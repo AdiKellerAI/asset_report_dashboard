@@ -56,6 +56,17 @@ a `needs_review` document, not an LLM guess.
 | Water bill | `City of Cleveland Division of Water` | - |
 | Sewer bill | `neorsd.org` or `Northeast Ohio Regional Sewer District` | - |
 
+## Transactions come from the Owner Packet only - not the utility bill PDFs too
+
+The Owner Packet's per-property transaction log already includes utility bill
+payments as cash-out line items (e.g. "City Of Cleveland Water Division ... Water -
+Past-07.11 610.86"). `transaction` rows are written from that log (owner-packet
+parser). The separate `water_bill`/`sewer_bill` PDF parsers exist for cross-checking
+and supporting-document evidence, **not** as a second write of the same amount -
+writing both would double-count. If a bill PDF's amount doesn't appear anywhere in
+that month's (or a nearby month's, since payment can lag billing) Owner Packet
+transaction log, that's a review-queue case, not two transactions.
+
 ## Cross-reference checks (dev-plan.md §8.4) - build these once individual parsers work
 
 - A water bill's `Fixed Charge` billing period should roughly match the sewer bill's for

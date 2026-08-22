@@ -48,10 +48,20 @@ Total <amt>]                        <- only present when there are unpaid bills 
 - `Owner Disbursements` — seen once (Colburn, Aug 2023): an **intra-portfolio transfer**, i.e. this property's surplus cash was swept to cover the other property's shortfall that month (visible in the transaction log as `Transfer to <other property address>` / `Transfer from <this property address>`). This is AppFolio netting the two properties against each other internally — not money leaving the portfolio. When this line is present, `Unpaid Bills` is typically absent (the surplus was already zeroed out via the transfer instead of being left as an unpaid-bill placeholder).
 - `Please Remit Balance Due` — appears only when `Net Owner Funds` goes negative (Brunswick, Aug 2023: unpaid utility bills exceeded the cash balance that month) — this is money AppFolio says Adi owes *in*, not a payout.
 
-**The arithmetic (confirmed across every sample):**
+**The arithmetic — confirmed across the full archive (dev-plan.md §8.4 cross-check,
+implemented as `test_cash_summary_arithmetic_holds` / `test_full_archive_parses_without_crashing`
+in `tests/test_parsers/test_owner_packet.py`), and initially got wrong in an earlier
+draft of this note — Owner Disbursements and Unpaid Bills are NOT interchangeable:**
 ```
-Net Owner Funds = Ending Cash Balance − |Unpaid Bills or Owner Disbursements, if present| − Property Reserve
+Net Owner Funds = Ending Cash Balance + Unpaid Bills (if present, already negative) + Property Reserve
 ```
+`Owner Disbursements`, when present instead of `Unpaid Bills`, is **already netted
+into `Ending Cash Balance`** (it's a real cash-out line in that month's transaction
+log - the intra-portfolio transfer itself) — subtracting it again double-counts and
+gives the wrong `Net Owner Funds`. Only `Unpaid Bills` gets subtracted a second time,
+because unlike a disbursement, the unpaid amount hasn't actually left the cash
+balance yet. When neither field is present (e.g. the 2025+ samples where the surplus
+is simply left to accumulate), `Net Owner Funds = Ending Cash Balance + Property Reserve`.
 
 ## ⚠️ Critical: `Net Owner Funds` is a running balance, not a monthly delta
 
@@ -101,6 +111,30 @@ Created on <date> Page <n>
 Category names observed so far: `RENTS` (income), `CLEANING AND MAINTENANCE`, `LEGAL AND OTHER PROFESSIONAL FEES`, `MANAGEMENT FEES`, `TAXES`. Expect more to appear over time (e.g. insurance) — map to the `expense_type` lookup taxonomy by category, not a hardcoded enum, per dev-plan.md §4.
 
 Table columns are one per month in the period range (variable width, 1–12 months) plus a trailing `Total` column — extract via `pdfplumber`'s table extraction, not line-splitting on whitespace, since amounts and month columns aren't fixed-width across samples.
+
+## Confirmed NOT supported yet: pre-Apr-2022 layout
+
+Two files in the archive (`Jan 01, 2021 to Dec 31, 2021.pdf`, `Jan 01, 2022 to Jan 31,
+2022.pdf`) use an older, structurally different layout: no "Property Cash Summary"
+field block in the expected position, `Income`/`Expense` transaction-table columns
+instead of `Cash In`/`Cash Out`, and the property name is presented as "-- <address>-"
+under an "Owner Statement" / "Adi Keller Properties" header rather than the
+"<address> - <address>" line used from Apr 2022 onward. `parse_owner_packet` detects
+it can't find the expected fields and correctly returns nothing for these 2 files
+rather than guessing — confirmed via the full-archive test. Every month from Apr 2022
+onward uses the modern layout documented above. Picking up these 2 oldest files is a
+future maintenance task, not blocking Phase 1.
+
+## Extraction implementation note
+
+Use `pdfplumber`'s `page.extract_tables()`, not `extract_text()` line-parsing, for
+both the field block and the transaction log — confirmed to cleanly separate columns
+even when a cell wraps across multiple lines (e.g. a payee name or a long maintenance
+description). `extract_tables()` returns 2–3 tables per property page: the field
+block, the transaction log, and (when present) the Bills Due table. One thing
+`extract_tables()` does NOT capture: the `Please Remit Balance Due` line sits outside
+the bordered table structure — don't try to extract it separately, it's mathematically
+redundant with `|Net Owner Funds|` when negative anyway.
 
 ## Sample files used
 - `Apr 01, 2022 to Apr 30, 2022.zip` (2022, pre-Income-Statement era, has 1 work order)
