@@ -7,8 +7,10 @@ def create_app(config_object=Config):
     app = Flask(__name__)
     app.config.from_object(config_object)
 
+    from app.routes.dashboard import dashboard_bp
     from app.routes.health import health_bp
     from app.routes.upload import upload_bp
+    app.register_blueprint(dashboard_bp)
     app.register_blueprint(health_bp)
     app.register_blueprint(upload_bp)
 

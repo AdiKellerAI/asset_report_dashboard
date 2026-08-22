@@ -8,7 +8,7 @@ A single-user Flask + PostgreSQL app that turns Adi's monthly AppFolio/Overland 
 
 ## Current phase
 
-**Phase 1 — Core capture (MVP)**, per `docs/dev-plan.md` §10. Schema and format research are done; parsers and the ingestion endpoint are next.
+**Phase 1 — Core capture (MVP)**, per `docs/dev-plan.md` §10. Schema, parsers, ingestion, real data, and the landing page are all done - only `transfer-log` is left, deferred at Adi's request (see "Not yet done" below).
 
 ## Done so far
 
@@ -21,7 +21,8 @@ A single-user Flask + PostgreSQL app that turns Adi's monthly AppFolio/Overland 
 | `owner-packet-parser` | `app/parsers/` - cash-summary field extraction + categorized transaction parsing from Owner Packet.pdf, tested against the full real archive (~52 files). Found and fixed a real arithmetic bug (Owner Disbursements vs Unpaid Bills) and identified 2 pre-Apr-2022 files with an unsupported older layout | Merged to `main` |
 | `utility-bill-parsers` | `app/parsers/water_bill.py`, `app/parsers/sewer_bill.py` - tested against every `bill_*.pdf` in the archive. Found the `bill_*` prefix also covers property tax, insurance, gas bills, invoices, and lease renewals (not yet parsed - see `report-ingestion` skill) and one file with a corrupted PDF font encoding (fails closed, doesn't crash) | Merged to `main` |
 | `zip-ingestion-endpoint` | `app/ingestion.py` + `POST /upload` - unzip/hash-dedupe (within-batch and across history via `document.content_hash`)/signature-route/write. Tested as one bulk upload of the entire real archive. Also: the real Neon Postgres project is now live - schema migrated, properties + expense types seeded, verified via a direct read-only check | Merged to `main` |
-| `fix-transfer-categorization` | Added `expense_type.is_operating` (migration `a6f966c5a581`) + 3 new categories (`internal_transfer`, `security_deposit_transfer`, `owner_distribution`), gated `monthly_statement`'s NOI fields on it, fixed a few real expenses (make-ready, lease/renewal fees) that were falling through to `other_expense` for lack of a keyword match. Added `flask recategorize-transactions` (no PDF re-parse needed) and ran it against production - corrected all 518 already-loaded transactions. See "Real data is now loaded" below for before/after numbers | Pending Adi's approval to push/merge |
+| `fix-transfer-categorization` | Added `expense_type.is_operating` (migration `a6f966c5a581`) + 3 new categories (`internal_transfer`, `security_deposit_transfer`, `owner_distribution`), gated `monthly_statement`'s NOI fields on it, fixed a few real expenses (make-ready, lease/renewal fees) that were falling through to `other_expense` for lack of a keyword match. Added `flask recategorize-transactions` (no PDF re-parse needed) and ran it against production - corrected all 518 already-loaded transactions. See "Real data is now loaded" below for before/after numbers | Merged to `main` |
+| `landing-page` | `app/reports.py` (period/property aggregation over `monthly_statement`) + `app/routes/dashboard.py` (`GET /`) + `app/templates/dashboard.html` - the 5 headline cards (Gross Rent Collected, Total Property Expenses, NOI, Net to Adi, Accumulated Balance) with Property × Period filters (This Month/This Year/Custom Month/Custom Year/All Time). Verified against real production-shaped numbers via curl + a manual dev-server check | Pending Adi's approval to push/merge |
 
 ## Key decisions locked in (see `docs/dev-plan.md` §13–14 for full detail)
 
@@ -90,8 +91,14 @@ database. Results: 149 documents after dedup (57 duplicates skipped), 104
 
 ## Not yet done (rest of Phase 1 roadmap)
 
-1. `transfer-log` — manual-entry endpoint for logging Wise transfers.
-2. `landing-page` — the 4 original headline cards + the Accumulated Balance card + property/period filters.
+1. `transfer-log` — manual-entry endpoint for logging Wise transfers. **Deferred at Adi's
+   request (2026-08-22)** — he'll add his TransferWise/Wise transfer history later, not
+   right now. Not blocking anything else; the `transfer` table already exists and the
+   Accumulated Balance card already accounts for it (just sees zero transfers until rows
+   exist).
+
+Landing page is otherwise the last Phase 1 item - once transfer-log lands (whenever
+Adi's ready), Phase 1 is complete and Phase 2 (reports/charts, dev-plan.md sec 10) is next.
 
 Then Phase 2 (reports/charts), Phase 3 (mortgage + tax tracker), Phase 4 (polish/mobile/automation) per `docs/dev-plan.md` §10 — plus one new feature not in the original phase list: a **site-wide USD/NIS currency toggle** using the current day's live exchange rate for display (storage stays USD-only, no schema change — see `docs/dev-plan.md` §15). Scope this as its own branch once reports/UI exist (Phase 2), not bolted onto the first page that shows a dollar figure.
 

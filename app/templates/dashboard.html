@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Asset Report Dashboard</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <header class="page-header">
+    <h1>Asset Report Dashboard</h1>
+  </header>
+
+  <form class="filter-bar" method="get" action="/">
+    <label>
+      Property
+      <select name="property">
+        <option value="all" {{ "selected" if selected_property == "all" }}>All Properties</option>
+        {% for p in properties %}
+        <option value="{{ p.nickname }}" {{ "selected" if selected_property == p.nickname }}>{{ p.nickname }}</option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <label>
+      Period
+      <select name="period" id="period-select">
+        <option value="this_month" {{ "selected" if selected_period == "this_month" }}>This Month</option>
+        <option value="this_year" {{ "selected" if selected_period == "this_year" }}>This Year</option>
+        <option value="custom_month" {{ "selected" if selected_period == "custom_month" }}>Custom Month</option>
+        <option value="custom_year" {{ "selected" if selected_period == "custom_year" }}>Custom Year</option>
+        <option value="all_time" {{ "selected" if selected_period == "all_time" }}>All Time</option>
+      </select>
+    </label>
+
+    <label id="month-field" class="custom-period-field">
+      Month
+      <input type="month" name="month" value="{{ selected_month }}">
+    </label>
+
+    <label id="year-field" class="custom-period-field">
+      Year
+      <input type="number" name="year" min="2020" max="2100" value="{{ selected_year }}">
+    </label>
+
+    <button type="submit">Apply</button>
+  </form>
+
+  <p class="period-label">{{ summary.period_label }}{% if not summary.has_data %} — no statement data for this period yet{% endif %}</p>
+
+  <main class="card-grid">
+    <section class="card">
+      <h2>Gross Rent Collected</h2>
+      <p class="card-value">${{ "%.2f"|format(summary.gross_rent) }}</p>
+    </section>
+
+    <section class="card">
+      <h2>Total Property Expenses</h2>
+      <p class="card-value">${{ "%.2f"|format(summary.total_expenses) }}</p>
+    </section>
+
+    <section class="card">
+      <h2>Net Operating Income</h2>
+      <p class="card-value">${{ "%.2f"|format(summary.noi) }}</p>
+    </section>
+
+    <section class="card">
+      <h2>Net to Adi</h2>
+      <p class="card-value">${{ "%.2f"|format(summary.net_to_adi) }}</p>
+    </section>
+
+    <section class="card card-accent">
+      <h2>Accumulated Balance</h2>
+      <p class="card-value">${{ "%.2f"|format(summary.accumulated_balance) }}</p>
+      <p class="card-note">Still with Overland, not yet transferred — portfolio-wide, as of now</p>
+    </section>
+  </main>
+
+  <script>
+    // Show only the custom-period input relevant to the selected period -
+    // no framework needed, this is the one bit of interactivity the page has.
+    function syncCustomPeriodFields() {
+      var period = document.getElementById("period-select").value;
+      document.getElementById("month-field").style.display = period === "custom_month" ? "flex" : "none";
+      document.getElementById("year-field").style.display = period === "custom_year" ? "flex" : "none";
+    }
+    document.getElementById("period-select").addEventListener("change", syncCustomPeriodFields);
+    syncCustomPeriodFields();
+  </script>
+</body>
+</html>
