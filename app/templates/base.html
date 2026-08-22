@@ -17,7 +17,14 @@
         <a href="/" class="{{ 'active' if active_nav == 'dashboard' else '' }}">Dashboard</a>
         <a href="/trends" class="{{ 'active' if active_nav == 'trends' else '' }}">Trends</a>
       </nav>
-      <button type="button" id="currency-toggle" class="currency-toggle" aria-pressed="false">$ USD</button>
+      <div class="currency-widget">
+        <button type="button" id="currency-toggle" class="currency-toggle" aria-pressed="false" aria-label="Switch currency between USD and NIS">
+          <span class="currency-toggle-side currency-toggle-usd">$</span>
+          <span class="currency-toggle-track"><span class="currency-toggle-thumb"></span></span>
+          <span class="currency-toggle-side currency-toggle-nis">₪</span>
+        </button>
+        <span id="fx-rate-note" class="fx-rate-note" hidden>1 $ = <span id="fx-rate-value"></span> ₪</span>
+      </div>
     </div>
   </header>
 
@@ -56,11 +63,18 @@
 
     document.addEventListener("DOMContentLoaded", function () {
       var btn = document.getElementById("currency-toggle");
+      var fxNote = document.getElementById("fx-rate-note");
+      var fxValue = document.getElementById("fx-rate-value");
       if (!btn) return;
+      if (fxValue) {
+        fxValue.textContent = window.FX_RATE_USD_TO_ILS.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      }
       btn.addEventListener("click", function () {
         window.currentCurrency = window.currentCurrency === "USD" ? "NIS" : "USD";
-        btn.textContent = window.currentCurrency === "USD" ? "$ USD" : "₪ NIS";
-        btn.setAttribute("aria-pressed", window.currentCurrency === "NIS");
+        var isNis = window.currentCurrency === "NIS";
+        btn.classList.toggle("is-nis", isNis);
+        btn.setAttribute("aria-pressed", isNis);
+        if (fxNote) fxNote.hidden = !isNis;
         refreshMoneyDisplays();
       });
     });

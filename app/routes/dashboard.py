@@ -1,7 +1,7 @@
 from flask import Blueprint, render_template, request
 
 from app.db import SessionLocal
-from app.reports import PERIOD_CHOICES, dashboard_breakdown, recent_income_trend
+from app.reports import PERIOD_CHOICES, dashboard_breakdown, recent_noi_trend
 
 dashboard_bp = Blueprint("dashboard", __name__)
 
@@ -18,7 +18,7 @@ def landing():
     session = SessionLocal()
     try:
         breakdown = dashboard_breakdown(session, period, month=month, year=year)
-        income_trend = recent_income_trend(session, months=5)
+        noi_trend = recent_noi_trend(session, months=5)
     finally:
         session.close()
 
@@ -29,6 +29,6 @@ def landing():
         selected_period=period,
         selected_month=month or "",
         selected_year=year or "",
-        income_months=[m.isoformat() for m in income_trend["months"]],
-        income_lines=income_trend["lines"],
+        noi_months=[m.isoformat() for m in noi_trend["months"]],
+        noi_lines=noi_trend["lines"],
     )

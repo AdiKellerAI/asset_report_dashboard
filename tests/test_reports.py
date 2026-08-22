@@ -7,7 +7,7 @@ from app.reports import (
     available_category_series,
     dashboard_breakdown,
     dashboard_summary,
-    recent_income_trend,
+    recent_noi_trend,
     resolve_period,
     trend_series,
 )
@@ -289,20 +289,16 @@ def test_dashboard_summary_this_month_defaults_to_latest_report_not_calendar_tod
     assert result["has_data"] is True
 
 
-def test_recent_income_trend_returns_last_n_months_per_property_and_total(db_session):
+def test_recent_noi_trend_returns_last_n_months_per_property_and_total(db_session):
     seed(db_session)
     brunswick = _property(db_session, "Brunswick")
     colburn = _property(db_session, "Colburn")
     for i, m in enumerate([3, 4, 5, 6, 7, 8]):
-        db_session.add(
-            MonthlyStatement(property_id=brunswick.id, month=date(2026, m, 1), gross_income=100 * (i + 1))
-        )
-        db_session.add(
-            MonthlyStatement(property_id=colburn.id, month=date(2026, m, 1), gross_income=10 * (i + 1))
-        )
+        db_session.add(MonthlyStatement(property_id=brunswick.id, month=date(2026, m, 1), noi=100 * (i + 1)))
+        db_session.add(MonthlyStatement(property_id=colburn.id, month=date(2026, m, 1), noi=10 * (i + 1)))
     db_session.commit()
 
-    result = recent_income_trend(db_session, months=5)
+    result = recent_noi_trend(db_session, months=5)
 
     assert result["months"] == [date(2026, m, 1) for m in [4, 5, 6, 7, 8]]
     assert result["lines"]["Brunswick"] == [200.0, 300.0, 400.0, 500.0, 600.0]

@@ -216,7 +216,7 @@ def trend_series(
     `months_limit` keeps only the most recent N months (the Trends page's
     Range picker) - None means every month on record. `properties`/
     `statements` let a caller that already fetched this data across every
-    property (recent_income_trend, for one remote-Postgres round trip
+    property (recent_noi_trend, for one remote-Postgres round trip
     instead of one per property) pass it straight in."""
     series_keys = series_keys or DEFAULT_TREND_SERIES
     if properties is None:
@@ -312,13 +312,13 @@ RANGE_CHOICES = {
 DEFAULT_RANGE = "1y"
 
 
-def recent_income_trend(session, months=5):
-    """Gross Rent Collected for the last N months that actually have a
+def recent_noi_trend(session, months=5):
+    """Net Operating Income for the last N months that actually have a
     report, per property plus the portfolio Total - the landing page's
-    at-a-glance income graph. No property filter on this page (Adi wants
-    both assets and the total visible together), so this always returns
-    every property's line. Fetches properties/statements once (a remote
-    Postgres round trip is the real cost here) and reuses them across every
+    at-a-glance graph. No property filter on this page (Adi wants both
+    assets and the total visible together), so this always returns every
+    property's line. Fetches properties/statements once (a remote Postgres
+    round trip is the real cost here) and reuses them across every
     property's trend_series call instead of re-querying per property."""
     properties = session.query(Property).order_by(Property.nickname).all()
     property_ids = [p.id for p in properties]
@@ -329,16 +329,14 @@ def recent_income_trend(session, months=5):
         .all()
     )
 
-    total = trend_series(
-        session, "all", series_keys=["gross_rent"], properties=properties, statements=all_statements
-    )
+    total = trend_series(session, "all", series_keys=["noi"], properties=properties, statements=all_statements)
     months_list = total["months"][-months:]
-    lines = {"Total": total["series"]["gross_rent"]["values"][-months:]}
+    lines = {"Total": total["series"]["noi"]["values"][-months:]}
     for prop in properties:
         s = trend_series(
-            session, prop.nickname, series_keys=["gross_rent"], properties=properties, statements=all_statements
+            session, prop.nickname, series_keys=["noi"], properties=properties, statements=all_statements
         )
-        lines[prop.nickname] = s["series"]["gross_rent"]["values"][-months:]
+        lines[prop.nickname] = s["series"]["noi"]["values"][-months:]
     return {"months": months_list, "lines": lines}
 
 

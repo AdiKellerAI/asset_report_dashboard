@@ -69,11 +69,11 @@ def test_landing_page_default_this_month_uses_latest_report_not_calendar_today(d
     assert "no statement data for this period yet" not in body
 
 
-def test_landing_page_includes_last_5_months_income_chart_per_property_and_total(db_session):
+def test_landing_page_includes_last_5_months_noi_chart_per_property_and_total(db_session):
     seed(db_session)
     brunswick = db_session.query(Property).filter_by(nickname="Brunswick").one()
     for m in [3, 4, 5, 6, 7]:
-        db_session.add(MonthlyStatement(property_id=brunswick.id, month=date(2026, m, 1), gross_income=100 * m))
+        db_session.add(MonthlyStatement(property_id=brunswick.id, month=date(2026, m, 1), noi=100 * m))
     db_session.commit()
 
     client = create_app().test_client()
@@ -81,7 +81,7 @@ def test_landing_page_includes_last_5_months_income_chart_per_property_and_total
 
     assert response.status_code == 200
     body = response.get_data(as_text=True)
-    assert 'id="income-chart"' in body
+    assert 'id="noi-chart"' in body
     assert '"2026-07-01"' in body
     assert '"Brunswick"' in body
     assert '"Colburn"' in body
@@ -117,4 +117,5 @@ def test_landing_page_money_values_carry_raw_usd_for_the_currency_toggle(db_sess
     body = response.get_data(as_text=True)
     assert 'class="money" data-usd="15107.93"' in body
     assert 'id="currency-toggle"' in body
+    assert 'id="fx-rate-note"' in body
     assert "FX_RATE_USD_TO_ILS" in body

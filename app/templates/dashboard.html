@@ -27,7 +27,7 @@
     <button type="submit">Apply</button>
   </form>
 
-  <p class="period-label">{{ total.period_label }}{% if not total.has_data %} — no statement data for this period yet{% endif %}</p>
+  <p class="period-label">{{ total.period_label }}{% if not total.has_data %} <span class="period-label-caveat">— no statement data for this period yet</span>{% endif %}</p>
 
   <div class="table-wrap">
     <table class="compare-table">
@@ -79,10 +79,10 @@
     <p class="card-note">Still with Overland, not yet transferred — portfolio-wide, as of now</p>
   </section>
 
-  {% if income_months %}
+  {% if noi_months %}
   <section class="chart-wrap income-chart">
-    <h2 class="chart-title">Income — Last 5 Months</h2>
-    <canvas id="income-chart" role="img" aria-label="Gross rent collected per property and total, last 5 months"></canvas>
+    <h2 class="chart-title">Net Operating Income — Last 5 Months</h2>
+    <canvas id="noi-chart" role="img" aria-label="Net operating income per property and total, last 5 months"></canvas>
   </section>
   {% endif %}
 {% endblock %}
@@ -100,11 +100,11 @@
     syncCustomPeriodFields();
   </script>
 
-  {% if income_months %}
+  {% if noi_months %}
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
   <script>
-    const incomeMonths = {{ income_months|tojson }};
-    const incomeLines = {{ income_lines|tojson }};
+    const noiMonths = {{ noi_months|tojson }};
+    const noiLines = {{ noi_lines|tojson }};
     // Total gets the gold accent (it's the headline aggregate, not a raw
     // category); properties get the validated dark categorical order so
     // colors stay consistent with the Trends page.
@@ -120,7 +120,7 @@
     }
 
     let propertyIndex = 0;
-    const datasets = Object.entries(incomeLines).map(([name, values]) => {
+    const datasets = Object.entries(noiLines).map(([name, values]) => {
       const color = LINE_COLORS[name] || PROPERTY_PALETTE[propertyIndex++ % PROPERTY_PALETTE.length];
       return {
         label: name,
@@ -136,9 +136,9 @@
       };
     });
 
-    const incomeChart = new Chart(document.getElementById("income-chart"), {
+    const noiChart = new Chart(document.getElementById("noi-chart"), {
       type: "line",
-      data: { labels: incomeMonths, datasets },
+      data: { labels: noiMonths, datasets },
       options: {
         responsive: true,
         interaction: { mode: "index", intersect: false },
@@ -170,7 +170,7 @@
         },
       },
     });
-    window.moneyCharts.push(incomeChart);
+    window.moneyCharts.push(noiChart);
   </script>
   {% endif %}
 {% endblock %}

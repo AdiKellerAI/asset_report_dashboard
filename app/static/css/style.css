@@ -98,28 +98,95 @@ a {
   padding: 0.25rem;
 }
 
-.currency-toggle {
-  appearance: none;
-  border: 1px solid var(--border);
-  background: var(--surface);
-  color: var(--ink-secondary);
-  font: inherit;
-  font-size: 0.8rem;
-  font-weight: 700;
-  border-radius: 999px;
-  padding: 0.45rem 0.9rem;
-  cursor: pointer;
-  transition: color 0.2s ease, border-color 0.2s ease;
+/* A dedicated switch design (not the same segmented-pill look as the nav)
+   so it reads as its own distinct control: two currency symbols with a
+   sliding thumb between them, gold-accented to match the Accumulated
+   Balance card's "money" association. */
+.currency-widget {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
 }
 
-.currency-toggle:hover {
-  color: var(--ink);
-  border-color: var(--accent);
+.currency-toggle {
+  appearance: none;
+  border: none;
+  background: none;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  cursor: pointer;
+  color: var(--ink-muted);
+  font: inherit;
+}
+
+.currency-toggle-side {
+  font-size: 0.95rem;
+  font-weight: 800;
+  transition: color 0.2s ease, transform 0.2s ease;
+}
+
+.currency-toggle-usd {
+  color: var(--gold);
+}
+
+.currency-toggle.is-nis .currency-toggle-usd {
+  color: var(--ink-muted);
+  transform: scale(0.85);
+}
+
+.currency-toggle-nis {
+  color: var(--ink-muted);
+}
+
+.currency-toggle.is-nis .currency-toggle-nis {
+  color: var(--gold);
+  transform: scale(1.05);
+}
+
+.currency-toggle-track {
+  position: relative;
+  width: 40px;
+  height: 22px;
+  border-radius: 999px;
+  background: linear-gradient(160deg, var(--surface-raised), var(--surface));
+  border: 1px solid var(--border);
+  transition: border-color 0.2s ease;
+}
+
+.currency-toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--gold), #f0c96b);
+  box-shadow: 0 2px 6px rgba(201, 133, 0, 0.4);
+  transition: transform 0.2s ease;
+}
+
+.currency-toggle.is-nis .currency-toggle-thumb {
+  transform: translateX(18px);
+}
+
+.currency-toggle:hover .currency-toggle-track {
+  border-color: var(--gold);
 }
 
 .currency-toggle:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 3px var(--accent-ring);
+}
+
+.currency-toggle:focus-visible .currency-toggle-track {
+  box-shadow: 0 0 0 3px var(--gold-soft);
+}
+
+.fx-rate-note {
+  font-size: 0.72rem;
+  color: var(--ink-muted);
+  font-variant-numeric: tabular-nums;
 }
 
 @media (max-width: 480px) {
@@ -153,15 +220,15 @@ a {
 .filter-bar {
   display: flex;
   flex-wrap: wrap;
-  gap: 1rem;
+  gap: 0.65rem;
   align-items: flex-end;
   width: fit-content;
   max-width: 100%;
   background: linear-gradient(160deg, var(--surface-raised), var(--surface));
   border: 1px solid var(--border-soft);
-  border-radius: var(--radius-lg);
+  border-radius: var(--radius-md);
   box-shadow: var(--shadow-card);
-  padding: 1.1rem 1.25rem;
+  padding: 0.6rem 0.75rem;
   margin-bottom: 1.5rem;
 }
 
@@ -172,12 +239,12 @@ a {
 .filter-bar > label {
   display: flex;
   flex-direction: column;
-  font-size: 0.72rem;
+  font-size: 0.65rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--ink-muted);
-  gap: 0.4rem;
+  gap: 0.25rem;
 }
 
 .filter-bar select,
@@ -187,20 +254,20 @@ a {
   background: rgba(255, 255, 255, 0.03);
   color: var(--ink);
   border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 0.55rem 2rem 0.55rem 0.7rem;
+  border-radius: 8px;
+  padding: 0.35rem 1.75rem 0.35rem 0.6rem;
   font: inherit;
-  font-size: 0.9rem;
-  min-height: 42px;
+  font-size: 0.82rem;
+  min-height: 32px;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23898781' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
   background-repeat: no-repeat;
-  background-position: right 0.75rem center;
+  background-position: right 0.6rem center;
 }
 
 .filter-bar input:not([type="checkbox"]) {
   background-image: none;
-  padding-right: 0.7rem;
+  padding-right: 0.6rem;
 }
 
 .filter-bar select:focus,
@@ -213,11 +280,11 @@ a {
 .filter-bar button {
   appearance: none;
   border: none;
-  border-radius: var(--radius-md);
-  padding: 0.6rem 1.4rem;
-  min-height: 42px;
+  border-radius: 8px;
+  padding: 0.35rem 1rem;
+  min-height: 32px;
   font: inherit;
-  font-size: 0.9rem;
+  font-size: 0.82rem;
   font-weight: 700;
   color: #0d1117;
   background: linear-gradient(135deg, var(--accent-strong), var(--accent));
@@ -348,9 +415,23 @@ a {
 /* ---------- Cards ---------- */
 
 .period-label {
+  color: var(--ink);
+  font-size: 1.4rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin: 0 0 1.25rem;
+}
+
+.empty-state-note {
   color: var(--ink-muted);
   font-size: 0.85rem;
   margin: 0 0 1.25rem;
+}
+
+.period-label-caveat {
+  font-size: 0.85rem;
+  font-weight: 500;
+  color: var(--ink-muted);
 }
 
 .card-grid {
