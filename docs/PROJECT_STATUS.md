@@ -19,6 +19,7 @@ A single-user Flask + PostgreSQL app that turns Adi's monthly AppFolio/Overland 
 | `format-notes` | Real `pdfplumber` text extraction across 5 years of Owner Packet samples + both utility bill types → `docs/formats/*.md`. Found and corrected a bug in the planned "Accumulated Balance" formula (see below) | Merged to `main` |
 | `project-status-and-skills` | This doc + `.claude/skills/` for this repo, plus the currency decision (dev-plan.md §15) | Merged to `main` |
 | `owner-packet-parser` | `app/parsers/` - cash-summary field extraction + categorized transaction parsing from Owner Packet.pdf, tested against the full real archive (~52 files). Found and fixed a real arithmetic bug (Owner Disbursements vs Unpaid Bills) and identified 2 pre-Apr-2022 files with an unsupported older layout | Merged to `main` |
+| `utility-bill-parsers` | `app/parsers/water_bill.py`, `app/parsers/sewer_bill.py` - tested against every `bill_*.pdf` in the archive. Found the `bill_*` prefix also covers property tax, insurance, gas bills, invoices, and lease renewals (not yet parsed - see `report-ingestion` skill) and one file with a corrupted PDF font encoding (fails closed, doesn't crash) | Merged to `main` |
 
 ## Key decisions locked in (see `docs/dev-plan.md` §13–14 for full detail)
 
@@ -33,10 +34,9 @@ A single-user Flask + PostgreSQL app that turns Adi's monthly AppFolio/Overland 
 
 ## Not yet done (rest of Phase 1 roadmap)
 
-1. `utility-bill-parsers` — water bill + sewer bill extraction functions (docs/formats/water-bill.md, docs/formats/sewer-bill.md), used for cross-checking against the Owner Packet's transaction log, not as a second source of `transaction` rows (see the `report-ingestion` skill).
-2. `zip-ingestion-endpoint` — upload/unzip/hash-dedupe/batch + signature-sniffer routing + review queue.
-3. `transfer-log` — manual-entry endpoint for logging Wise transfers.
-4. `landing-page` — the 4 original headline cards + the Accumulated Balance card + property/period filters.
+1. `zip-ingestion-endpoint` — upload/unzip/hash-dedupe/batch + signature-sniffer routing + review queue.
+2. `transfer-log` — manual-entry endpoint for logging Wise transfers.
+3. `landing-page` — the 4 original headline cards + the Accumulated Balance card + property/period filters.
 
 Then Phase 2 (reports/charts), Phase 3 (mortgage + tax tracker), Phase 4 (polish/mobile/automation) per `docs/dev-plan.md` §10 — plus one new feature not in the original phase list: a **site-wide USD/NIS currency toggle** using the current day's live exchange rate for display (storage stays USD-only, no schema change — see `docs/dev-plan.md` §15). Scope this as its own branch once reports/UI exist (Phase 2), not bolted onto the first page that shows a dollar figure.
 
