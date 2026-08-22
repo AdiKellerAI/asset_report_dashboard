@@ -136,7 +136,7 @@ a {
   align-items: flex-start;
 }
 
-.filter-bar label {
+.filter-bar > label {
   display: flex;
   flex-direction: column;
   font-size: 0.72rem;
@@ -207,29 +207,34 @@ a {
 }
 
 .series-picker {
+  width: 100%;
   border: 1px solid var(--border-soft);
   border-radius: var(--radius-md);
-  padding: 0.6rem 0.9rem;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem 1.1rem;
+  padding: 0.9rem 1rem 1rem;
   margin: 0;
 }
 
 .series-picker legend {
   font-size: 0.72rem;
-  font-weight: 600;
+  font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: var(--ink-muted);
   padding: 0 0.3rem;
 }
 
+.series-picker .checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+  gap: 0.55rem 1rem;
+  margin-top: 0.4rem;
+}
+
 .checkbox-label {
   display: flex;
+  flex-direction: row;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.5rem;
   font-size: 0.85rem;
   font-weight: 500;
   text-transform: none;
@@ -237,12 +242,68 @@ a {
   color: var(--ink-secondary);
   min-height: auto;
   cursor: pointer;
+  transition: color 0.15s ease;
+}
+
+.checkbox-label:hover {
+  color: var(--ink);
 }
 
 .checkbox-label input[type="checkbox"] {
+  flex-shrink: 0;
   accent-color: var(--accent);
   width: 15px;
   height: 15px;
+}
+
+/* Category picker collapsed by default (13+ options is a lot to scan at
+   once) - a native <details> keeps it elegant with zero extra JS. */
+.category-picker {
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  padding: 0;
+  overflow: hidden;
+}
+
+.category-picker summary {
+  list-style: none;
+  cursor: pointer;
+  padding: 0.75rem 1rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.category-picker summary::-webkit-details-marker {
+  display: none;
+}
+
+.category-picker summary::before {
+  content: "";
+  width: 0;
+  height: 0;
+  border-left: 4px solid var(--ink-muted);
+  border-top: 4px solid transparent;
+  border-bottom: 4px solid transparent;
+  transition: transform 0.15s ease;
+}
+
+.category-picker[open] summary::before {
+  transform: rotate(90deg);
+}
+
+.category-picker summary:hover {
+  color: var(--ink);
+}
+
+.category-picker .checkbox-grid {
+  padding: 0 1rem 1rem;
+  margin-top: 0;
 }
 
 /* ---------- Cards ---------- */
@@ -322,6 +383,83 @@ a {
   margin: 0.6rem 0 0;
 }
 
+.card-accumulated {
+  margin-bottom: 1.1rem;
+}
+
+/* ---------- Comparison table ---------- */
+
+.table-wrap {
+  background: linear-gradient(160deg, var(--surface-raised), var(--surface));
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 0.5rem 1rem;
+  margin-bottom: 1.1rem;
+  overflow-x: auto;
+}
+
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.compare-table th,
+.compare-table td {
+  text-align: right;
+  padding: 0.85rem 0.75rem;
+  font-size: 0.92rem;
+}
+
+.compare-table thead th {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-muted);
+  border-bottom: 1px solid var(--border);
+}
+
+.compare-table .metric-col,
+.compare-table th[scope="row"] {
+  text-align: left;
+  color: var(--ink-secondary);
+  font-weight: 500;
+}
+
+.compare-table tbody th[scope="row"] {
+  font-size: 0.88rem;
+}
+
+.compare-table tbody tr:not(:last-child) td,
+.compare-table tbody tr:not(:last-child) th {
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.compare-table td {
+  color: var(--ink);
+  font-weight: 600;
+}
+
+.compare-table .total-col {
+  color: var(--accent-strong);
+  font-weight: 700;
+}
+
+@media (max-width: 640px) {
+  .compare-table th,
+  .compare-table td {
+    padding: 0.6rem 0.45rem;
+    font-size: 0.8rem;
+  }
+
+  .compare-table thead th {
+    font-size: 0.6rem;
+  }
+}
+
 /* ---------- Chart ---------- */
 
 .chart-wrap {
@@ -337,6 +475,19 @@ a {
 .chart-wrap canvas {
   max-width: 100%;
   display: block;
+}
+
+.income-chart {
+  margin-top: 1.1rem;
+}
+
+.chart-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--ink-muted);
+  margin: 0 0 1rem;
 }
 
 @media (prefers-color-scheme: light) {

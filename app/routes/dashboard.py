@@ -1,15 +1,13 @@
 from flask import Blueprint, render_template, request
 
 from app.db import SessionLocal
-from app.models import Property
-from app.reports import PERIOD_CHOICES, dashboard_summary
+from app.reports import PERIOD_CHOICES, dashboard_breakdown, recent_income_trend
 
 dashboard_bp = Blueprint("dashboard", __name__)
 
 
 @dashboard_bp.get("/")
 def landing():
-    property_filter = request.args.get("property", "all")
     period = request.args.get("period", "this_month")
     month = request.args.get("month")
     year = request.args.get("year")
@@ -19,17 +17,18 @@ def landing():
 
     session = SessionLocal()
     try:
-        properties = session.query(Property).order_by(Property.nickname).all()
-        summary = dashboard_summary(session, property_filter, period, month=month, year=year)
+        breakdown = dashboard_breakdown(session, period, month=month, year=year)
+        income_trend = recent_income_trend(session, months=5)
     finally:
         session.close()
 
     return render_template(
         "dashboard.html",
-        summary=summary,
-        properties=properties,
-        selected_property=property_filter,
+        properties=breakdown["properties"],
+        total=breakdown["total"],
         selected_period=period,
         selected_month=month or "",
         selected_year=year or "",
+        income_months=[m.isoformat() for m in income_trend["months"]],
+        income_lines=income_trend["lines"],
     )

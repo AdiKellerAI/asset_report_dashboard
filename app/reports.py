@@ -6,6 +6,8 @@ per-month totals the ingestion pipeline derived from the categorized log.
 
 from datetime import date
 
+from sqlalchemy import func
+
 from app.models import ExpenseType, Mortgage, MonthlyStatement, Property, Transaction, Transfer
 
 PERIOD_CHOICES = ("this_month", "this_year", "custom_month", "custom_year", "all_time")
@@ -61,7 +63,17 @@ def period_label(period, start, end):
     return str(start.year)
 
 
+def latest_reported_month(session):
+    """The most recent month any property has a monthly_statement for - "now"
+    for this app's purposes is whatever the latest report covers, not the
+    wall-clock date (statements lag by nature, so the real calendar's current
+    month rarely has a report yet)."""
+    return session.query(func.max(MonthlyStatement.month)).scalar()
+
+
 def dashboard_summary(session, property_nickname="all", period="this_month", month=None, year=None, today=None):
+    if today is None:
+        today = latest_reported_month(session) or date.today()
     start, end = resolve_period(period, month=month, year=year, today=today)
     property_ids = _property_ids_for(session, property_nickname)
 
@@ -216,3 +228,35 @@ def trend_series(session, property_nickname="all", series_keys=None):
         result[key] = {"label": label, "values": values}
 
     return {"months": months, "series": result}
+
+
+def recent_income_trend(session, months=5):
+    """Gross Rent Collected for the last N months that actually have a
+    report, per property plus the portfolio Total - the landing page's
+    at-a-glance income graph. No property filter on this page (Adi wants
+    both assets and the total visible together), so this always returns
+    every property's line."""
+    total = trend_series(session, property_nickname="all", series_keys=["gross_rent"])
+    months_list = total["months"][-months:]
+    lines = {"Total": total["series"]["gross_rent"]["values"][-months:]}
+    for prop in session.query(Property).order_by(Property.nickname).all():
+        s = trend_series(session, property_nickname=prop.nickname, series_keys=["gross_rent"])
+        lines[prop.nickname] = s["series"]["gross_rent"]["values"][-months:]
+    return {"months": months_list, "lines": lines}
+
+
+def dashboard_breakdown(session, period="this_month", month=None, year=None, today=None):
+    """Per-property figures plus the portfolio Total, all for the same
+    period - the landing page's comparison table. Adi wants both assets and
+    the combined total visible together rather than switching a property
+    filter."""
+    if today is None:
+        today = latest_reported_month(session) or date.today()
+
+    properties = session.query(Property).order_by(Property.nickname).all()
+    per_property = [
+        {"nickname": p.nickname, **dashboard_summary(session, p.nickname, period, month=month, year=year, today=today)}
+        for p in properties
+    ]
+    total = dashboard_summary(session, "all", period, month=month, year=year, today=today)
+    return {"properties": per_property, "total": total}

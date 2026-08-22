@@ -16,23 +16,27 @@
 
     <fieldset class="series-picker">
       <legend>Summary</legend>
-      {% for key, label in summary_series.items() %}
-      <label class="checkbox-label">
-        <input type="checkbox" name="series" value="{{ key }}" {{ "checked" if key in selected_series }}>
-        {{ label }}
-      </label>
-      {% endfor %}
+      <div class="checkbox-grid">
+        {% for key, label in summary_series.items() %}
+        <label class="checkbox-label">
+          <input type="checkbox" name="series" value="{{ key }}" {{ "checked" if key in selected_series }}>
+          {{ label }}
+        </label>
+        {% endfor %}
+      </div>
     </fieldset>
 
-    <fieldset class="series-picker">
-      <legend>By Category</legend>
-      {% for key, label in category_series.items() %}
-      <label class="checkbox-label">
-        <input type="checkbox" name="series" value="{{ key }}" {{ "checked" if key in selected_series }}>
-        {{ label }}
-      </label>
-      {% endfor %}
-    </fieldset>
+    <details class="category-picker" {{ "open" if selected_series|select("in", category_series)|list else "" }}>
+      <summary>By Category</summary>
+      <div class="checkbox-grid">
+        {% for key, label in category_series.items() %}
+        <label class="checkbox-label">
+          <input type="checkbox" name="series" value="{{ key }}" {{ "checked" if key in selected_series }}>
+          {{ label }}
+        </label>
+        {% endfor %}
+      </div>
+    </details>
 
     <button type="submit">Apply</button>
   </form>
@@ -109,7 +113,7 @@
               padding: 12,
               cornerRadius: 10,
               callbacks: {
-                label: (item) => `${item.dataset.label}: $${item.parsed.y.toLocaleString()}`,
+                label: (item) => `${item.dataset.label}: ${item.parsed.y.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} $`,
               },
             },
           },
@@ -124,7 +128,7 @@
               border: { color: BASELINE },
               ticks: {
                 color: INK_MUTED,
-                callback: (value) => "$" + value.toLocaleString(),
+                callback: (value) => value.toLocaleString() + " $",
               },
             },
           },

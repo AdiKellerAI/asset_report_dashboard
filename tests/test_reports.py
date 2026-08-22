@@ -3,7 +3,14 @@ from datetime import date
 import pytest
 
 from app.models import ExpenseType, MonthlyStatement, Mortgage, Property, Transaction, Transfer
-from app.reports import available_category_series, dashboard_summary, resolve_period, trend_series
+from app.reports import (
+    available_category_series,
+    dashboard_breakdown,
+    dashboard_summary,
+    recent_income_trend,
+    resolve_period,
+    trend_series,
+)
 from app.seed import seed
 
 
@@ -251,3 +258,57 @@ def test_trend_series_defaults_to_gross_rent_noi_net_to_adi(db_session):
     result = trend_series(db_session, property_nickname="Brunswick")
 
     assert set(result["series"].keys()) == {"gross_rent", "noi", "net_to_adi"}
+
+
+def test_dashboard_summary_this_month_defaults_to_latest_report_not_calendar_today(db_session):
+    """The real calendar's current month rarely has a report yet (statements
+    lag) - "This Month" without an explicit `today` should mean the latest
+    month we actually have a monthly_statement for, not date.today()."""
+    seed(db_session)
+    brunswick = _property(db_session, "Brunswick")
+    db_session.add(MonthlyStatement(property_id=brunswick.id, month=date(2026, 7, 1), gross_income=500, noi=300))
+    db_session.commit()
+
+    result = dashboard_summary(db_session, property_nickname="Brunswick", period="this_month")
+
+    assert result["period_label"] == "July 2026"
+    assert result["gross_rent"] == pytest.approx(500.0)
+    assert result["has_data"] is True
+
+
+def test_recent_income_trend_returns_last_n_months_per_property_and_total(db_session):
+    seed(db_session)
+    brunswick = _property(db_session, "Brunswick")
+    colburn = _property(db_session, "Colburn")
+    for i, m in enumerate([3, 4, 5, 6, 7, 8]):
+        db_session.add(
+            MonthlyStatement(property_id=brunswick.id, month=date(2026, m, 1), gross_income=100 * (i + 1))
+        )
+        db_session.add(
+            MonthlyStatement(property_id=colburn.id, month=date(2026, m, 1), gross_income=10 * (i + 1))
+        )
+    db_session.commit()
+
+    result = recent_income_trend(db_session, months=5)
+
+    assert result["months"] == [date(2026, m, 1) for m in [4, 5, 6, 7, 8]]
+    assert result["lines"]["Brunswick"] == [200.0, 300.0, 400.0, 500.0, 600.0]
+    assert result["lines"]["Colburn"] == [20.0, 30.0, 40.0, 50.0, 60.0]
+    assert result["lines"]["Total"] == [220.0, 330.0, 440.0, 550.0, 660.0]
+
+
+def test_dashboard_breakdown_gives_per_property_and_total_for_same_period(db_session):
+    seed(db_session)
+    brunswick = _property(db_session, "Brunswick")
+    colburn = _property(db_session, "Colburn")
+    db_session.add(MonthlyStatement(property_id=brunswick.id, month=date(2026, 7, 1), gross_income=1000, noi=800))
+    db_session.add(MonthlyStatement(property_id=colburn.id, month=date(2026, 7, 1), gross_income=500, noi=400))
+    db_session.commit()
+
+    result = dashboard_breakdown(db_session, period="this_month")
+
+    by_nickname = {p["nickname"]: p for p in result["properties"]}
+    assert by_nickname["Brunswick"]["gross_rent"] == pytest.approx(1000.0)
+    assert by_nickname["Colburn"]["gross_rent"] == pytest.approx(500.0)
+    assert result["total"]["gross_rent"] == pytest.approx(1500.0)
+    assert result["total"]["period_label"] == "July 2026"

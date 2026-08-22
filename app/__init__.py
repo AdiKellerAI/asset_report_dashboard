@@ -16,6 +16,12 @@ def create_app(config_object=Config):
     app.register_blueprint(trends_bp)
     app.register_blueprint(upload_bp)
 
+    @app.template_filter("money")
+    def money_filter(value):
+        """1234.5 -> "1,234.50 $" - Adi's preferred display format (dollar
+        sign as a suffix, comma thousands separator)."""
+        return f"{value:,.2f} $"
+
     @app.cli.command("seed-db")
     def seed_db():
         """Seed the properties and expense-type taxonomy into Postgres."""
