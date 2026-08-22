@@ -17,7 +17,8 @@ A single-user Flask + PostgreSQL app that turns Adi's monthly AppFolio/Overland 
 | `project-scaffolding` | Flask app skeleton, `/health` route, pytest wiring, `docs/dev-plan.md` copied in | Merged to `main` |
 | `postgres-schema` | SQLAlchemy models + Alembic migration for all 9 tables, seed data (properties + expense taxonomy), local Docker Postgres for dev/test | Merged to `main` |
 | `format-notes` | Real `pdfplumber` text extraction across 5 years of Owner Packet samples + both utility bill types → `docs/formats/*.md`. Found and corrected a bug in the planned "Accumulated Balance" formula (see below) | Merged to `main` |
-| `project-status-and-skills` | This doc + `.claude/skills/` for this repo | In progress |
+| `project-status-and-skills` | This doc + `.claude/skills/` for this repo, plus the currency decision (dev-plan.md §15) | Merged to `main` |
+| `owner-packet-parser` | `app/parsers/` - cash-summary field extraction + categorized transaction parsing from Owner Packet.pdf, tested against the full real archive (~52 files). Found and fixed a real arithmetic bug (Owner Disbursements vs Unpaid Bills) and identified 2 pre-Apr-2022 files with an unsupported older layout | Merged to `main` |
 
 ## Key decisions locked in (see `docs/dev-plan.md` §13–14 for full detail)
 
@@ -32,7 +33,7 @@ A single-user Flask + PostgreSQL app that turns Adi's monthly AppFolio/Overland 
 
 ## Not yet done (rest of Phase 1 roadmap)
 
-1. `owner-packet-parser` + `utility-bill-parsers` — deterministic extraction functions, tested against the real archive (not just the 5 samples used for format notes).
+1. `utility-bill-parsers` — water bill + sewer bill extraction functions (docs/formats/water-bill.md, docs/formats/sewer-bill.md), used for cross-checking against the Owner Packet's transaction log, not as a second source of `transaction` rows (see the `report-ingestion` skill).
 2. `zip-ingestion-endpoint` — upload/unzip/hash-dedupe/batch + signature-sniffer routing + review queue.
 3. `transfer-log` — manual-entry endpoint for logging Wise transfers.
 4. `landing-page` — the 4 original headline cards + the Accumulated Balance card + property/period filters.
