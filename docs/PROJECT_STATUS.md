@@ -21,6 +21,7 @@ A single-user Flask + PostgreSQL app that turns Adi's monthly AppFolio/Overland 
 | `owner-packet-parser` | `app/parsers/` - cash-summary field extraction + categorized transaction parsing from Owner Packet.pdf, tested against the full real archive (~52 files). Found and fixed a real arithmetic bug (Owner Disbursements vs Unpaid Bills) and identified 2 pre-Apr-2022 files with an unsupported older layout | Merged to `main` |
 | `utility-bill-parsers` | `app/parsers/water_bill.py`, `app/parsers/sewer_bill.py` - tested against every `bill_*.pdf` in the archive. Found the `bill_*` prefix also covers property tax, insurance, gas bills, invoices, and lease renewals (not yet parsed - see `report-ingestion` skill) and one file with a corrupted PDF font encoding (fails closed, doesn't crash) | Merged to `main` |
 | `zip-ingestion-endpoint` | `app/ingestion.py` + `POST /upload` - unzip/hash-dedupe (within-batch and across history via `document.content_hash`)/signature-route/write. Tested as one bulk upload of the entire real archive. Also: the real Neon Postgres project is now live - schema migrated, properties + expense types seeded, verified via a direct read-only check | Merged to `main` |
+| `fix-transfer-categorization` | Added `expense_type.is_operating` (migration `a6f966c5a581`) + 3 new categories (`internal_transfer`, `security_deposit_transfer`, `owner_distribution`), gated `monthly_statement`'s NOI fields on it, fixed a few real expenses (make-ready, lease/renewal fees) that were falling through to `other_expense` for lack of a keyword match. Added `flask recategorize-transactions` (no PDF re-parse needed) and ran it against production - corrected all 518 already-loaded transactions. See "Real data is now loaded" below for before/after numbers | Pending Adi's approval to push/merge |
 
 ## Key decisions locked in (see `docs/dev-plan.md` §13–14 for full detail)
 
@@ -46,23 +47,46 @@ database. Results: 149 documents after dedup (57 duplicates skipped), 104
 - DB size: 8.3 MB (well within Neon's 500MB free tier — original files stay on local
   disk, only structured rows go to Postgres)
 
-**Two things this surfaced, not yet fixed:**
-1. **`other_expense` category is suspiciously large** ($116,517 across 151
-   transactions, almost as big as total rent income). Likely cause: intra-portfolio
-   transfers (money moved between Brunswick/Colburn internally, e.g. "Transfer to
-   11301 Brunswick Ave") and security-deposit bookkeeping entries ("Auto transfer of
-   funds from Operating Cash to Security Deposit Cash") are being categorized as
-   `other_expense` when they're not real property expenses at all. Needs a parser
-   fix (`app/parsers/owner_packet.py`'s `categorize_transaction`, or a filter in
-   `app/ingestion.py`'s `_write_transactions`) to exclude/separate these.
-2. **Transfer timeline needs reconciling with Adi.** Adi said transfers to Israel
-   stopped ~8 months ago (~Jan 2026). The real loaded data shows both properties'
-   `net_owner_funds` still getting disbursed back to $0 through **March 2026**, and
-   only starts accumulating continuously from **April 2026** onward (~4 months ago,
-   not 8) — query used: `SELECT month, beginning_balance, ending_balance,
-   net_owner_funds FROM monthly_statement ms JOIN property p ON p.id=ms.property_id
-   WHERE p.nickname=... ORDER BY month`. Asked Adi to confirm which is right before
-   this becomes load-bearing for the `transfer` table / Accumulated Balance card.
+**Two things this surfaced - both now resolved (2026-08-22):**
+1. **`other_expense` was inflated** ($116,517/151 transactions, almost as big as
+   total rent income) — fixed on the `fix-transfer-categorization` branch and
+   corrected in production. It was a mix of causes, not just the one originally
+   suspected:
+   - Intra-portfolio transfers (Brunswick↔Colburn, e.g. "Transfer to 11301
+     Brunswick Ave"): 34 txns, $28,977
+   - Security-deposit sweeps/refunds ("Auto transfer of funds from Operating Cash
+     to Security Deposit Cash", clearing-account move-out refunds): 6 txns, $3,549
+   - **"Owner Distribution - Owner payment for MM/YYYY" / "Owner Contribution"**:
+     64 txns, $71,091 — bigger than the other two combined, and not anticipated in
+     the original brief. Adi confirmed (2026-08-22) these *are* the Wise-to-Israel
+     transfer mechanism ("all income arrives to Overland Properties and passed to
+     me with transaction by Wise") — not a separate personal-bank-account payout,
+     so the "no personal US bank account, `owner_payment` doesn't apply" decision
+     (dev-plan.md §13.5) needs a mental update: distributions do leave Overland,
+     they just leave *as* the Wise transfer, recorded in AppFolio's ledger as
+     "Owner Distribution."
+   - ~47 remaining txns (~$12,900) were real expenses missing a keyword match
+     (e.g. "Rent Ready - Make ready", "Commissions/Placement Fees - Lease Fee",
+     "Lease renewal Fee") - now correctly land in `maintenance_repair` /
+     `tenant_placement_fee`.
+   `other_expense` is now $1,699.88 across 41 transactions - a true catch-all.
+   Fix: new `expense_type.is_operating` flag (migration `a6f966c5a581`), three new
+   categories (`internal_transfer`, `security_deposit_transfer`,
+   `owner_distribution`) excluded from `monthly_statement`'s
+   `gross_income`/`total_operating_expense`/`noi`, plus the missing keywords.
+   `flask recategorize-transactions` corrected the already-loaded data in place
+   (no PDF re-parse - the transaction descriptions were already in Postgres).
+2. **Transfer timeline, resolved.** The earlier "~8 months vs ~4 months"
+   discrepancy was based on the wrong signal — `net_owner_funds` resetting to $0
+   turns out to be an unrelated arithmetic effect (Ending Cash Balance − Unpaid
+   Bills − Property Reserve, dev-plan.md §14), not tied to when money actually
+   left the portfolio. The real signal is the `owner_distribution` transactions
+   from finding #1 above (since Adi confirmed those *are* the Wise transfers): the
+   **last one for both properties is 2026-02-19** — none since. That lines up
+   with Adi's original "~8 months ago" recollection much better than the "April
+   2026" this doc previously flagged. Still worth a final confirmation from Adi
+   against his own Wise records before treating Feb 19, 2026 as the authoritative
+   cutoff for backfilling the `transfer` table.
 
 ## Not yet done (rest of Phase 1 roadmap)
 

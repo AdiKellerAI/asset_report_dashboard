@@ -31,7 +31,7 @@ what it changed from and why).
 
 | Decision | Answer | Where it's detailed |
 |---|---|---|
-| Postgres instance | Same instance as `maayan_recipes` (a GCP Cloud SQL instance - corrected 2026-08-22, `photography`/Neon was a mistaken first guess), new database within it | `docs/dev-plan.md` §13.1 |
+| Postgres instance | A dedicated Neon serverless project, separate from both `maayan_recipes` and `photography` - live as of 2026-08-22. (Two earlier, superseded answers same day: `photography`/Neon, then `maayan_recipes`'s GCP Cloud SQL - dropped after an IP-allowlist dead end) | `docs/dev-plan.md` §13.1, `postgres-instance` memory |
 | Property nicknames | Brunswick, Colburn (no "Ave") | §13.2 |
 | App access | Private to Adi only, single password gate | §13.3 |
 | ORM | SQLAlchemy + Alembic (versioned migrations, not push-based sync) | §13.6 |

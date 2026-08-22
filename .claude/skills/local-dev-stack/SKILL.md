@@ -81,5 +81,7 @@ docker compose down
 - The real `DATABASE_URL` (a dedicated Neon serverless Postgres project - see the
   `postgres-instance` memory; this replaced an earlier plan to reuse the
   `maayan_recipes` GCP Cloud SQL instance, dropped after an IP-allowlist dead end)
-  has not been handed over yet as of Phase 1 - schema/migrations have only been
-  verified against the local container so far. Don't assume it's configured.
+  is live as of 2026-08-22 and set in `.env` (gitignored) - schema, seed data, and
+  the full real archive are already loaded there. Prefer the local Docker
+  container for iterating/tests; treat the Neon `DATABASE_URL` as real financial
+  data, not a scratch DB.
