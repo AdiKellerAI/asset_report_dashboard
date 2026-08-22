@@ -33,11 +33,41 @@ A single-user Flask + PostgreSQL app that turns Adi's monthly AppFolio/Overland 
 - Local dev environment quirk: Homebrew's Python 3.12 needs `DYLD_LIBRARY_PATH="/opt/homebrew/opt/expat/lib"` set (already in `~/.zshrc`) to work around a libexpat ABI mismatch against this Mac's very new macOS build — see the `local-dev-stack` skill.
 - Standing rule: whenever a branch touches anything visible, run the Flask dev server and actually view it on localhost before calling the branch done.
 
+## Real data is now loaded (2026-08-22)
+
+Ran the full archive (54 top-level files) through `process_upload` into the live Neon
+database. Results: 149 documents after dedup (57 duplicates skipped), 104
+`monthly_statement` rows (52 months × 2 properties), 518 transactions. Breakdown:
+- 52 Owner Packets parsed, 2 flagged (the known pre-Apr-2022 layout)
+- 13 water bills + 14 sewer bills parsed, 1 water bill flagged (known garbled font)
+- 67 "unknown", flagged for review — expected: other `bill_*` types not yet parsed
+  (property tax, insurance, gas, invoices, lease renewals) plus photographed
+  bill/work-order JPEGs (need OCR, not built)
+- DB size: 8.3 MB (well within Neon's 500MB free tier — original files stay on local
+  disk, only structured rows go to Postgres)
+
+**Two things this surfaced, not yet fixed:**
+1. **`other_expense` category is suspiciously large** ($116,517 across 151
+   transactions, almost as big as total rent income). Likely cause: intra-portfolio
+   transfers (money moved between Brunswick/Colburn internally, e.g. "Transfer to
+   11301 Brunswick Ave") and security-deposit bookkeeping entries ("Auto transfer of
+   funds from Operating Cash to Security Deposit Cash") are being categorized as
+   `other_expense` when they're not real property expenses at all. Needs a parser
+   fix (`app/parsers/owner_packet.py`'s `categorize_transaction`, or a filter in
+   `app/ingestion.py`'s `_write_transactions`) to exclude/separate these.
+2. **Transfer timeline needs reconciling with Adi.** Adi said transfers to Israel
+   stopped ~8 months ago (~Jan 2026). The real loaded data shows both properties'
+   `net_owner_funds` still getting disbursed back to $0 through **March 2026**, and
+   only starts accumulating continuously from **April 2026** onward (~4 months ago,
+   not 8) — query used: `SELECT month, beginning_balance, ending_balance,
+   net_owner_funds FROM monthly_statement ms JOIN property p ON p.id=ms.property_id
+   WHERE p.nickname=... ORDER BY month`. Asked Adi to confirm which is right before
+   this becomes load-bearing for the `transfer` table / Accumulated Balance card.
+
 ## Not yet done (rest of Phase 1 roadmap)
 
 1. `transfer-log` — manual-entry endpoint for logging Wise transfers.
 2. `landing-page` — the 4 original headline cards + the Accumulated Balance card + property/period filters.
-3. The actual bulk-import of the real archive into the live Neon database hasn't happened yet — the pipeline is proven against it in tests (a throwaway DB), but no real historical data has been loaded into the production database yet.
 
 Then Phase 2 (reports/charts), Phase 3 (mortgage + tax tracker), Phase 4 (polish/mobile/automation) per `docs/dev-plan.md` §10 — plus one new feature not in the original phase list: a **site-wide USD/NIS currency toggle** using the current day's live exchange rate for display (storage stays USD-only, no schema change — see `docs/dev-plan.md` §15). Scope this as its own branch once reports/UI exist (Phase 2), not bolted onto the first page that shows a dollar figure.
 
