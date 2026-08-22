@@ -291,3 +291,26 @@ Accumulated Balance = Σ over properties of (net_owner_funds from each property'
 Once a transfer is reflected in a later ingested month's statement (as an actual cash-out line), stop subtracting it separately — it's already baked into that month's `net_owner_funds`.
 
 See `docs/formats/owner-packet.md`, `docs/formats/water-bill.md`, `docs/formats/sewer-bill.md` for full per-document-type field maps, detection signatures, and confirmed layout drift (e.g. the 2026 letterhead/owner-entity change to "Overland Properties-Metro Space Realty" / "Keller Assets Ohio LLC", and the Income Statement (P&L) pages only existing from 2023 onward, absent in 2022).
+
+---
+
+## 15. Currency (2026-08-22)
+
+Adi pays VirtueTax ~2000 NIS/year for the annual tax filing (`tax_report`) — the first
+non-USD amount anywhere in this app. Resolved directly with Adi:
+
+- **Storage stays USD-only, no schema change.** `tax_report.amount_paid` (already in the
+  §4 schema) holds the USD-converted amount — Adi enters the USD equivalent of the NIS
+  fee at entry time (e.g. from his card statement), same manual-entry pattern as
+  `mortgage`. No `currency` column needed on any table.
+- **New feature (not yet built, not blocking Phase 1): a site-wide currency display
+  toggle (USD / NIS), default USD.** When switched to NIS, every dollar figure on every
+  page converts using **the current day's live USD→NIS exchange rate** — not the
+  historical rate from when each underlying transaction happened. This is a display-layer
+  concern only (all storage/math stays in USD internally) — needs a live FX-rate lookup
+  at render time, which is a new external runtime dependency (not an LLM call, so it
+  doesn't conflict with §2's "no runtime AI dependency" rule, but it's a new kind of
+  external call this app didn't previously need — needs a caching/fallback strategy, e.g.
+  cache the day's rate for the session rather than calling on every page load). Scope this
+  as its own branch when reports/UI are being built (Phase 2 territory) — don't bolt it on
+  ad hoc to the first page that happens to show a dollar amount.
