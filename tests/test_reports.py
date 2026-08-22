@@ -2,8 +2,8 @@ from datetime import date
 
 import pytest
 
-from app.models import MonthlyStatement, Mortgage, Property, Transfer
-from app.reports import dashboard_summary, resolve_period
+from app.models import ExpenseType, MonthlyStatement, Mortgage, Property, Transaction, Transfer
+from app.reports import available_category_series, dashboard_summary, resolve_period, trend_series
 from app.seed import seed
 
 
@@ -166,3 +166,88 @@ def test_accumulated_balance_subtracts_transfers_sent_after_latest_statement(db_
     result = dashboard_summary(db_session, property_nickname="all", period="all_time")
 
     assert result["accumulated_balance"] == pytest.approx(1000.0 - 430.0)
+
+
+def test_available_category_series_excludes_rent_income(db_session):
+    seed(db_session)
+
+    categories = available_category_series(db_session)
+
+    assert "cat:rent_income" not in categories
+    assert categories["cat:management_fee"] == "Management Fee"
+
+
+def test_trend_series_one_point_per_month_no_cross_month_aggregation(db_session):
+    """Unlike dashboard_summary, unpaid_bills/net_owner_funds don't need the
+    latest-month-only treatment here - every chart point is exactly one
+    month, so summing per month (not across months) is correct as-is."""
+    seed(db_session)
+    brunswick = _property(db_session, "Brunswick")
+    db_session.add_all(
+        [
+            MonthlyStatement(
+                property_id=brunswick.id, month=date(2026, 4, 1), gross_income=1000, noi=800, unpaid_bills=-300
+            ),
+            MonthlyStatement(
+                property_id=brunswick.id, month=date(2026, 5, 1), gross_income=1100, noi=900, unpaid_bills=-300
+            ),
+        ]
+    )
+    db_session.commit()
+
+    result = trend_series(db_session, property_nickname="Brunswick", series_keys=["gross_rent", "noi", "unpaid_bills"])
+
+    assert result["months"] == [date(2026, 4, 1), date(2026, 5, 1)]
+    assert result["series"]["gross_rent"]["values"] == [1000.0, 1100.0]
+    assert result["series"]["noi"]["values"] == [800.0, 900.0]
+    assert result["series"]["unpaid_bills"]["values"] == [-300.0, -300.0]  # not doubled/summed
+
+
+def test_trend_series_net_to_adi_per_month_with_mortgage(db_session):
+    seed(db_session)
+    brunswick = _property(db_session, "Brunswick")
+    db_session.add(Mortgage(property_id=brunswick.id, monthly_payment=200))
+    db_session.add_all(
+        [
+            MonthlyStatement(property_id=brunswick.id, month=date(2026, 4, 1), noi=1000, unpaid_bills=-50),
+            MonthlyStatement(property_id=brunswick.id, month=date(2026, 5, 1), noi=1200, unpaid_bills=-100),
+        ]
+    )
+    db_session.commit()
+
+    result = trend_series(db_session, property_nickname="Brunswick", series_keys=["net_to_adi"])
+
+    assert result["series"]["net_to_adi"]["values"] == pytest.approx([1000 - 50 - 200, 1200 - 100 - 200])
+
+
+def test_trend_series_category_line(db_session):
+    seed(db_session)
+    brunswick = _property(db_session, "Brunswick")
+    management_fee = db_session.query(ExpenseType).filter_by(code="management_fee").one()
+    db_session.add(MonthlyStatement(property_id=brunswick.id, month=date(2026, 4, 1)))
+    db_session.add(
+        Transaction(
+            property_id=brunswick.id,
+            expense_type_id=management_fee.id,
+            date=date(2026, 4, 5),
+            amount=125,
+            description="Management Fees",
+        )
+    )
+    db_session.commit()
+
+    result = trend_series(db_session, property_nickname="Brunswick", series_keys=["cat:management_fee"])
+
+    assert result["series"]["cat:management_fee"]["label"] == "Management Fee"
+    assert result["series"]["cat:management_fee"]["values"] == [125.0]
+
+
+def test_trend_series_defaults_to_gross_rent_noi_net_to_adi(db_session):
+    seed(db_session)
+    brunswick = _property(db_session, "Brunswick")
+    db_session.add(MonthlyStatement(property_id=brunswick.id, month=date(2026, 4, 1), gross_income=100, noi=50))
+    db_session.commit()
+
+    result = trend_series(db_session, property_nickname="Brunswick")
+
+    assert set(result["series"].keys()) == {"gross_rent", "noi", "net_to_adi"}

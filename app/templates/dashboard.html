@@ -1,16 +1,7 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Asset Report Dashboard</title>
-  <link rel="stylesheet" href="/static/css/style.css">
-</head>
-<body>
-  <header class="page-header">
-    <h1>Asset Report Dashboard</h1>
-  </header>
+{% extends "base.html" %}
+{% set active_nav = "dashboard" %}
 
+{% block content %}
   <form class="filter-bar" method="get" action="/">
     <label>
       Property
@@ -75,7 +66,9 @@
       <p class="card-note">Still with Overland, not yet transferred — portfolio-wide, as of now</p>
     </section>
   </main>
+{% endblock %}
 
+{% block scripts %}
   <script>
     // Show only the custom-period input relevant to the selected period -
     // no framework needed, this is the one bit of interactivity the page has.
@@ -87,5 +80,4 @@
     document.getElementById("period-select").addEventListener("change", syncCustomPeriodFields);
     syncCustomPeriodFields();
   </script>
-</body>
-</html>
+{% endblock %}

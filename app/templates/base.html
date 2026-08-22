@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Asset Report Dashboard{% endblock %}</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body>
+  <header class="page-header">
+    <h1>Asset Report Dashboard</h1>
+    <nav class="main-nav">
+      <a href="/" class="{{ 'active' if active_nav == 'dashboard' else '' }}">Dashboard</a>
+      <a href="/trends" class="{{ 'active' if active_nav == 'trends' else '' }}">Trends</a>
+    </nav>
+  </header>
+
+  {% block content %}{% endblock %}
+
+  {% block scripts %}{% endblock %}
+</body>
+</html>

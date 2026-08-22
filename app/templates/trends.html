@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+{% set active_nav = "trends" %}
+{% block title %}Trends - Asset Report Dashboard{% endblock %}
+
+{% block content %}
+  <form class="filter-bar filter-bar-wrap" method="get" action="/trends">
+    <label>
+      Property
+      <select name="property">
+        <option value="all" {{ "selected" if selected_property == "all" }}>All Properties</option>
+        {% for p in properties %}
+        <option value="{{ p.nickname }}" {{ "selected" if selected_property == p.nickname }}>{{ p.nickname }}</option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <fieldset class="series-picker">
+      <legend>Summary</legend>
+      {% for key, label in summary_series.items() %}
+      <label class="checkbox-label">
+        <input type="checkbox" name="series" value="{{ key }}" {{ "checked" if key in selected_series }}>
+        {{ label }}
+      </label>
+      {% endfor %}
+    </fieldset>
+
+    <fieldset class="series-picker">
+      <legend>By Category</legend>
+      {% for key, label in category_series.items() %}
+      <label class="checkbox-label">
+        <input type="checkbox" name="series" value="{{ key }}" {{ "checked" if key in selected_series }}>
+        {{ label }}
+      </label>
+      {% endfor %}
+    </fieldset>
+
+    <button type="submit">Apply</button>
+  </form>
+
+  {% if months %}
+  <div class="chart-wrap">
+    <canvas id="trend-chart" role="img" aria-label="Selected parameters over time"></canvas>
+  </div>
+  {% else %}
+  <p class="period-label">No monthly_statement data yet for this property.</p>
+  {% endif %}
+{% endblock %}
+
+{% block scripts %}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <script>
+    const months = {{ months|tojson }};
+    const series = {{ series|tojson }};
+    const palette = ["#2b6cb0", "#c05621", "#2f855a", "#805ad5", "#b83280", "#d69e2e", "#3182ce", "#718096"];
+
+    const ctx = document.getElementById("trend-chart");
+    if (ctx) {
+      new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: months,
+          datasets: Object.values(series).map((s, i) => ({
+            label: s.label,
+            data: s.values,
+            borderColor: palette[i % palette.length],
+            backgroundColor: palette[i % palette.length],
+            tension: 0.15,
+            fill: false,
+          })),
+        },
+        options: {
+          responsive: true,
+          interaction: { mode: "index", intersect: false },
+          scales: {
+            y: {
+              ticks: {
+                callback: (value) => "$" + value.toLocaleString(),
+              },
+            },
+          },
+        },
+      });
+    }
+  </script>
+{% endblock %}

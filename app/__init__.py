@@ -9,9 +9,11 @@ def create_app(config_object=Config):
 
     from app.routes.dashboard import dashboard_bp
     from app.routes.health import health_bp
+    from app.routes.trends import trends_bp
     from app.routes.upload import upload_bp
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(health_bp)
+    app.register_blueprint(trends_bp)
     app.register_blueprint(upload_bp)
 
     @app.cli.command("seed-db")

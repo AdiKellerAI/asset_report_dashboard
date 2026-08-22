@@ -321,3 +321,28 @@ time to time) follows the same rule as VirtueTax: **convert to USD at entry**, n
 each time it changes, via a Mortgage settings page (dev-plan.md §5.6, Phase 3) — he
 explicitly asked for this to be editable from the site itself, not just a DB edit.
 No schema change needed beyond what §4 already specifies.
+
+---
+
+## 16. Trends page (2026-08-22) — generalizes §5.1's trend chart
+
+New requirement from Adi, given directly (not something the original §5.1 spec
+anticipated): a dedicated page/tab graphing **any** parameter over time (monthly),
+not just the fixed Gross → NOI → Net to Adi three-line chart §5.1 originally planned
+as part of the landing page. Resolved directly with Adi:
+
+- **Scope of "every parameter":** every `monthly_statement` summary figure (Gross
+  Rent, Total Expenses, NOI, Net to Adi, Net Owner Funds, Beginning/Ending Balance,
+  Unpaid Bills, Property Reserve) **plus** a monthly total per individual expense
+  category (management fee, maintenance, property tax, etc. - every `expense_type`
+  row, each selectable as its own line). `rent_income` is not offered as a separate
+  category line since it's the same number as Gross Rent.
+- **Default view:** Gross Rent / NOI / Net to Adi (not Gross Rent / Total Expenses /
+  NOI - Adi specifically wants Net to Adi in the default 3, matching the
+  originally-planned trend chart from §5.1 rather than the landing page's first-3-cards
+  order).
+- **Filtering:** Property (All/Brunswick/Colburn), same as the landing page.
+  No period/date-range filter - shows every month with data, full history.
+- Implemented as its own page (`GET /trends`) rather than embedded in the landing
+  page, since "every parameter, user-selectable" doesn't fit a fixed headline-card
+  layout. Built with Chart.js (already the planned charting library per §7).
