@@ -71,16 +71,40 @@ def latest_reported_month(session):
     return session.query(func.max(MonthlyStatement.month)).scalar()
 
 
-def dashboard_summary(session, property_nickname="all", period="this_month", month=None, year=None, today=None):
+def dashboard_summary(
+    session,
+    property_nickname="all",
+    period="this_month",
+    month=None,
+    year=None,
+    today=None,
+    properties=None,
+    accumulated_balance=None,
+    statements=None,
+    monthly_mortgage_total=None,
+):
+    """`properties`/`accumulated_balance`/`statements`/`monthly_mortgage_total`
+    let a caller that already fetched this data (dashboard_breakdown, for a
+    remote-Postgres-friendly single round trip covering every property)
+    pass it straight in instead of this function re-querying it per
+    property - each still defaults to a fresh query so this function works
+    standalone (as every existing caller/test already expects)."""
+    if properties is None:
+        properties = session.query(Property).order_by(Property.nickname).all()
     if today is None:
         today = latest_reported_month(session) or date.today()
     start, end = resolve_period(period, month=month, year=year, today=today)
-    property_ids = _property_ids_for(session, property_nickname)
+    property_ids = _property_ids_for(property_nickname, properties)
 
-    query = session.query(MonthlyStatement).filter(MonthlyStatement.property_id.in_(property_ids))
-    if start is not None:
-        query = query.filter(MonthlyStatement.month >= start, MonthlyStatement.month <= end)
-    statements = query.all()
+    if statements is None:
+        query = session.query(MonthlyStatement).filter(MonthlyStatement.property_id.in_(property_ids))
+        if start is not None:
+            query = query.filter(MonthlyStatement.month >= start, MonthlyStatement.month <= end)
+        statements = query.all()
+    else:
+        statements = [
+            s for s in statements if s.property_id in property_ids and (start is None or start <= s.month <= end)
+        ]
 
     gross_rent = sum(float(s.gross_income or 0) for s in statements)
     total_expenses = sum(float(s.total_operating_expense or 0) for s in statements)
@@ -95,8 +119,11 @@ def dashboard_summary(session, property_nickname="all", period="this_month", mon
     latest_month = max(months_present, default=None)
     unpaid_bills = sum(float(s.unpaid_bills or 0) for s in statements if s.month == latest_month)
 
-    mortgages = session.query(Mortgage).filter(Mortgage.property_id.in_(property_ids)).all()
-    monthly_mortgage_total = sum(float(m.monthly_payment or 0) for m in mortgages)
+    if monthly_mortgage_total is None:
+        monthly_mortgage_total = sum(
+            float(m.monthly_payment or 0)
+            for m in session.query(Mortgage).filter(Mortgage.property_id.in_(property_ids)).all()
+        )
     net_to_adi = noi + unpaid_bills - monthly_mortgage_total * len(months_present)
 
     return {
@@ -104,7 +131,9 @@ def dashboard_summary(session, property_nickname="all", period="this_month", mon
         "total_expenses": total_expenses,
         "noi": noi,
         "net_to_adi": net_to_adi,
-        "accumulated_balance": _accumulated_balance(session),
+        "accumulated_balance": (
+            accumulated_balance if accumulated_balance is not None else _accumulated_balance(session, properties)
+        ),
         "has_data": bool(statements),
         "period_start": start,
         "period_end": end,
@@ -112,26 +141,42 @@ def dashboard_summary(session, property_nickname="all", period="this_month", mon
     }
 
 
-def _accumulated_balance(session):
+def _accumulated_balance(session, properties=None):
     """dev-plan.md sec 14 corrected formula: for each property, its most
     recent monthly_statement.net_owner_funds, summed across the portfolio,
     minus any transfer.amount_sent + fee sent after that point. Always
     portfolio-wide and as-of-now - not affected by the property/period
     filters (`transfer` is portfolio-level, not per-property, and this card
     answers "what's still with Overland right now," not a per-period question).
+
+    One query for "every property's latest statement" (a GROUP BY + join,
+    not a per-property round trip) plus one for transfers - a remote
+    Postgres round trip is the real cost here, not row count.
     """
-    total = 0.0
-    latest_months = []
-    for prop in session.query(Property).all():
-        latest = (
-            session.query(MonthlyStatement)
-            .filter_by(property_id=prop.id)
-            .order_by(MonthlyStatement.month.desc())
-            .first()
+    if properties is None:
+        properties = session.query(Property).all()
+    property_ids = [p.id for p in properties]
+    if not property_ids:
+        return 0.0
+
+    latest_per_property = (
+        session.query(MonthlyStatement.property_id, func.max(MonthlyStatement.month).label("latest_month"))
+        .filter(MonthlyStatement.property_id.in_(property_ids))
+        .group_by(MonthlyStatement.property_id)
+        .subquery()
+    )
+    latest_statements = (
+        session.query(MonthlyStatement)
+        .join(
+            latest_per_property,
+            (MonthlyStatement.property_id == latest_per_property.c.property_id)
+            & (MonthlyStatement.month == latest_per_property.c.latest_month),
         )
-        if latest is not None and latest.net_owner_funds is not None:
-            total += float(latest.net_owner_funds)
-            latest_months.append(latest.month)
+        .all()
+    )
+
+    total = sum(float(s.net_owner_funds or 0) for s in latest_statements if s.net_owner_funds is not None)
+    latest_months = [s.month for s in latest_statements]
 
     if latest_months:
         cutoff = max(latest_months)
@@ -150,38 +195,55 @@ def available_category_series(session):
     }
 
 
-def _property_ids_for(session, property_nickname):
-    properties = session.query(Property).all()
+def _property_ids_for(property_nickname, properties):
     if property_nickname and property_nickname != "all":
         properties = [p for p in properties if p.nickname == property_nickname]
     return [p.id for p in properties]
 
 
-def trend_series(session, property_nickname="all", series_keys=None, months_limit=None):
+def trend_series(
+    session,
+    property_nickname="all",
+    series_keys=None,
+    months_limit=None,
+    properties=None,
+    statements=None,
+):
     """One data point per month, across every month with a monthly_statement
     row in scope - unlike dashboard_summary, there's no cross-month
     aggregation here, so the unpaid_bills/net_owner_funds running-balance
     caveat doesn't apply: each chart point is exactly one month's value.
     `months_limit` keeps only the most recent N months (the Trends page's
-    Range picker) - None means every month on record."""
+    Range picker) - None means every month on record. `properties`/
+    `statements` let a caller that already fetched this data across every
+    property (recent_income_trend, for one remote-Postgres round trip
+    instead of one per property) pass it straight in."""
     series_keys = series_keys or DEFAULT_TREND_SERIES
-    property_ids = _property_ids_for(session, property_nickname)
+    if properties is None:
+        properties = session.query(Property).order_by(Property.nickname).all()
+    property_ids = _property_ids_for(property_nickname, properties)
 
-    statements = (
-        session.query(MonthlyStatement)
-        .filter(MonthlyStatement.property_id.in_(property_ids))
-        .order_by(MonthlyStatement.month)
-        .all()
-    )
+    if statements is None:
+        statements = (
+            session.query(MonthlyStatement)
+            .filter(MonthlyStatement.property_id.in_(property_ids))
+            .order_by(MonthlyStatement.month)
+            .all()
+        )
+    else:
+        statements = sorted((s for s in statements if s.property_id in property_ids), key=lambda s: s.month)
+
     by_month = {}
     for s in statements:
         by_month.setdefault(s.month, []).append(s)
     months = sorted(by_month.keys())
 
-    monthly_mortgage_total = sum(
-        float(m.monthly_payment or 0)
-        for m in session.query(Mortgage).filter(Mortgage.property_id.in_(property_ids)).all()
-    )
+    monthly_mortgage_total = 0.0
+    if "net_to_adi" in series_keys:
+        monthly_mortgage_total = sum(
+            float(m.monthly_payment or 0)
+            for m in session.query(Mortgage).filter(Mortgage.property_id.in_(property_ids)).all()
+        )
 
     category_codes = [k.split(":", 1)[1] for k in series_keys if k.startswith("cat:")]
     category_totals = {}
@@ -255,12 +317,27 @@ def recent_income_trend(session, months=5):
     report, per property plus the portfolio Total - the landing page's
     at-a-glance income graph. No property filter on this page (Adi wants
     both assets and the total visible together), so this always returns
-    every property's line."""
-    total = trend_series(session, property_nickname="all", series_keys=["gross_rent"])
+    every property's line. Fetches properties/statements once (a remote
+    Postgres round trip is the real cost here) and reuses them across every
+    property's trend_series call instead of re-querying per property."""
+    properties = session.query(Property).order_by(Property.nickname).all()
+    property_ids = [p.id for p in properties]
+    all_statements = (
+        session.query(MonthlyStatement)
+        .filter(MonthlyStatement.property_id.in_(property_ids))
+        .order_by(MonthlyStatement.month)
+        .all()
+    )
+
+    total = trend_series(
+        session, "all", series_keys=["gross_rent"], properties=properties, statements=all_statements
+    )
     months_list = total["months"][-months:]
     lines = {"Total": total["series"]["gross_rent"]["values"][-months:]}
-    for prop in session.query(Property).order_by(Property.nickname).all():
-        s = trend_series(session, property_nickname=prop.nickname, series_keys=["gross_rent"])
+    for prop in properties:
+        s = trend_series(
+            session, prop.nickname, series_keys=["gross_rent"], properties=properties, statements=all_statements
+        )
         lines[prop.nickname] = s["series"]["gross_rent"]["values"][-months:]
     return {"months": months_list, "lines": lines}
 
@@ -269,14 +346,45 @@ def dashboard_breakdown(session, period="this_month", month=None, year=None, tod
     """Per-property figures plus the portfolio Total, all for the same
     period - the landing page's comparison table. Adi wants both assets and
     the combined total visible together rather than switching a property
-    filter."""
+    filter. Fetches properties/statements/mortgages/accumulated_balance once
+    and passes them into each dashboard_summary call instead of letting it
+    re-query per property - a remote Postgres round trip is the real cost
+    here, not row count (see docs/PROJECT_STATUS.md's dashboard-load-time fix)."""
+    properties = session.query(Property).order_by(Property.nickname).all()
+    property_ids = [p.id for p in properties]
     if today is None:
         today = latest_reported_month(session) or date.today()
 
-    properties = session.query(Property).order_by(Property.nickname).all()
+    start, end = resolve_period(period, month=month, year=year, today=today)
+    query = session.query(MonthlyStatement).filter(MonthlyStatement.property_id.in_(property_ids))
+    if start is not None:
+        query = query.filter(MonthlyStatement.month >= start, MonthlyStatement.month <= end)
+    all_statements = query.all()
+
+    mortgage_by_property = {}
+    for m in session.query(Mortgage).filter(Mortgage.property_id.in_(property_ids)).all():
+        mortgage_by_property[m.property_id] = mortgage_by_property.get(m.property_id, 0.0) + float(
+            m.monthly_payment or 0
+        )
+
+    accumulated_balance = _accumulated_balance(session, properties)
+
+    def summary_for(nickname, monthly_mortgage_total):
+        return dashboard_summary(
+            session,
+            nickname,
+            period,
+            month=month,
+            year=year,
+            today=today,
+            properties=properties,
+            accumulated_balance=accumulated_balance,
+            statements=all_statements,
+            monthly_mortgage_total=monthly_mortgage_total,
+        )
+
     per_property = [
-        {"nickname": p.nickname, **dashboard_summary(session, p.nickname, period, month=month, year=year, today=today)}
-        for p in properties
+        {"nickname": p.nickname, **summary_for(p.nickname, mortgage_by_property.get(p.id, 0.0))} for p in properties
     ]
-    total = dashboard_summary(session, "all", period, month=month, year=year, today=today)
+    total = summary_for("all", sum(mortgage_by_property.values()))
     return {"properties": per_property, "total": total}
