@@ -41,8 +41,10 @@ traceable" rule (dev-plan.md §4's closing line).
 
 ## Conventions
 
-- Integer serial primary keys, not UUIDs (matches the `photography` project's pattern -
-  see the `reference_photography_db_pattern` memory).
+- Integer serial primary keys, not UUIDs - this project's own choice, kept as-is;
+  note `maayan_recipes` (the Postgres instance actually being reused, see the
+  `postgres-instance` memory) uses UUID PKs, but that's a difference between the
+  two apps' schemas, not something this project needs to match.
 - snake_case columns, `created_at` with `server_default=func.now()`.
 - Money columns are `Numeric(12, 2)`, never `Float`.
 - `expense_type` is a **growing lookup table**, not a hardcoded enum (dev-plan.md §4) -

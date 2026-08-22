@@ -23,7 +23,7 @@ A single-user Flask + PostgreSQL app that turns Adi's monthly AppFolio/Overland 
 
 ## Key decisions locked in (see `docs/dev-plan.md` §13–14 for full detail)
 
-- Postgres: same Neon instance as the `photography` project, new database within it. **Real `DATABASE_URL` not yet handed over** — schema/migrations only verified against a local Docker Postgres so far.
+- Postgres: same instance as the `maayan_recipes` project (a GCP Cloud SQL instance, not Neon — corrected 2026-08-22, `photography` was a mistaken first guess), new database within it. **Real `DATABASE_URL` not yet handed over** — schema/migrations only verified against a local Docker Postgres so far.
 - Property nicknames: **Brunswick**, **Colburn**.
 - Access: private to Adi only.
 - ORM: SQLAlchemy + Alembic (versioned migrations).

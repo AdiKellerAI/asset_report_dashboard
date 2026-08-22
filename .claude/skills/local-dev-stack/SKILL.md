@@ -78,6 +78,7 @@ docker compose down
   `platform.mac_ver()`-touching code crashes. See above.
 - Connecting to port 5432 by habit instead of **5433** - this repo's test container
   intentionally uses a non-default port.
-- The real Neon `DATABASE_URL` (new database within the existing instance shared with the
-  `photography` project) has not been handed over yet as of Phase 1 - schema/migrations
-  have only been verified against the local container so far. Don't assume it's configured.
+- The real `DATABASE_URL` (new database on the GCP Cloud SQL instance shared with the
+  `maayan_recipes` project - see the `postgres-instance` memory) has not been handed
+  over yet as of Phase 1 - schema/migrations have only been verified against the
+  local container so far. Don't assume it's configured.

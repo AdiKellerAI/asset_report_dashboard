@@ -31,7 +31,7 @@ what it changed from and why).
 
 | Decision | Answer | Where it's detailed |
 |---|---|---|
-| Postgres instance | Same Neon instance as the `photography` project, new database within it | `docs/dev-plan.md` §13.1 |
+| Postgres instance | Same instance as `maayan_recipes` (a GCP Cloud SQL instance - corrected 2026-08-22, `photography`/Neon was a mistaken first guess), new database within it | `docs/dev-plan.md` §13.1 |
 | Property nicknames | Brunswick, Colburn (no "Ave") | §13.2 |
 | App access | Private to Adi only, single password gate | §13.3 |
 | ORM | SQLAlchemy + Alembic (versioned migrations, not push-based sync) | §13.6 |
@@ -41,7 +41,8 @@ what it changed from and why).
 | "Net to Adi" reserve question | Proceeding with NOI − unpaid bills − mortgage (reserve not subtracted) as the default | §13.4 |
 | Accumulated Balance formula | **Corrected 2026-08-22** after real data inspection - `net_owner_funds` is a running balance, not a monthly delta. See §14 for the corrected formula - don't reintroduce the original "sum across all months" version | §14 |
 | Python version | Homebrew Python 3.12 (not system 3.9.6) - required `DYLD_LIBRARY_PATH="/opt/homebrew/opt/expat/lib"` workaround for a libexpat ABI mismatch on this Mac's macOS build; Adi found and applied this fix himself, added to `~/.zshrc` | `local-dev-stack` skill |
-| Currency | All storage/math stays USD-only (VirtueTax's ~2000 NIS/year fee gets entered as its USD equivalent, no `currency` column). A future site-wide USD/NIS **display** toggle uses the current day's live exchange rate, default USD - display-layer only, its own future branch, not blocking Phase 1 | `docs/dev-plan.md` §15 |
+| Currency | All storage/math stays USD-only (VirtueTax's ~2000 NIS/year fee, and the mortgage payment - currently 5081 NIS, changes periodically - both get entered as their USD equivalent, no `currency` column anywhere). A future site-wide USD/NIS **display** toggle uses the current day's live exchange rate, default USD - display-layer only, its own future branch, not blocking Phase 1 | `docs/dev-plan.md` §15 |
+| Mortgage editing | Needs to be editable from the site itself (a real UI page, not a DB edit) - Adi will update the USD-equivalent `monthly_payment` there whenever the NIS amount changes. This is the Phase 3 Mortgage settings page (dev-plan.md §5.6) | `docs/dev-plan.md` §15 |
 
 ## Still open (ask when work reaches these, don't guess)
 

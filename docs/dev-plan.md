@@ -262,7 +262,7 @@ None of this should be pasted into a chat — hand these to Claude Code directly
 
 Resolved directly with Adi during Phase 1 kickoff — supersedes section 12 where noted:
 
-1. **Postgres:** same Neon instance as the `photography` project, new database/schema within it (not a separate instance).
+1. **Postgres:** same instance as the `maayan_recipes` project, new database within it (not a separate instance). **Corrected 2026-08-22:** originally recorded as "same instance as `photography`" — Adi corrected this after that instance's connection pattern had already been investigated; `photography` uses Neon via Replit, but the actual target is `maayan_recipes`, which connects directly to a **Google Cloud SQL** Postgres instance (`server/database.js`: raw `pg` driver, host `34.132.167.99:5432`). Don't reuse the password found in that file without Adi confirming it directly (dev-plan.md §11).
 2. **Property nicknames:** **Brunswick** / **Colburn** (no "Ave").
 3. **Access model:** private to Adi only — single password gate, no accountant sharing.
 4. **Net to Adi:** proceeding with NOI − unpaid bills − mortgage (reserve not subtracted) as the default, pending confirmation once real numbers are in front of us.
@@ -314,3 +314,10 @@ non-USD amount anywhere in this app. Resolved directly with Adi:
   cache the day's rate for the session rather than calling on every page load). Scope this
   as its own branch when reports/UI are being built (Phase 2 territory) — don't bolt it on
   ad hoc to the first page that happens to show a dollar amount.
+
+**Mortgage (2026-08-22):** the mortgage payment (currently 5081 NIS, changes from
+time to time) follows the same rule as VirtueTax: **convert to USD at entry**, no
+`currency` column on `mortgage`. Adi enters the USD-equivalent `monthly_payment`
+each time it changes, via a Mortgage settings page (dev-plan.md §5.6, Phase 3) — he
+explicitly asked for this to be editable from the site itself, not just a DB edit.
+No schema change needed beyond what §4 already specifies.

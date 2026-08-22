@@ -59,6 +59,7 @@ class Document(Base):
     original_filename: Mapped[str] = mapped_column(String(255), nullable=False)
     source_batch_id: Mapped[int | None] = mapped_column(ForeignKey("upload_batch.id"))
     storage_path: Mapped[str] = mapped_column(String(500), nullable=False)
+    content_hash: Mapped[str] = mapped_column(String(64), unique=True, nullable=False)
     raw_extracted_json: Mapped[dict | None] = mapped_column(JSONB)
     status: Mapped[str] = mapped_column(String(20), nullable=False, default="needs_review")
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
