@@ -303,17 +303,20 @@ non-USD amount anywhere in this app. Resolved directly with Adi:
   §4 schema) holds the USD-converted amount — Adi enters the USD equivalent of the NIS
   fee at entry time (e.g. from his card statement), same manual-entry pattern as
   `mortgage`. No `currency` column needed on any table.
-- **New feature (not yet built, not blocking Phase 1): a site-wide currency display
-  toggle (USD / NIS), default USD.** When switched to NIS, every dollar figure on every
+- **Site-wide currency display toggle (USD / NIS), default USD.** Built 2026-08-22
+  (moved up from its original "Phase 2, own branch" plan - Adi asked for it directly
+  once the landing page existed). When switched to NIS, every dollar figure on every
   page converts using **the current day's live USD→NIS exchange rate** — not the
-  historical rate from when each underlying transaction happened. This is a display-layer
-  concern only (all storage/math stays in USD internally) — needs a live FX-rate lookup
-  at render time, which is a new external runtime dependency (not an LLM call, so it
-  doesn't conflict with §2's "no runtime AI dependency" rule, but it's a new kind of
-  external call this app didn't previously need — needs a caching/fallback strategy, e.g.
-  cache the day's rate for the session rather than calling on every page load). Scope this
-  as its own branch when reports/UI are being built (Phase 2 territory) — don't bolt it on
-  ad hoc to the first page that happens to show a dollar amount.
+  historical rate from when each underlying transaction happened. Display-layer only
+  (storage/math stays USD): `app/fx.py`'s `get_usd_to_ils_rate()` hits
+  `api.frankfurter.app` (no API key, stdlib `urllib` - no new dependency), caches the
+  result once per calendar day, and falls back to the last-known (or a static ~3.7)
+  rate if the lookup fails, so a network hiccup never breaks the page. The `money`
+  Jinja filter wraps every figure in a `<span data-usd="...">`; a shared
+  `window.formatMoney()` in `base.html` re-renders every such span (and calls
+  `chart.update()` on every registered Chart.js instance, since reformatting a tick's
+  label doesn't require rescaling the underlying data on a linear axis) when the
+  header's toggle button is clicked - no page reload.
 
 **Mortgage (2026-08-22):** the mortgage payment (currently 5081 NIS, changes from
 time to time) follows the same rule as VirtueTax: **convert to USD at entry**, no

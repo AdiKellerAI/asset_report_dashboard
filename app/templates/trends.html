@@ -14,6 +14,18 @@
       </select>
     </label>
 
+    <label>
+      Range
+      <select name="range">
+        <option value="6m" {{ "selected" if selected_range == "6m" }}>Last 6 Months</option>
+        <option value="1y" {{ "selected" if selected_range == "1y" }}>Last 1 Year</option>
+        <option value="2y" {{ "selected" if selected_range == "2y" }}>Last 2 Years</option>
+        <option value="3y" {{ "selected" if selected_range == "3y" }}>Last 3 Years</option>
+        <option value="5y" {{ "selected" if selected_range == "5y" }}>Last 5 Years</option>
+        <option value="all" {{ "selected" if selected_range == "all" }}>All Time</option>
+      </select>
+    </label>
+
     <fieldset class="series-picker">
       <legend>Summary</legend>
       <div class="checkbox-grid">
@@ -77,7 +89,7 @@
 
     const ctx = document.getElementById("trend-chart");
     if (ctx) {
-      new Chart(ctx, {
+      const trendChart = new Chart(ctx, {
         type: "line",
         data: {
           labels: months,
@@ -113,7 +125,7 @@
               padding: 12,
               cornerRadius: 10,
               callbacks: {
-                label: (item) => `${item.dataset.label}: ${item.parsed.y.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} $`,
+                label: (item) => `${item.dataset.label}: ${window.formatMoney(item.parsed.y)}`,
               },
             },
           },
@@ -124,16 +136,18 @@
               ticks: { color: INK_MUTED },
             },
             y: {
+              beginAtZero: true,
               grid: { color: GRIDLINE },
               border: { color: BASELINE },
               ticks: {
                 color: INK_MUTED,
-                callback: (value) => value.toLocaleString() + " $",
+                callback: (value) => window.formatMoney(value),
               },
             },
           },
         },
       });
+      window.moneyCharts.push(trendChart);
     }
   </script>
 {% endblock %}

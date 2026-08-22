@@ -157,11 +157,13 @@ def _property_ids_for(session, property_nickname):
     return [p.id for p in properties]
 
 
-def trend_series(session, property_nickname="all", series_keys=None):
+def trend_series(session, property_nickname="all", series_keys=None, months_limit=None):
     """One data point per month, across every month with a monthly_statement
     row in scope - unlike dashboard_summary, there's no cross-month
     aggregation here, so the unpaid_bills/net_owner_funds running-balance
-    caveat doesn't apply: each chart point is exactly one month's value."""
+    caveat doesn't apply: each chart point is exactly one month's value.
+    `months_limit` keeps only the most recent N months (the Trends page's
+    Range picker) - None means every month on record."""
     series_keys = series_keys or DEFAULT_TREND_SERIES
     property_ids = _property_ids_for(session, property_nickname)
 
@@ -227,7 +229,25 @@ def trend_series(session, property_nickname="all", series_keys=None):
                 values.append(0.0)
         result[key] = {"label": label, "values": values}
 
+    if months_limit is not None:
+        months = months[-months_limit:]
+        for s in result.values():
+            s["values"] = s["values"][-months_limit:]
+
     return {"months": months, "series": result}
+
+
+# The Trends page's Range picker - "how far back" is a separate axis from
+# which parameters are selected.
+RANGE_CHOICES = {
+    "6m": 6,
+    "1y": 12,
+    "2y": 24,
+    "3y": 36,
+    "5y": 60,
+    "all": None,
+}
+DEFAULT_RANGE = "1y"
 
 
 def recent_income_trend(session, months=5):

@@ -102,3 +102,19 @@ def test_landing_page_money_format_uses_comma_and_dollar_suffix(db_session):
     body = response.get_data(as_text=True)
     assert "15,107.93 $" in body
     assert "$15107.93" not in body
+
+
+def test_landing_page_money_values_carry_raw_usd_for_the_currency_toggle(db_session):
+    seed(db_session)
+    brunswick = db_session.query(Property).filter_by(nickname="Brunswick").one()
+    db_session.add(MonthlyStatement(property_id=brunswick.id, month=date(2026, 7, 1), net_owner_funds=15107.93))
+    db_session.commit()
+
+    client = create_app().test_client()
+    response = client.get("/?period=custom_month&month=2026-07")
+
+    assert response.status_code == 200
+    body = response.get_data(as_text=True)
+    assert 'class="money" data-usd="15107.93"' in body
+    assert 'id="currency-toggle"' in body
+    assert "FX_RATE_USD_TO_ILS" in body

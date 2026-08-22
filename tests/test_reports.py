@@ -260,6 +260,19 @@ def test_trend_series_defaults_to_gross_rent_noi_net_to_adi(db_session):
     assert set(result["series"].keys()) == {"gross_rent", "noi", "net_to_adi"}
 
 
+def test_trend_series_months_limit_keeps_only_the_most_recent(db_session):
+    seed(db_session)
+    brunswick = _property(db_session, "Brunswick")
+    for m in [3, 4, 5, 6, 7]:
+        db_session.add(MonthlyStatement(property_id=brunswick.id, month=date(2026, m, 1), gross_income=100 * m))
+    db_session.commit()
+
+    result = trend_series(db_session, property_nickname="Brunswick", series_keys=["gross_rent"], months_limit=2)
+
+    assert result["months"] == [date(2026, 6, 1), date(2026, 7, 1)]
+    assert result["series"]["gross_rent"]["values"] == [600.0, 700.0]
+
+
 def test_dashboard_summary_this_month_defaults_to_latest_report_not_calendar_today(db_session):
     """The real calendar's current month rarely has a report yet (statements
     lag) - "This Month" without an explicit `today` should mean the latest

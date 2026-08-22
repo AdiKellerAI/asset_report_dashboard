@@ -136,7 +136,7 @@
       };
     });
 
-    new Chart(document.getElementById("income-chart"), {
+    const incomeChart = new Chart(document.getElementById("income-chart"), {
       type: "line",
       data: { labels: incomeMonths, datasets },
       options: {
@@ -155,20 +155,22 @@
             padding: 12,
             cornerRadius: 10,
             callbacks: {
-              label: (item) => `${item.dataset.label}: ${item.parsed.y.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} $`,
+              label: (item) => `${item.dataset.label}: ${window.formatMoney(item.parsed.y)}`,
             },
           },
         },
         scales: {
           x: { grid: { color: "#2c2c2a" }, border: { color: "#383835" }, ticks: { color: "#898781" } },
           y: {
+            beginAtZero: true,
             grid: { color: "#2c2c2a" },
             border: { color: "#383835" },
-            ticks: { color: "#898781", callback: (value) => value.toLocaleString() + " $" },
+            ticks: { color: "#898781", callback: (value) => window.formatMoney(value) },
           },
         },
       },
     });
+    window.moneyCharts.push(incomeChart);
   </script>
   {% endif %}
 {% endblock %}

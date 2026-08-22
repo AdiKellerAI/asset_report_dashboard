@@ -1,4 +1,5 @@
 from flask import Flask
+from markupsafe import Markup
 
 from app.config import Config
 
@@ -18,9 +19,17 @@ def create_app(config_object=Config):
 
     @app.template_filter("money")
     def money_filter(value):
-        """1234.5 -> "1,234.50 $" - Adi's preferred display format (dollar
-        sign as a suffix, comma thousands separator)."""
-        return f"{value:,.2f} $"
+        """1234.5 -> a <span> showing "1,234.50 $" (Adi's preferred format -
+        dollar sign as a suffix, comma thousands separator) that also carries
+        the raw USD value so the site-wide currency toggle (base.html) can
+        re-render it in NIS client-side without a page reload."""
+        return Markup(f'<span class="money" data-usd="{value}">{value:,.2f} $</span>')
+
+    @app.context_processor
+    def inject_fx_rate():
+        from app.fx import get_usd_to_ils_rate
+
+        return {"usd_to_ils_rate": get_usd_to_ils_rate()}
 
     @app.cli.command("seed-db")
     def seed_db():
