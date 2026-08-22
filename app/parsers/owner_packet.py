@@ -13,6 +13,8 @@ from datetime import date, datetime
 
 import pdfplumber
 
+from app.parsers.common import match_property_nickname, parse_amount
+
 CASH_SUMMARY_FIELD_MAP = {
     "Beginning Balance": "beginning_balance",
     "Cash In": "cash_in",
@@ -63,26 +65,6 @@ class PropertyCashSummary:
     transactions: list[TransactionRow] = field(default_factory=list)
 
 
-def _parse_amount(value):
-    if value is None:
-        return None
-    cleaned = value.replace(",", "").strip()
-    if not cleaned:
-        return None
-    try:
-        return float(cleaned)
-    except ValueError:
-        return None
-
-
-def _match_property_nickname(label, known_nicknames):
-    lowered = label.lower()
-    for nickname in known_nicknames:
-        if nickname.lower() in lowered:
-            return nickname
-    return None
-
-
 def categorize_transaction(description: str) -> str:
     lowered = (description or "").lower()
     for code, keywords in CATEGORY_KEYWORDS:
@@ -98,7 +80,7 @@ def _parse_cash_summary_fields(table):
             continue
         key = CASH_SUMMARY_FIELD_MAP.get(row[0])
         if key:
-            fields[key] = _parse_amount(row[1])
+            fields[key] = parse_amount(row[1])
     return fields
 
 
@@ -122,9 +104,9 @@ def _parse_transactions_table(table):
                 type=cell(2),
                 reference=cell(3),
                 description=cell(4),
-                cash_in=_parse_amount(row[5]) if len(row) > 5 else None,
-                cash_out=_parse_amount(row[6]) if len(row) > 6 else None,
-                balance=_parse_amount(row[7]) if len(row) > 7 else None,
+                cash_in=parse_amount(row[5]) if len(row) > 5 else None,
+                cash_out=parse_amount(row[6]) if len(row) > 6 else None,
+                balance=parse_amount(row[7]) if len(row) > 7 else None,
             )
         )
     return transactions
@@ -142,7 +124,7 @@ def parse_owner_packet(pdf_path, known_nicknames=("Brunswick", "Colburn")):
 
             idx = lines.index("Property Cash Summary")
             property_label = lines[idx - 1] if idx > 0 else ""
-            nickname = _match_property_nickname(property_label, known_nicknames)
+            nickname = match_property_nickname(property_label, known_nicknames)
 
             tables = page.extract_tables()
             if not tables:

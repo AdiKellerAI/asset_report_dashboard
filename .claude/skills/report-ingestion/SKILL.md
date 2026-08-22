@@ -67,6 +67,28 @@ writing both would double-count. If a bill PDF's amount doesn't appear anywhere 
 that month's (or a nearby month's, since payment can lag billing) Owner Packet
 transaction log, that's a review-queue case, not two transactions.
 
+## Other `bill_*` document types found in the archive (not yet built)
+
+Testing the water/sewer parsers against every `bill_*.pdf` in the whole archive
+(not just water/sewer samples) surfaced several other real document types living
+under the same `bill_*` filename prefix - confirmed by filename pattern, not yet
+by content inspection:
+
+| Filename pattern (examples) | Likely type |
+|---|---|
+| `bill_11301_1st_half_pt_*`, `bill_2500_1st_installment_*` | Cuyahoga County property tax half-payments |
+| `bill_amax_statefarm*`, `bill_insurance_*` | Insurance (State Farm) |
+| `bill_final_2500_enbridge_*` | Gas bill (Enbridge/Dominion) |
+| `bill_*_invoice_*` | Contractor invoices (maintenance/repair work) |
+| `bill_*_renewal_*_keller*` | Lease renewals |
+
+`detect_document_type()` correctly returns `unknown` for all of these today - that's
+the intended review-queue behavior, not a bug. Building parsers for these is future
+work (property tax/insurance/gas could become their own `expense_type`-driving
+parsers; lease renewals feed the Phase 3 lease-agreement parser in dev-plan.md §10).
+Don't assume this list is complete - it's only what showed up in the archive as of
+the utility-bill-parsers branch.
+
 ## Cross-reference checks (dev-plan.md §8.4) - build these once individual parsers work
 
 - A water bill's `Fixed Charge` billing period should roughly match the sewer bill's for

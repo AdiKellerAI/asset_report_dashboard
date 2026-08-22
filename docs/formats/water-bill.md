@@ -48,6 +48,17 @@ Meter Number <id> | Previous Read <date, val> | Current Read <date, val> | Usage
 
 **Splitting Water vs. Sewer expense types:** this bill is `water_bill` only — despite including "Water Pollution Control" charges, those are still billed by Cleveland Water (not NEORSD) and should stay bundled into the single `water_bill` transaction amount = `Total Amount Due`. Don't try to split Cleveland Water Total vs. Local Charges Total into separate transactions.
 
+## Confirmed edge case: one file with a corrupted font encoding
+
+`bill_water_bill_2113_w_10406012026144542158_0001.pdf` (Jun 2026 zip) extracts
+garbled text throughout - "Due" reads as "Oue", "of" as "ot"/"o{", etc. - a bad-PDF
+font-encoding issue, not a parser bug. Confirmed isolated (no other file in the
+archive exhibits this via the full-archive test in
+`tests/test_parsers/test_utility_bills.py`). The parser correctly returns
+`total_amount_due=None` for it (fails closed) rather than extracting a wrong
+number - would need OCR or fuzzy matching to recover, out of scope for now; falls
+through to the review queue in the real ingestion flow.
+
 ## Sample files used
 - `Aug 01, 2023 to Aug 31, 2023.zip` → `bill_past_07_11_document_0_59.pdf` (past-due, single charge, no page-2 local charges section)
 - `Jan 01, 2025 to Jan 31, 2025.zip` → `bill_document_0_10.pdf` (2 charges, Colburn)
