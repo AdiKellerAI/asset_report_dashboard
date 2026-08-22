@@ -20,10 +20,11 @@ A single-user Flask + PostgreSQL app that turns Adi's monthly AppFolio/Overland 
 | `project-status-and-skills` | This doc + `.claude/skills/` for this repo, plus the currency decision (dev-plan.md §15) | Merged to `main` |
 | `owner-packet-parser` | `app/parsers/` - cash-summary field extraction + categorized transaction parsing from Owner Packet.pdf, tested against the full real archive (~52 files). Found and fixed a real arithmetic bug (Owner Disbursements vs Unpaid Bills) and identified 2 pre-Apr-2022 files with an unsupported older layout | Merged to `main` |
 | `utility-bill-parsers` | `app/parsers/water_bill.py`, `app/parsers/sewer_bill.py` - tested against every `bill_*.pdf` in the archive. Found the `bill_*` prefix also covers property tax, insurance, gas bills, invoices, and lease renewals (not yet parsed - see `report-ingestion` skill) and one file with a corrupted PDF font encoding (fails closed, doesn't crash) | Merged to `main` |
+| `zip-ingestion-endpoint` | `app/ingestion.py` + `POST /upload` - unzip/hash-dedupe (within-batch and across history via `document.content_hash`)/signature-route/write. Tested as one bulk upload of the entire real archive. Also: the real Neon Postgres project is now live - schema migrated, properties + expense types seeded, verified via a direct read-only check | Merged to `main` |
 
 ## Key decisions locked in (see `docs/dev-plan.md` §13–14 for full detail)
 
-- Postgres: same instance as the `maayan_recipes` project (a GCP Cloud SQL instance, not Neon — corrected 2026-08-22, `photography` was a mistaken first guess), new database within it. **Real `DATABASE_URL` not yet handed over** — schema/migrations only verified against a local Docker Postgres so far.
+- Postgres: a **dedicated Neon serverless project** (not shared with `maayan_recipes` or `photography` — both were considered and dropped, see the `postgres-instance` memory). **Live as of 2026-08-22** — Adi created the project, ran `alembic upgrade head` and `flask seed-db` against it directly; verified schema (all 10 tables) and seed data (Brunswick/Colburn + 12 expense types) are correctly in place. `DATABASE_URL` lives in `.env` (gitignored). **Neon free tier is 500MB — be deliberate about what goes in it**: original uploaded files are archived to local disk (`instance/documents/`), never to Postgres; only structured rows go to the DB, and `document.content_hash` prevents duplicate ingestion.
 - Property nicknames: **Brunswick**, **Colburn**.
 - Access: private to Adi only.
 - ORM: SQLAlchemy + Alembic (versioned migrations).
@@ -34,15 +35,14 @@ A single-user Flask + PostgreSQL app that turns Adi's monthly AppFolio/Overland 
 
 ## Not yet done (rest of Phase 1 roadmap)
 
-1. `zip-ingestion-endpoint` — upload/unzip/hash-dedupe/batch + signature-sniffer routing + review queue.
-2. `transfer-log` — manual-entry endpoint for logging Wise transfers.
-3. `landing-page` — the 4 original headline cards + the Accumulated Balance card + property/period filters.
+1. `transfer-log` — manual-entry endpoint for logging Wise transfers.
+2. `landing-page` — the 4 original headline cards + the Accumulated Balance card + property/period filters.
+3. The actual bulk-import of the real archive into the live Neon database hasn't happened yet — the pipeline is proven against it in tests (a throwaway DB), but no real historical data has been loaded into the production database yet.
 
 Then Phase 2 (reports/charts), Phase 3 (mortgage + tax tracker), Phase 4 (polish/mobile/automation) per `docs/dev-plan.md` §10 — plus one new feature not in the original phase list: a **site-wide USD/NIS currency toggle** using the current day's live exchange rate for display (storage stays USD-only, no schema change — see `docs/dev-plan.md` §15). Scope this as its own branch once reports/UI exist (Phase 2), not bolted onto the first page that shows a dollar figure.
 
 ## Still waiting on Adi
 
-- The real Neon `DATABASE_URL` for this project (new database within the existing instance).
 - GCP project ID, if/when we get to Cloud Run deployment (Phase 4).
 - Telegram bot token + chat ID, if the notification feature is wanted (optional, Phase 4).
 - Mortgage details per property (Phase 3).
