@@ -1,137 +1,262 @@
+/* Dark, elegant theme. Token set follows the validated dark chart palette
+   (see the dataviz skill's references/palette.md "Chart chrome & ink" table)
+   so the app's own surfaces/ink match the Trends page's chart exactly -
+   category accent colors are reserved for chart series and never reused for
+   UI chrome. */
+
 :root {
-  color-scheme: light dark;
-  --bg: #f7f7f8;
-  --card-bg: #ffffff;
-  --text: #1a1a1a;
-  --muted: #666666;
-  --border: #e0e0e0;
-  --accent: #2b6cb0;
+  color-scheme: dark;
+
+  --page: #0d0d0d;
+  --surface: #17181c;
+  --surface-raised: #1d1f24;
+  --border: rgba(255, 255, 255, 0.09);
+  --border-soft: rgba(255, 255, 255, 0.06);
+
+  --ink: #ffffff;
+  --ink-secondary: #c3c2b7;
+  --ink-muted: #898781;
+
+  --accent: #3987e5;      /* categorical slot 1 - reused as the app's one UI accent */
+  --accent-strong: #5c9dec;
+  --accent-soft: rgba(57, 135, 229, 0.14);
+  --accent-ring: rgba(57, 135, 229, 0.35);
+
+  --gold: #c98500;        /* categorical slot 4 - Accumulated Balance highlight only */
+  --gold-soft: rgba(201, 133, 0, 0.14);
+
+  --radius-lg: 18px;
+  --radius-md: 12px;
+  --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 20px 50px -24px rgba(0, 0, 0, 0.7);
+  --shadow-raised: 0 1px 0 rgba(255, 255, 255, 0.06) inset, 0 24px 60px -20px rgba(0, 0, 0, 0.8);
 }
 
 * {
   box-sizing: border-box;
 }
 
+html, body {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
 body {
   margin: 0;
-  padding: 1rem;
-  font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
-  background: var(--bg);
-  color: var(--text);
+  padding: 1.5rem 1.5rem 3rem;
+  font-family: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+  background:
+    radial-gradient(60rem 30rem at 15% -10%, rgba(57, 135, 229, 0.10), transparent 60%),
+    radial-gradient(50rem 26rem at 110% 10%, rgba(201, 133, 0, 0.06), transparent 60%),
+    var(--page);
+  background-attachment: fixed;
+  color: var(--ink);
+  -webkit-font-smoothing: antialiased;
 }
+
+a {
+  color: inherit;
+}
+
+/* ---------- Header / nav ---------- */
 
 .page-header {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: space-between;
   gap: 1rem;
-  margin-bottom: 1rem;
+  margin-bottom: 1.75rem;
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--border-soft);
 }
 
 .page-header h1 {
-  font-size: 1.25rem;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
   margin: 0;
+  background: linear-gradient(120deg, var(--ink) 30%, var(--accent-strong) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .main-nav {
   display: flex;
-  gap: 1rem;
+  flex-shrink: 0;
+  gap: 0.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  padding: 0.25rem;
+}
+
+@media (max-width: 480px) {
+  .page-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
 }
 
 .main-nav a {
-  color: var(--muted);
+  color: var(--ink-secondary);
   text-decoration: none;
-  padding: 0.25rem 0;
-  border-bottom: 2px solid transparent;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.4rem 0.9rem;
+  border-radius: 999px;
+  transition: color 0.2s ease, background 0.2s ease;
+}
+
+.main-nav a:hover {
+  color: var(--ink);
 }
 
 .main-nav a.active {
-  color: var(--text);
-  border-bottom-color: var(--accent);
-  font-weight: 600;
+  color: var(--ink);
+  background: var(--accent-soft);
+}
+
+/* ---------- Filter bar ---------- */
+
+.filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-end;
+  background: linear-gradient(160deg, var(--surface-raised), var(--surface));
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 1.1rem 1.25rem;
+  margin-bottom: 1.5rem;
 }
 
 .filter-bar-wrap {
   align-items: flex-start;
 }
 
-.series-picker {
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 0.5rem 0.75rem;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem 1rem;
-}
-
-.series-picker legend {
-  font-size: 0.8rem;
-  color: var(--muted);
-  padding: 0 0.25rem;
-}
-
-.checkbox-label {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  font-size: 0.85rem;
-  min-height: auto;
-}
-
-.chart-wrap {
-  background: var(--card-bg);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 1rem;
-}
-
-.filter-bar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  align-items: flex-end;
-  margin-bottom: 1rem;
-}
-
 .filter-bar label {
   display: flex;
   flex-direction: column;
-  font-size: 0.85rem;
-  color: var(--muted);
-  gap: 0.25rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-muted);
+  gap: 0.4rem;
 }
 
 .filter-bar select,
-.filter-bar input,
-.filter-bar button {
-  padding: 0.5rem;
-  font-size: 1rem;
+.filter-bar input:not([type="checkbox"]) {
+  appearance: none;
+  -webkit-appearance: none;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--ink);
   border: 1px solid var(--border);
-  border-radius: 6px;
-  min-height: 44px; /* tap-sized on mobile */
+  border-radius: var(--radius-md);
+  padding: 0.55rem 2rem 0.55rem 0.7rem;
+  font: inherit;
+  font-size: 0.9rem;
+  min-height: 42px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23898781' stroke-width='1.5' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+}
+
+.filter-bar input:not([type="checkbox"]) {
+  background-image: none;
+  padding-right: 0.7rem;
+}
+
+.filter-bar select:focus,
+.filter-bar input:not([type="checkbox"]):focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-ring);
 }
 
 .filter-bar button {
-  background: var(--accent);
-  color: white;
+  appearance: none;
   border: none;
+  border-radius: var(--radius-md);
+  padding: 0.6rem 1.4rem;
+  min-height: 42px;
+  font: inherit;
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #0d1117;
+  background: linear-gradient(135deg, var(--accent-strong), var(--accent));
   cursor: pointer;
+  transition: filter 0.2s ease, transform 0.2s ease;
+}
+
+.filter-bar button:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+.filter-bar button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--accent-ring);
 }
 
 .custom-period-field {
   display: none;
 }
 
+.series-picker {
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  padding: 0.6rem 0.9rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1.1rem;
+  margin: 0;
+}
+
+.series-picker legend {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-muted);
+  padding: 0 0.3rem;
+}
+
+.checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--ink-secondary);
+  min-height: auto;
+  cursor: pointer;
+}
+
+.checkbox-label input[type="checkbox"] {
+  accent-color: var(--accent);
+  width: 15px;
+  height: 15px;
+}
+
+/* ---------- Cards ---------- */
+
 .period-label {
-  color: var(--muted);
-  font-size: 0.9rem;
-  margin: 0 0 1rem;
+  color: var(--ink-muted);
+  font-size: 0.85rem;
+  margin: 0 0 1.25rem;
 }
 
 .card-grid {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 1rem;
+  gap: 1.1rem;
 }
 
 @media (min-width: 640px) {
@@ -147,42 +272,74 @@ body {
 }
 
 .card {
-  background: var(--card-bg);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 1rem;
+  position: relative;
+  background: linear-gradient(160deg, var(--surface-raised), var(--surface));
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 1.25rem 1.4rem;
+  transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.card:hover {
+  transform: translateY(-3px);
+  border-color: var(--border);
+  box-shadow: var(--shadow-raised);
 }
 
 .card h2 {
-  font-size: 0.9rem;
-  color: var(--muted);
-  margin: 0 0 0.5rem;
-  font-weight: 600;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--ink-muted);
+  margin: 0 0 0.6rem;
 }
 
 .card-value {
-  font-size: 1.75rem;
-  margin: 0;
+  font-size: 1.9rem;
   font-weight: 700;
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+  margin: 0;
 }
 
 .card-accent {
-  border-color: var(--accent);
+  border-color: rgba(201, 133, 0, 0.25);
+  background: linear-gradient(160deg, rgba(201, 133, 0, 0.10), var(--surface));
+}
+
+.card-accent .card-value {
+  background: linear-gradient(120deg, var(--gold), #f0c96b);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .card-note {
   font-size: 0.75rem;
-  color: var(--muted);
-  margin: 0.5rem 0 0;
+  color: var(--ink-muted);
+  margin: 0.6rem 0 0;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #16181d;
-    --card-bg: #1f2229;
-    --text: #f0f0f0;
-    --muted: #9a9a9a;
-    --border: #33363d;
-    --accent: #6ea8fe;
-  }
+/* ---------- Chart ---------- */
+
+.chart-wrap {
+  background: linear-gradient(160deg, var(--surface-raised), var(--surface));
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 1.25rem;
+  max-width: 100%;
+  overflow: hidden;
+}
+
+.chart-wrap canvas {
+  max-width: 100%;
+  display: block;
+}
+
+@media (prefers-color-scheme: light) {
+  /* This app is deliberately dark-only (Adi's preference) - a light OS
+     theme still gets the dark palette, not an inverted light one. */
 }

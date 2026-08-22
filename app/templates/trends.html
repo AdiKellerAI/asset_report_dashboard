@@ -51,7 +51,25 @@
   <script>
     const months = {{ months|tojson }};
     const series = {{ series|tojson }};
-    const palette = ["#2b6cb0", "#c05621", "#2f855a", "#805ad5", "#b83280", "#d69e2e", "#3182ce", "#718096"];
+
+    // Validated dark-mode categorical order (dataviz skill references/palette.md)
+    // - fixed order, never cycled/re-sorted; a fallback gray covers any
+    // selection beyond the 8 validated slots rather than generating a hue.
+    const PALETTE = ["#3987e5", "#d95926", "#199e70", "#c98500", "#d55181", "#008300", "#9085e9", "#e66767"];
+    const FALLBACK = "#5b6072";
+    const INK_SECONDARY = "#c3c2b7";
+    const INK_MUTED = "#898781";
+    const GRIDLINE = "#2c2c2a";
+    const BASELINE = "#383835";
+    const SURFACE_RAISED = "#1d1f24";
+
+    function withAlpha(hex, alpha) {
+      const n = parseInt(hex.slice(1), 16);
+      const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+
+    Chart.defaults.font.family = "'Manrope', system-ui, sans-serif";
 
     const ctx = document.getElementById("trend-chart");
     if (ctx) {
@@ -59,21 +77,53 @@
         type: "line",
         data: {
           labels: months,
-          datasets: Object.values(series).map((s, i) => ({
-            label: s.label,
-            data: s.values,
-            borderColor: palette[i % palette.length],
-            backgroundColor: palette[i % palette.length],
-            tension: 0.15,
-            fill: false,
-          })),
+          datasets: Object.values(series).map((s, i) => {
+            const color = i < PALETTE.length ? PALETTE[i] : FALLBACK;
+            return {
+              label: s.label,
+              data: s.values,
+              borderColor: color,
+              backgroundColor: withAlpha(color, 0.12),
+              pointBackgroundColor: color,
+              pointRadius: 3,
+              pointHoverRadius: 5,
+              borderWidth: 2,
+              tension: 0.25,
+              fill: true,
+            };
+          }),
         },
         options: {
           responsive: true,
           interaction: { mode: "index", intersect: false },
+          plugins: {
+            legend: {
+              labels: { color: INK_SECONDARY, usePointStyle: true, boxWidth: 8, boxHeight: 8, padding: 16 },
+            },
+            tooltip: {
+              backgroundColor: SURFACE_RAISED,
+              borderColor: "rgba(255,255,255,0.10)",
+              borderWidth: 1,
+              titleColor: "#ffffff",
+              bodyColor: INK_SECONDARY,
+              padding: 12,
+              cornerRadius: 10,
+              callbacks: {
+                label: (item) => `${item.dataset.label}: $${item.parsed.y.toLocaleString()}`,
+              },
+            },
+          },
           scales: {
+            x: {
+              grid: { color: GRIDLINE },
+              border: { color: BASELINE },
+              ticks: { color: INK_MUTED },
+            },
             y: {
+              grid: { color: GRIDLINE },
+              border: { color: BASELINE },
               ticks: {
+                color: INK_MUTED,
                 callback: (value) => "$" + value.toLocaleString(),
               },
             },
