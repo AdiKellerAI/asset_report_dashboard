@@ -33,15 +33,28 @@ CASH_SUMMARY_FIELD_MAP = {
 CATEGORY_KEYWORDS = [
     ("rent_income", ["rent income"]),
     ("management_fee", ["management fee"]),
-    ("tenant_placement_fee", ["tenant placement", "leasing fee"]),
+    (
+        "tenant_placement_fee",
+        ["tenant placement", "leasing fee", "lease fee", "placement fee", "renewal fee"],
+    ),
     ("property_tax", ["property tax"]),
     ("annual_state_fee", ["rental registration"]),
     ("legal_professional_fee", ["legal", "professional fee"]),
-    ("maintenance_repair", ["general maintenance", "maintenance labor", "repair"]),
+    (
+        "maintenance_repair",
+        ["general maintenance", "maintenance labor", "repair", "make ready"],
+    ),
     ("sewer_bill", ["sewer"]),
     ("water_bill", ["water"]),
     ("insurance", ["insurance"]),
     ("tax_prep_fee", ["virtuetax", "tax prep"]),
+    # Non-operating cash movements - real cash-in/cash-out on this property's
+    # books, but not a rent/expense event, so they must not inflate
+    # other_expense or the NOI it feeds. See docs/PROJECT_STATUS.md's
+    # "other_expense category" finding and app/ingestion.py's is_operating gate.
+    ("owner_distribution", ["owner distribution", "owner contribution"]),
+    ("security_deposit_transfer", ["security deposit", "clearing account"]),
+    ("internal_transfer", ["transfer to ", "transfer from "]),
 ]
 
 

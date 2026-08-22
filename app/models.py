@@ -36,6 +36,11 @@ class ExpenseType(Base):
     code: Mapped[str] = mapped_column(String(50), unique=True, nullable=False)
     label: Mapped[str] = mapped_column(String(100), nullable=False)
     is_income: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    # False for non-operating cash movements (intra-portfolio transfers, security
+    # deposit sweeps, owner distributions/contributions) - excluded from
+    # monthly_statement.gross_income/total_operating_expense/noi even though the
+    # individual transaction row is still kept for the audit trail.
+    is_operating: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
 

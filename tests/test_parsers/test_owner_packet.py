@@ -5,6 +5,37 @@ from app.parsers.signatures import OWNER_PACKET, detect_document_type
 from tests.test_parsers.conftest import all_archive_files, owner_packet_path, requires_archive
 
 
+@pytest.mark.parametrize(
+    "description,expected_code",
+    [
+        ("Transfer to 11301 Brunswick Ave", "internal_transfer"),
+        ("Transfer from 2500 Colburn Ave, Cleveland, OH 44109", "internal_transfer"),
+        ("Auto transfer of funds from Operating Cash to Security Deposit Cash", "security_deposit_transfer"),
+        (
+            "Damon A. Machalec, Destyni F. Patera, 2500 Colburn Ave, Cleveland, OH 44109: Security Deposit Transfer",
+            "security_deposit_transfer",
+        ),
+        (
+            "Clearing Account - Damon A. Machalec, Destyni F. Patera, 2500 Colburn Ave, "
+            "Cleveland, OH 44109: Move Out Refund",
+            "security_deposit_transfer",
+        ),
+        ("Owner Distribution - Owner payment for 01/2026", "owner_distribution"),
+        ("Owner Contribution", "owner_distribution"),
+        ("Rent Ready - Make ready after tenant moved out", "maintenance_repair"),
+        ("Commissions/Placement Fees - Lease Fee", "tenant_placement_fee"),
+        ("Lease renewal Fee - Renewal Fee", "tenant_placement_fee"),
+    ],
+)
+def test_categorize_transaction_non_operating_and_fixed_keywords(description, expected_code):
+    """Regression test for the other_expense over-inflation finding (docs/PROJECT_STATUS.md):
+    intra-portfolio transfers, security-deposit bookkeeping, and owner distributions/
+    contributions must not fall through to the other_expense catch-all, and a few
+    real expenses (make-ready, lease/renewal fees) were being missed by keyword
+    matching entirely."""
+    assert categorize_transaction(description) == expected_code
+
+
 @requires_archive
 def test_detects_owner_packet_signature(tmp_path):
     path = owner_packet_path("Apr 01, 2022 to Apr 30, 2022.zip", tmp_path)

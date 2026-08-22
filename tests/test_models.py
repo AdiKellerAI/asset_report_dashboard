@@ -13,8 +13,13 @@ def test_seed_creates_properties_and_expense_types(db_session):
     codes = {e.code for e in db_session.query(ExpenseType).all()}
 
     assert nicknames == set(PROPERTIES)
-    assert codes == {code for code, _, _ in EXPENSE_TYPES}
+    assert codes == {code for code, _, _, _ in EXPENSE_TYPES}
     assert "owner_payment" not in codes
+
+    non_operating = {
+        e.code for e in db_session.query(ExpenseType).all() if not e.is_operating
+    }
+    assert non_operating == {"internal_transfer", "security_deposit_transfer", "owner_distribution"}
 
 
 def test_seed_is_idempotent(db_session):

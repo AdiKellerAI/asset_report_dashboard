@@ -24,4 +24,19 @@ def create_app(config_object=Config):
         finally:
             session.close()
 
+    @app.cli.command("recategorize-transactions")
+    def recategorize_transactions_cmd():
+        """Re-run categorize_transaction against already-ingested transactions
+        and recompute the monthly_statement totals they feed - no PDF re-parse.
+        See docs/PROJECT_STATUS.md's other_expense finding."""
+        from app.db import SessionLocal
+        from app.ingestion import recategorize_transactions
+
+        session = SessionLocal()
+        try:
+            count = recategorize_transactions(session)
+            print(f"Recategorized {count} transaction(s).")
+        finally:
+            session.close()
+
     return app

@@ -210,10 +210,11 @@ def _write_transactions(prop, summary, document, session, expense_types_by_code)
             )
         )
 
-        if expense_type.is_income:
-            income_total += txn.cash_in or 0
-        else:
-            expense_total += txn.cash_out or 0
+        if expense_type.is_operating:
+            if expense_type.is_income:
+                income_total += txn.cash_in or 0
+            else:
+                expense_total += txn.cash_out or 0
 
     month_statement = (
         session.query(MonthlyStatement)
@@ -224,6 +225,48 @@ def _write_transactions(prop, summary, document, session, expense_types_by_code)
         month_statement.gross_income = income_total
         month_statement.total_operating_expense = expense_total
         month_statement.noi = income_total - expense_total
+
+
+def recategorize_transactions(session):
+    """Re-run categorize_transaction against every already-stored transaction's
+    description and recompute the monthly_statement totals it feeds - a one-off
+    correction for data ingested before a categorize_transaction change, with no
+    PDF re-parsing needed (the description text is already in Postgres).
+    Idempotent: re-running produces the same result. Returns the number of
+    transactions whose category actually changed."""
+    expense_types_by_code = {e.code: e for e in session.query(ExpenseType).all()}
+    other_expense = expense_types_by_code["other_expense"]
+
+    recategorized = 0
+    for txn in session.query(Transaction).all():
+        new_type = expense_types_by_code.get(categorize_transaction(txn.description), other_expense)
+        if txn.expense_type_id != new_type.id:
+            txn.expense_type = new_type
+            recategorized += 1
+    session.flush()
+
+    groups = {}
+    for txn in session.query(Transaction).filter(Transaction.source_document_id.isnot(None)).all():
+        groups.setdefault((txn.property_id, txn.source_document_id), []).append(txn)
+
+    for (property_id, source_document_id), txns in groups.items():
+        statement = (
+            session.query(MonthlyStatement)
+            .filter_by(property_id=property_id, source_document_id=source_document_id)
+            .one_or_none()
+        )
+        if statement is None:
+            continue
+        income_total = sum(float(t.amount) for t in txns if t.expense_type.is_income and t.expense_type.is_operating)
+        expense_total = sum(
+            float(t.amount) for t in txns if not t.expense_type.is_income and t.expense_type.is_operating
+        )
+        statement.gross_income = income_total
+        statement.total_operating_expense = expense_total
+        statement.noi = income_total - expense_total
+
+    session.commit()
+    return recategorized
 
 
 def _ingest_utility_bill(raw, doc_type, document, properties_by_nickname):

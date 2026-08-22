@@ -2,8 +2,15 @@ from datetime import date
 
 import pytest
 
-from app.ingestion import parse_statement_period, process_upload
-from app.models import Document, MonthlyStatement, Property, Transaction
+from app.ingestion import (
+    _upsert_monthly_statement,
+    _write_transactions,
+    parse_statement_period,
+    process_upload,
+    recategorize_transactions,
+)
+from app.models import Document, ExpenseType, MonthlyStatement, Property, Transaction
+from app.parsers.owner_packet import PropertyCashSummary, TransactionRow
 from app.seed import seed
 from tests.test_parsers.conftest import ARCHIVE_DIR, requires_archive
 
@@ -60,6 +67,138 @@ def test_owner_packet_writes_monthly_statements_and_transactions(db_session):
     assert len(transactions) == 2  # rent income + management fee
     rent_txn = next(t for t in transactions if t.expense_type.code == "rent_income")
     assert float(rent_txn.amount) == 1378.00
+
+
+def test_non_operating_transactions_excluded_from_noi(db_session):
+    """docs/PROJECT_STATUS.md's other_expense finding: intra-portfolio transfers,
+    security-deposit sweeps, and owner distributions are real cash movements
+    (still written as Transaction rows) but must not inflate gross_income/
+    total_operating_expense/noi."""
+    seed(db_session)
+    brunswick = db_session.query(Property).filter_by(nickname="Brunswick").one()
+    expense_types = {e.code: e for e in db_session.query(ExpenseType).all()}
+    document = Document(
+        type="owner_packet",
+        original_filename="test.pdf",
+        storage_path="unused",
+        content_hash="deadbeef" * 8,
+    )
+    db_session.add(document)
+    db_session.flush()
+
+    month = date(2026, 5, 1)
+    _upsert_monthly_statement(
+        brunswick,
+        month,
+        PropertyCashSummary(
+            property_label="Brunswick",
+            property_nickname="Brunswick",
+            fields={"beginning_balance": 0, "ending_cash_balance": 1000, "net_owner_funds": 1000},
+        ),
+        document,
+        db_session,
+    )
+
+    summary = PropertyCashSummary(
+        property_label="Brunswick",
+        property_nickname="Brunswick",
+        transactions=[
+            TransactionRow(date(2026, 5, 1), "Tenant", "Payment", "", "Rent Income", 1000.0, None, None),
+            TransactionRow(date(2026, 5, 2), "Overland", "Transfer", "", "Transfer to 2500 Colburn Ave", None, 400.0, None),
+            TransactionRow(
+                date(2026, 5, 3), "Overland", "JE", "", "Owner Distribution - Owner payment for 05/2026", None, 300.0, None
+            ),
+        ],
+    )
+    _write_transactions(brunswick, summary, document, db_session, expense_types)
+
+    statement = (
+        db_session.query(MonthlyStatement).filter_by(property_id=brunswick.id, month=month).one()
+    )
+    assert float(statement.gross_income) == pytest.approx(1000.0)
+    assert float(statement.total_operating_expense) == pytest.approx(0.0)
+    assert float(statement.noi) == pytest.approx(1000.0)
+
+    # the transfer/distribution rows are still recorded, just not in the NOI math
+    non_operating = (
+        db_session.query(Transaction)
+        .filter_by(property_id=brunswick.id)
+        .join(ExpenseType)
+        .filter(ExpenseType.is_operating.is_(False))
+        .all()
+    )
+    assert {t.expense_type.code for t in non_operating} == {"internal_transfer", "owner_distribution"}
+
+
+def test_recategorize_transactions_corrects_already_ingested_data(db_session):
+    """The production-data correction path: transactions already written under
+    the old categorize_transaction (before internal_transfer/security_deposit_
+    transfer/owner_distribution existed) get fixed in place, and the
+    monthly_statement totals they feed get recomputed - no PDF re-parse."""
+    seed(db_session)
+    brunswick = db_session.query(Property).filter_by(nickname="Brunswick").one()
+    other_expense = db_session.query(ExpenseType).filter_by(code="other_expense").one()
+    rent_income = db_session.query(ExpenseType).filter_by(code="rent_income").one()
+
+    document = Document(
+        type="owner_packet",
+        original_filename="test.pdf",
+        storage_path="unused",
+        content_hash="cafebabe" * 8,
+    )
+    db_session.add(document)
+    db_session.flush()
+
+    month = date(2026, 5, 1)
+    db_session.add(
+        MonthlyStatement(
+            property_id=brunswick.id,
+            month=month,
+            source_document_id=document.id,
+            gross_income=1000,
+            total_operating_expense=400,  # wrong: includes the transfer below
+            noi=600,
+        )
+    )
+    db_session.add(
+        Transaction(
+            property_id=brunswick.id,
+            expense_type_id=rent_income.id,
+            date=month,
+            amount=1000,
+            description="Rent Income",
+            source_document_id=document.id,
+        )
+    )
+    db_session.add(
+        Transaction(
+            property_id=brunswick.id,
+            expense_type_id=other_expense.id,  # mis-categorized, pre-fix
+            date=month,
+            amount=400,
+            description="Transfer to 2500 Colburn Ave",
+            source_document_id=document.id,
+        )
+    )
+    db_session.commit()
+
+    recategorized_count = recategorize_transactions(db_session)
+
+    assert recategorized_count == 1
+    transfer_txn = (
+        db_session.query(Transaction).filter_by(description="Transfer to 2500 Colburn Ave").one()
+    )
+    assert transfer_txn.expense_type.code == "internal_transfer"
+
+    statement = (
+        db_session.query(MonthlyStatement).filter_by(property_id=brunswick.id, month=month).one()
+    )
+    assert float(statement.gross_income) == pytest.approx(1000.0)
+    assert float(statement.total_operating_expense) == pytest.approx(0.0)
+    assert float(statement.noi) == pytest.approx(1000.0)
+
+    # idempotent: running it again changes nothing further
+    assert recategorize_transactions(db_session) == 0
 
 
 @requires_archive
