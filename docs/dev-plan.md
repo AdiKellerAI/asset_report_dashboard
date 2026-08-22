@@ -272,3 +272,22 @@ Resolved directly with Adi during Phase 1 kickoff — supersedes section 12 wher
    - The landing page (section 5.1) gets a **5th headline card**: **Accumulated Balance** — funds still sitting with Overland, not yet transferred to Israel. First-pass formula: `SUM(monthly_statement.net_owner_funds) − SUM(transfer.amount_sent + transfer.fee)`, to be validated once real Owner Packet text extraction confirms what "net owner funds" represents month-to-month.
 6. **ORM:** SQLAlchemy + Alembic (versioned migrations), not a push-based sync — chosen since financial-data schema changes should be auditable.
 7. **Dev workflow addition:** whenever a branch touches anything visible (route, page, chart), run the Flask dev server on localhost and actually view it in a browser before considering that branch done — not just green tests.
+
+---
+
+## 14. Format-notes findings (2026-08-22, Branch 3) — corrects §13.5
+
+Real text extraction (via `pdfplumber`) across Owner Packet samples spanning Apr 2022 → May 2026 (see `docs/formats/owner-packet.md` for full detail) turned up a correction to the Accumulated Balance formula agreed in §13.5:
+
+**`monthly_statement.net_owner_funds` is a running balance, not a monthly delta.** Each month's `Beginning Balance` equals the prior month's `Ending Cash Balance` — confirmed across every consecutive pair checked. Through 2024, AppFolio zeroed this out monthly via an actual "Owner payment" bill; from Jan 2025 onward that stopped happening for most months, so the balance is simply left to accumulate (this is exactly why Adi has ~8 months of undisbursed funds sitting with Overland).
+
+**Consequence:** Accumulated Balance must NOT sum `net_owner_funds` across months (that would multiply-count carried-forward cash). Corrected formula:
+
+```
+Accumulated Balance = Σ over properties of (net_owner_funds from each property's MOST RECENT monthly_statement)
+                       − Σ (transfer.amount_sent + transfer.fee for transfers dated after that statement's month)
+```
+
+Once a transfer is reflected in a later ingested month's statement (as an actual cash-out line), stop subtracting it separately — it's already baked into that month's `net_owner_funds`.
+
+See `docs/formats/owner-packet.md`, `docs/formats/water-bill.md`, `docs/formats/sewer-bill.md` for full per-document-type field maps, detection signatures, and confirmed layout drift (e.g. the 2026 letterhead/owner-entity change to "Overland Properties-Metro Space Realty" / "Keller Assets Ohio LLC", and the Income Statement (P&L) pages only existing from 2023 onward, absent in 2022).
