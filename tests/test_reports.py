@@ -126,10 +126,13 @@ def test_net_to_adi_uses_latest_month_unpaid_bills_not_a_sum(db_session):
     assert result["net_to_adi"] == pytest.approx(1700.0)
 
 
-def test_net_to_adi_subtracts_mortgage_per_month_present(db_session):
+def test_net_to_adi_subtracts_mortgage_per_month_present_for_all_properties(db_session):
+    """The mortgage is one combined loan for the whole portfolio (Adi
+    confirmed 2026-08-23), not per property - it only ever affects the "all
+    properties" Net to Adi, never an individual property's own column."""
     seed(db_session)
     brunswick = _property(db_session, "Brunswick")
-    db_session.add(Mortgage(property_id=brunswick.id, monthly_payment=250))
+    db_session.add(Mortgage(monthly_payment=250))
     db_session.add_all(
         [
             MonthlyStatement(property_id=brunswick.id, month=date(2026, 1, 1), noi=1000),
@@ -138,9 +141,11 @@ def test_net_to_adi_subtracts_mortgage_per_month_present(db_session):
     )
     db_session.commit()
 
-    result = dashboard_summary(db_session, property_nickname="Brunswick", period="custom_year", year="2026")
+    all_result = dashboard_summary(db_session, property_nickname="all", period="custom_year", year="2026")
+    brunswick_result = dashboard_summary(db_session, property_nickname="Brunswick", period="custom_year", year="2026")
 
-    assert result["net_to_adi"] == pytest.approx(2000.0 - 250 * 2)
+    assert all_result["net_to_adi"] == pytest.approx(2000.0 - 250 * 2)
+    assert brunswick_result["net_to_adi"] == pytest.approx(2000.0)  # mortgage NOT subtracted here
 
 
 def test_accumulated_balance_is_portfolio_wide_regardless_of_property_filter(db_session):
@@ -211,9 +216,11 @@ def test_trend_series_one_point_per_month_no_cross_month_aggregation(db_session)
 
 
 def test_trend_series_net_to_adi_per_month_with_mortgage(db_session):
+    """Same portfolio-level-mortgage rule as dashboard_summary: only the
+    "all properties" net_to_adi line subtracts it."""
     seed(db_session)
     brunswick = _property(db_session, "Brunswick")
-    db_session.add(Mortgage(property_id=brunswick.id, monthly_payment=200))
+    db_session.add(Mortgage(monthly_payment=200))
     db_session.add_all(
         [
             MonthlyStatement(property_id=brunswick.id, month=date(2026, 4, 1), noi=1000, unpaid_bills=-50),
@@ -222,9 +229,11 @@ def test_trend_series_net_to_adi_per_month_with_mortgage(db_session):
     )
     db_session.commit()
 
-    result = trend_series(db_session, property_nickname="Brunswick", series_keys=["net_to_adi"])
+    all_result = trend_series(db_session, property_nickname="all", series_keys=["net_to_adi"])
+    brunswick_result = trend_series(db_session, property_nickname="Brunswick", series_keys=["net_to_adi"])
 
-    assert result["series"]["net_to_adi"]["values"] == pytest.approx([1000 - 50 - 200, 1200 - 100 - 200])
+    assert all_result["series"]["net_to_adi"]["values"] == pytest.approx([1000 - 50 - 200, 1200 - 100 - 200])
+    assert brunswick_result["series"]["net_to_adi"]["values"] == pytest.approx([950, 1100])  # no mortgage here
 
 
 def test_trend_series_category_line(db_session):

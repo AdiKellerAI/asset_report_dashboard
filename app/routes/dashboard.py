@@ -34,7 +34,7 @@ def landing():
         selected_period=period,
         selected_month=month or "",
         selected_year=year or "",
-        noi_months=[m.isoformat() for m in noi_trend["months"]],
+        noi_months=[m.strftime("%Y-%m") for m in noi_trend["months"]],
         noi_lines=noi_trend["lines"],
         total_label=translate("Total", g.lang),
     )

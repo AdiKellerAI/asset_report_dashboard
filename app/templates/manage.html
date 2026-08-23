@@ -10,41 +10,43 @@
   <section class="manage-card">
     <h2 class="manage-card-title">{{ "Upload New Reports"|t }}</h2>
     <p class="manage-card-hint">{{ "Select the report files (zip or individual files, as downloaded)."|t }}</p>
-    <form method="post" action="/manage/upload" enctype="multipart/form-data" class="manage-form">
-      <input type="file" name="files" multiple>
-      <button type="submit">{{ "Upload"|t }}</button>
+    <form method="post" action="/manage/upload" enctype="multipart/form-data" id="upload-form">
+      <label for="upload-input" class="dropzone" id="dropzone">
+        <svg class="dropzone-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <path d="M12 4v11m0-11 4 4m-4-4-4 4" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M4 16.5V18a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-1.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span class="dropzone-text">{{ "Drop files here, or click to browse"|t }}</span>
+        <span class="dropzone-hint">{{ "Select the report files (zip or individual files, as downloaded)."|t }}</span>
+        <span class="dropzone-filenames" id="dropzone-filenames"></span>
+        <input type="file" name="files" id="upload-input" multiple hidden>
+      </label>
+      <button type="submit" class="dropzone-submit">{{ "Upload"|t }}</button>
     </form>
   </section>
 
   <section class="manage-card">
     <h2 class="manage-card-title">{{ "Mortgage"|t }}</h2>
-    <div class="manage-grid">
-      {% for p in properties %}
-      {% set m = mortgages_by_property.get(p.id) %}
-      <div class="manage-subcard">
-        <h3>{{ p.nickname }}</h3>
-        <form method="post" action="/manage/mortgage/{{ p.nickname }}" class="manage-form manage-form-stacked">
-          <label>
-            {{ "Lender"|t }}
-            <input type="text" name="lender" value="{{ m.lender if m else '' }}">
-          </label>
-          <label>
-            {{ "Monthly Payment (USD)"|t }}
-            <input type="number" step="0.01" name="monthly_payment" value="{{ m.monthly_payment if m else '' }}">
-          </label>
-          <label>
-            {{ "Principal Balance (USD)"|t }}
-            <input type="number" step="0.01" name="principal_balance" value="{{ m.principal_balance if m else '' }}">
-          </label>
-          <label>
-            {{ "Start Date"|t }}
-            <input type="date" name="start_date" value="{{ m.start_date.isoformat() if m and m.start_date else '' }}">
-          </label>
-          <button type="submit">{{ "Save"|t }}</button>
-        </form>
-      </div>
-      {% endfor %}
-    </div>
+    <p class="manage-card-hint">{{ "One combined mortgage for the whole portfolio."|t }}</p>
+    <form method="post" action="/manage/mortgage" class="manage-form">
+      <label>
+        {{ "Lender"|t }}
+        <input type="text" name="lender" value="{{ mortgage.lender if mortgage else '' }}">
+      </label>
+      <label>
+        {{ "Monthly Payment (USD)"|t }}
+        <input type="number" step="0.01" name="monthly_payment" value="{{ mortgage.monthly_payment if mortgage else '' }}">
+      </label>
+      <label>
+        {{ "Principal Balance (USD)"|t }}
+        <input type="number" step="0.01" name="principal_balance" value="{{ mortgage.principal_balance if mortgage else '' }}">
+      </label>
+      <label>
+        {{ "Start Date"|t }}
+        <input type="date" name="start_date" value="{{ mortgage.start_date.isoformat() if mortgage and mortgage.start_date else '' }}">
+      </label>
+      <button type="submit">{{ "Save"|t }}</button>
+    </form>
   </section>
 
   <section class="manage-card">
@@ -152,4 +154,41 @@
     <p class="empty-state-note">{{ "No transfers recorded yet."|t }}</p>
     {% endif %}
   </section>
+{% endblock %}
+
+{% block scripts %}
+  <script>
+    (function () {
+      const dropzone = document.getElementById("dropzone");
+      const input = document.getElementById("upload-input");
+      const filenames = document.getElementById("dropzone-filenames");
+      if (!dropzone || !input) return;
+
+      function showNames(fileList) {
+        const names = Array.from(fileList).map((f) => f.name);
+        filenames.textContent = names.length ? names.join(", ") : "";
+      }
+
+      input.addEventListener("change", () => showNames(input.files));
+
+      ["dragenter", "dragover"].forEach((evt) =>
+        dropzone.addEventListener(evt, (e) => {
+          e.preventDefault();
+          dropzone.classList.add("is-dragover");
+        })
+      );
+      ["dragleave", "drop"].forEach((evt) =>
+        dropzone.addEventListener(evt, (e) => {
+          e.preventDefault();
+          dropzone.classList.remove("is-dragover");
+        })
+      );
+      dropzone.addEventListener("drop", (e) => {
+        if (e.dataTransfer && e.dataTransfer.files.length) {
+          input.files = e.dataTransfer.files;
+          showNames(input.files);
+        }
+      });
+    })();
+  </script>
 {% endblock %}

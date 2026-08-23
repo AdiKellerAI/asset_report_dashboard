@@ -82,7 +82,8 @@ def test_landing_page_includes_last_5_months_noi_chart_per_property_and_total(db
     assert response.status_code == 200
     body = response.get_data(as_text=True)
     assert 'id="noi-chart"' in body
-    assert '"2026-07-01"' in body
+    assert '"2026-07"' in body
+    assert '"2026-07-01"' not in body  # chart x-axis is month/year only, no day
     assert '"Brunswick"' in body
     assert '"Colburn"' in body
     assert '"Total"' in body
@@ -116,7 +117,7 @@ def test_landing_page_has_currency_toggle_defaulting_to_usd_english(db_session):
     assert response.status_code == 200
     body = response.get_data(as_text=True)
     assert '15,107.93 $' in body
-    assert 'id="currency-toggle"' in body
+    assert 'class="lang-switch"' in body
     assert 'class="fx-rate-note"' not in body  # only shown in Hebrew/NIS mode
     assert '<html lang="en" dir="ltr">' in body
 

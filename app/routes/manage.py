@@ -6,7 +6,7 @@ from app.cache import invalidate_all
 from app.db import SessionLocal
 from app.i18n import translate_message
 from app.ingestion import process_upload
-from app.models import Document, Mortgage, Property, TaxReport, Transfer
+from app.models import Document, Mortgage, TaxReport, Transfer
 
 manage_bp = Blueprint("manage", __name__)
 
@@ -41,8 +41,7 @@ def _redirect_with_message(template, level="success", **kwargs):
 def manage():
     session = SessionLocal()
     try:
-        properties = session.query(Property).order_by(Property.nickname).all()
-        mortgages_by_property = {m.property_id: m for m in session.query(Mortgage).all()}
+        mortgage = session.query(Mortgage).order_by(Mortgage.id.desc()).first()
         tax_reports = session.query(TaxReport).order_by(TaxReport.year.desc()).all()
         transfers = session.query(Transfer).order_by(Transfer.transfer_date.desc()).all()
     finally:
@@ -50,8 +49,7 @@ def manage():
 
     return render_template(
         "manage.html",
-        properties=properties,
-        mortgages_by_property=mortgages_by_property,
+        mortgage=mortgage,
         tax_reports=tax_reports,
         transfers=transfers,
         message=request.args.get("msg"),
@@ -82,17 +80,16 @@ def upload_reports():
     return redirect(url_for("manage.manage", msg=msg, level="success"))
 
 
-@manage_bp.post("/manage/mortgage/<nickname>")
-def update_mortgage(nickname):
+@manage_bp.post("/manage/mortgage")
+def update_mortgage():
+    """One combined mortgage for the whole portfolio (Adi confirmed
+    2026-08-23 it's a single loan covering both properties) - upserts the
+    one existing row rather than one per property."""
     session = SessionLocal()
     try:
-        prop = session.query(Property).filter_by(nickname=nickname).one_or_none()
-        if prop is None:
-            return _redirect_with_message("Unknown property {name!r}.", "error", name=nickname)
-
-        mortgage = session.query(Mortgage).filter_by(property_id=prop.id).one_or_none()
+        mortgage = session.query(Mortgage).order_by(Mortgage.id.desc()).first()
         if mortgage is None:
-            mortgage = Mortgage(property_id=prop.id)
+            mortgage = Mortgage()
             session.add(mortgage)
 
         try:
@@ -109,7 +106,7 @@ def update_mortgage(nickname):
         session.close()
     invalidate_all()
 
-    return _redirect_with_message("Mortgage updated for {name}.", name=nickname)
+    return _redirect_with_message("Mortgage updated.")
 
 
 @manage_bp.post("/manage/tax")

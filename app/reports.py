@@ -120,10 +120,13 @@ def dashboard_summary(
     unpaid_bills = sum(float(s.unpaid_bills or 0) for s in statements if s.month == latest_month)
 
     if monthly_mortgage_total is None:
-        monthly_mortgage_total = sum(
-            float(m.monthly_payment or 0)
-            for m in session.query(Mortgage).filter(Mortgage.property_id.in_(property_ids)).all()
-        )
+        # The mortgage is one combined loan for the whole portfolio (Adi
+        # confirmed 2026-08-23), not per property - it only ever affects the
+        # "all properties" Net to Adi, never an individual property's own.
+        monthly_mortgage_total = 0.0
+        if property_nickname == "all":
+            mortgage = session.query(Mortgage).order_by(Mortgage.id.desc()).first()
+            monthly_mortgage_total = float(mortgage.monthly_payment or 0) if mortgage else 0.0
     net_to_adi = noi + unpaid_bills - monthly_mortgage_total * len(months_present)
 
     return {
@@ -238,12 +241,12 @@ def trend_series(
         by_month.setdefault(s.month, []).append(s)
     months = sorted(by_month.keys())
 
+    # The mortgage is one combined loan for the whole portfolio, not per
+    # property - only affects the "all properties" Net to Adi line.
     monthly_mortgage_total = 0.0
-    if "net_to_adi" in series_keys:
-        monthly_mortgage_total = sum(
-            float(m.monthly_payment or 0)
-            for m in session.query(Mortgage).filter(Mortgage.property_id.in_(property_ids)).all()
-        )
+    if "net_to_adi" in series_keys and property_nickname == "all":
+        mortgage = session.query(Mortgage).order_by(Mortgage.id.desc()).first()
+        monthly_mortgage_total = float(mortgage.monthly_payment or 0) if mortgage else 0.0
 
     category_codes = [k.split(":", 1)[1] for k in series_keys if k.startswith("cat:")]
     category_totals = {}
@@ -359,11 +362,10 @@ def dashboard_breakdown(session, period="this_month", month=None, year=None, tod
         query = query.filter(MonthlyStatement.month >= start, MonthlyStatement.month <= end)
     all_statements = query.all()
 
-    mortgage_by_property = {}
-    for m in session.query(Mortgage).filter(Mortgage.property_id.in_(property_ids)).all():
-        mortgage_by_property[m.property_id] = mortgage_by_property.get(m.property_id, 0.0) + float(
-            m.monthly_payment or 0
-        )
+    # One combined mortgage for the whole portfolio (not per property) -
+    # only ever subtracted from the "all properties" Total column below.
+    mortgage = session.query(Mortgage).order_by(Mortgage.id.desc()).first()
+    monthly_mortgage_payment = float(mortgage.monthly_payment or 0) if mortgage else 0.0
 
     accumulated_balance = _accumulated_balance(session, properties)
 
@@ -381,8 +383,6 @@ def dashboard_breakdown(session, period="this_month", month=None, year=None, tod
             monthly_mortgage_total=monthly_mortgage_total,
         )
 
-    per_property = [
-        {"nickname": p.nickname, **summary_for(p.nickname, mortgage_by_property.get(p.id, 0.0))} for p in properties
-    ]
-    total = summary_for("all", sum(mortgage_by_property.values()))
+    per_property = [{"nickname": p.nickname, **summary_for(p.nickname, 0.0)} for p in properties]
+    total = summary_for("all", monthly_mortgage_payment)
     return {"properties": per_property, "total": total}

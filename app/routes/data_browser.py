@@ -133,7 +133,6 @@ def _table_configs():
             "order_by": Mortgage.id,
             "columns": [
                 ("ID", lambda r: r.id),
-                ("Property", lambda r: _property_label(r.property)),
                 ("Lender", lambda r: r.lender or "—"),
                 (
                     "Monthly Payment",

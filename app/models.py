@@ -113,17 +113,20 @@ class MonthlyStatement(Base):
 
 
 class Mortgage(Base):
+    """One combined mortgage for the whole portfolio (Adi confirmed 2026-08-23
+    it's a single loan covering both properties, not one per property) -
+    portfolio-level like `transfer`, no property_id. Only ever affects the
+    Total column of "Net to Adi", never an individual property's own column,
+    since it isn't attributable to one property alone."""
+
     __tablename__ = "mortgage"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    property_id: Mapped[int] = mapped_column(ForeignKey("property.id"), nullable=False)
     lender: Mapped[str | None] = mapped_column(String(100))
     monthly_payment: Mapped[float | None] = mapped_column(Numeric(12, 2))
     principal_balance: Mapped[float | None] = mapped_column(Numeric(12, 2))
     start_date: Mapped[date | None] = mapped_column(Date)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
-
-    property: Mapped["Property"] = relationship()
 
 
 class TaxReport(Base):

@@ -11,29 +11,20 @@
 </head>
 <body>
   <header class="page-header">
-    <h1>{{ "Asset Report Dashboard"|t }}</h1>
-    <div class="header-right">
-      <nav class="main-nav">
-        <a href="/" class="{{ 'active' if active_nav == 'dashboard' else '' }}">{{ "Dashboard"|t }}</a>
-        <a href="/trends" class="{{ 'active' if active_nav == 'trends' else '' }}">{{ "Trends"|t }}</a>
-        <a href="/manage" class="{{ 'active' if active_nav == 'manage' else '' }}">{{ "Manage"|t }}</a>
-        <a href="/tables" class="{{ 'active' if active_nav == 'tables' else '' }}">{{ "Tables"|t }}</a>
-      </nav>
-      <div class="currency-widget">
-        <a
-          href="/set-language/{{ 'en' if lang == 'he' else 'he' }}"
-          id="currency-toggle"
-          class="currency-toggle {{ 'is-nis' if lang == 'he' else '' }}"
-          aria-label="{{ 'Switch to English / USD' if lang == 'he' else 'Switch to Hebrew / NIS' }}"
-        >
-          <span class="currency-toggle-side currency-toggle-usd">$</span>
-          <span class="currency-toggle-track"><span class="currency-toggle-thumb"></span></span>
-          <span class="currency-toggle-side currency-toggle-nis">₪</span>
-        </a>
-        {% if lang == "he" %}
-        <span class="fx-rate-note">1 $ = {{ "%.2f"|format(usd_to_ils_rate) }} ₪</span>
-        {% endif %}
+    <nav class="main-nav">
+      <a href="/" class="{{ 'active' if active_nav == 'dashboard' else '' }}">{{ "Dashboard"|t }}</a>
+      <a href="/trends" class="{{ 'active' if active_nav == 'trends' else '' }}">{{ "Trends"|t }}</a>
+      <a href="/manage" class="{{ 'active' if active_nav == 'manage' else '' }}">{{ "Manage"|t }}</a>
+      <a href="/tables" class="{{ 'active' if active_nav == 'tables' else '' }}">{{ "Tables"|t }}</a>
+    </nav>
+    <div class="currency-widget">
+      <div class="lang-switch" role="group" aria-label="Currency / language">
+        <a href="/set-language/en" class="lang-switch-option {{ 'active' if lang == 'en' }}">$</a>
+        <a href="/set-language/he" class="lang-switch-option {{ 'active' if lang == 'he' }}">₪</a>
       </div>
+      {% if lang == "he" %}
+      <span class="fx-rate-note">1 $ = {{ "%.2f"|format(usd_to_ils_rate) }} ₪</span>
+      {% endif %}
     </div>
   </header>
 

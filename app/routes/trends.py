@@ -54,6 +54,6 @@ def trends():
         category_series=category_series,
         selected_series=selected_series,
         selected_range=selected_range,
-        months=[m.isoformat() for m in data["months"]],
+        months=[m.strftime("%Y-%m") for m in data["months"]],
         series=series,
     )

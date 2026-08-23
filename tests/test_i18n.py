@@ -17,10 +17,10 @@ def test_translate_falls_back_to_original_for_unknown_string():
 
 
 def test_translate_message_fills_in_kwargs_after_translating_the_template():
-    msg = translate_message("Mortgage updated for {name}.", "he", name="Brunswick")
-    assert msg == "המשכנתא עודכנה עבור Brunswick."
+    msg = translate_message("Tax payment for {year} recorded.", "he", year=2025)
+    assert msg == "תשלום המס עבור 2025 נרשם."
 
 
 def test_translate_message_english_passthrough():
-    msg = translate_message("Mortgage updated for {name}.", "en", name="Brunswick")
-    assert msg == "Mortgage updated for Brunswick."
+    msg = translate_message("Tax payment for {year} recorded.", "en", year=2025)
+    assert msg == "Tax payment for 2025 recorded."

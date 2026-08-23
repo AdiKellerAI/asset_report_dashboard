@@ -70,24 +70,6 @@ a {
   border-bottom: 1px solid var(--border-soft);
 }
 
-.page-header h1 {
-  font-size: 1.05rem;
-  font-weight: 700;
-  letter-spacing: -0.01em;
-  margin: 0;
-  background: linear-gradient(120deg, var(--ink) 30%, var(--accent-strong) 100%);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.header-right {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  flex-shrink: 0;
-}
-
 .main-nav {
   display: flex;
   flex-shrink: 0;
@@ -98,89 +80,44 @@ a {
   padding: 0.25rem;
 }
 
-/* A dedicated switch design (not the same segmented-pill look as the nav)
-   so it reads as its own distinct control: two currency symbols with a
-   sliding thumb between them, gold-accented to match the Accumulated
-   Balance card's "money" association. */
+/* A minimal segmented control (not a switch) - two currency symbols side
+   by side, the active one filled with the gold "money" accent. */
 .currency-widget {
   display: flex;
   align-items: center;
   gap: 0.6rem;
 }
 
-.currency-toggle {
-  appearance: none;
-  border: none;
-  background: none;
-  padding: 0;
+.lang-switch {
+  display: flex;
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  padding: 0.2rem;
+  gap: 0.15rem;
+}
+
+.lang-switch-option {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  cursor: pointer;
-  color: var(--ink-muted);
-  font: inherit;
-}
-
-.currency-toggle-side {
-  font-size: 0.95rem;
-  font-weight: 800;
-  transition: color 0.2s ease, transform 0.2s ease;
-}
-
-.currency-toggle-usd {
-  color: var(--gold);
-}
-
-.currency-toggle.is-nis .currency-toggle-usd {
-  color: var(--ink-muted);
-  transform: scale(0.85);
-}
-
-.currency-toggle-nis {
-  color: var(--ink-muted);
-}
-
-.currency-toggle.is-nis .currency-toggle-nis {
-  color: var(--gold);
-  transform: scale(1.05);
-}
-
-.currency-toggle-track {
-  position: relative;
-  width: 40px;
-  height: 22px;
+  justify-content: center;
+  min-width: 30px;
+  padding: 0.3rem 0.6rem;
   border-radius: 999px;
-  background: linear-gradient(160deg, var(--surface-raised), var(--surface));
-  border: 1px solid var(--border);
-  transition: border-color 0.2s ease;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--ink-muted);
+  text-decoration: none;
+  transition: color 0.2s ease, background 0.2s ease;
 }
 
-.currency-toggle-thumb {
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
+.lang-switch-option:hover {
+  color: var(--ink);
+}
+
+.lang-switch-option.active {
+  color: #0d1117;
   background: linear-gradient(135deg, var(--gold), #f0c96b);
-  box-shadow: 0 2px 6px rgba(201, 133, 0, 0.4);
-  transition: transform 0.2s ease;
-}
-
-.currency-toggle.is-nis .currency-toggle-thumb {
-  transform: translateX(18px);
-}
-
-.currency-toggle:hover .currency-toggle-track {
-  border-color: var(--gold);
-}
-
-.currency-toggle:focus-visible {
-  outline: none;
-}
-
-.currency-toggle:focus-visible .currency-toggle-track {
-  box-shadow: 0 0 0 3px var(--gold-soft);
 }
 
 .fx-rate-note {
@@ -302,8 +239,89 @@ a {
   box-shadow: 0 0 0 3px var(--accent-ring);
 }
 
-.custom-period-field {
+/* ---------- Period selector (pill row, not a boxed dropdown card) ---------- */
+
+.period-selector {
+  margin-bottom: 1.5rem;
+}
+
+.period-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.period-pill {
+  appearance: none;
+  border: 1px solid var(--border-soft);
+  background: var(--surface);
+  color: var(--ink-secondary);
+  text-decoration: none;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.5rem 1.05rem;
+  border-radius: 999px;
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.period-pill:hover {
+  color: var(--ink);
+  border-color: var(--accent);
+}
+
+.period-pill.active {
+  color: var(--ink);
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+.custom-period-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 0.6rem;
+}
+
+.custom-period-form[hidden] {
   display: none;
+}
+
+.custom-period-form select,
+.custom-period-form input {
+  appearance: none;
+  -webkit-appearance: none;
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.4rem 0.6rem;
+  font: inherit;
+  font-size: 0.82rem;
+  min-height: 34px;
+}
+
+.custom-period-form select:focus,
+.custom-period-form input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-ring);
+}
+
+.custom-period-form button {
+  appearance: none;
+  border: none;
+  border-radius: 8px;
+  padding: 0.4rem 1rem;
+  min-height: 34px;
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #0d1117;
+  background: linear-gradient(135deg, var(--accent-strong), var(--accent));
+  cursor: pointer;
 }
 
 .series-picker {
@@ -745,17 +763,81 @@ a {
   margin-bottom: 0;
 }
 
+/* ---------- Upload dropzone ---------- */
+
+.dropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  text-align: center;
+  border: 1.5px dashed var(--border);
+  border-radius: var(--radius-lg);
+  padding: 2.25rem 1.5rem;
+  cursor: pointer;
+  background: rgba(255, 255, 255, 0.015);
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.dropzone:hover,
+.dropzone.is-dragover {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.dropzone-icon {
+  width: 28px;
+  height: 28px;
+  color: var(--accent-strong);
+}
+
+.dropzone-text {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.dropzone-hint {
+  font-size: 0.78rem;
+  color: var(--ink-muted);
+}
+
+.dropzone-filenames {
+  font-size: 0.78rem;
+  color: var(--accent-strong);
+  font-weight: 600;
+  word-break: break-word;
+}
+
+.dropzone-submit {
+  appearance: none;
+  border: none;
+  border-radius: 8px;
+  padding: 0.5rem 1.1rem;
+  min-height: 34px;
+  margin-top: 0.85rem;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #0d1117;
+  background: linear-gradient(135deg, var(--accent-strong), var(--accent));
+  cursor: pointer;
+  transition: filter 0.2s ease, transform 0.2s ease;
+}
+
+.dropzone-submit:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
 /* ---------- RTL (Hebrew) overrides ---------- */
 /* Setting dir="rtl" on <html> already mirrors flexbox/grid/table order for
    free (the browser reverses main-axis order under RTL automatically) -
-   these are just the spots with a hardcoded LTR assumption (a leftward
-   thumb slide, a right-side dropdown arrow). Charts opt back into dir="ltr"
-   explicitly (see the templates) - numeric/date axes conventionally stay
-   LTR even inside an RTL page. */
-
-[dir="rtl"] .currency-toggle.is-nis .currency-toggle-thumb {
-  transform: translateX(-18px);
-}
+   this is just the one spot with a hardcoded LTR assumption (a right-side
+   dropdown arrow). Charts opt back into dir="ltr" explicitly (see the
+   templates) - numeric/date axes conventionally stay LTR even inside an
+   RTL page. */
 
 [dir="rtl"] .filter-bar select,
 [dir="rtl"] .manage-form select {

@@ -105,7 +105,7 @@ Core tables:
   - `other_expense` — catch-all, reviewed periodically for whether it deserves its own category
   - `owner_payment` — the net payout that hits your bank
 - **monthly_statement** — property_id, month, gross_income, total_operating_expense, NOI, beginning_balance, ending_balance, unpaid_bills, reserve, net_owner_funds (the AppFolio summary, stored as a snapshot so historical reports don't shift if categorization logic changes later)
-- **mortgage** — property_id, lender, monthly_payment, principal_balance (optional), start_date — entered manually by Adi, not from a document
+- **mortgage** — lender, monthly_payment, principal_balance (optional), start_date — entered manually by Adi, not from a document. **Corrected 2026-08-23:** originally spec'd with a `property_id` (one mortgage per property); Adi confirmed directly it's actually one combined loan for the whole portfolio, so `property_id` was dropped - portfolio-level like `transfer`. Only ever subtracted from the portfolio-wide "Net to Adi" figure, never an individual property's own.
 - **tax_report** — year, provider ("VirtueTax"), amount_paid, what_it_covers (free text/notes), filed_date, document_id
 - **document** — id, property_id (nullable), type, upload_date, original_filename, source_batch_id (see zip ingestion below), storage_path, raw_extracted_json, status (`parsed`, `needs_review`, `confirmed`)
 - **upload_batch** — id, uploaded_at, source (`single_file`, `multi_file`, `zip`), file_count, notes — groups files that came in together, so a bulk import stays traceable as one event

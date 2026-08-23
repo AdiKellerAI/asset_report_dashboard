@@ -2,30 +2,25 @@
 {% set active_nav = "dashboard" %}
 
 {% block content %}
-  <form class="filter-bar" method="get" action="/">
-    <label>
-      {{ "Period"|t }}
-      <select name="period" id="period-select">
-        <option value="this_month" {{ "selected" if selected_period == "this_month" }}>{{ "This Month"|t }}</option>
-        <option value="this_year" {{ "selected" if selected_period == "this_year" }}>{{ "This Year"|t }}</option>
-        <option value="custom_month" {{ "selected" if selected_period == "custom_month" }}>{{ "Custom Month"|t }}</option>
-        <option value="custom_year" {{ "selected" if selected_period == "custom_year" }}>{{ "Custom Year"|t }}</option>
-        <option value="all_time" {{ "selected" if selected_period == "all_time" }}>{{ "All Time"|t }}</option>
+  {% set is_custom = selected_period in ("custom_month", "custom_year") %}
+  <div class="period-selector">
+    <nav class="period-pills">
+      <a href="/?period=this_month" class="period-pill {{ 'active' if selected_period == 'this_month' }}">{{ "This Month"|t }}</a>
+      <a href="/?period=this_year" class="period-pill {{ 'active' if selected_period == 'this_year' }}">{{ "This Year"|t }}</a>
+      <a href="/?period=all_time" class="period-pill {{ 'active' if selected_period == 'all_time' }}">{{ "All Time"|t }}</a>
+      <button type="button" id="custom-period-toggle" class="period-pill period-pill-custom {{ 'active' if is_custom }}">{{ "Custom"|t }} ▾</button>
+    </nav>
+
+    <form method="get" action="/" id="custom-period-form" class="custom-period-form" {{ "" if is_custom else "hidden" }}>
+      <select name="period" id="custom-period-type">
+        <option value="custom_month" {{ "selected" if selected_period == "custom_month" }}>{{ "Month"|t }}</option>
+        <option value="custom_year" {{ "selected" if selected_period == "custom_year" }}>{{ "Year"|t }}</option>
       </select>
-    </label>
-
-    <label id="month-field" class="custom-period-field">
-      {{ "Month"|t }}
-      <input type="month" name="month" value="{{ selected_month }}">
-    </label>
-
-    <label id="year-field" class="custom-period-field">
-      {{ "Year"|t }}
-      <input type="number" name="year" min="2020" max="2100" value="{{ selected_year }}">
-    </label>
-
-    <button type="submit">{{ "Apply"|t }}</button>
-  </form>
+      <input type="month" name="month" id="custom-month-input" value="{{ selected_month }}" {{ "" if selected_period == "custom_month" else "hidden" }}>
+      <input type="number" name="year" id="custom-year-input" min="2020" max="2100" value="{{ selected_year }}" {{ "" if selected_period == "custom_year" else "hidden" }}>
+      <button type="submit">{{ "Go"|t }}</button>
+    </form>
+  </div>
 
   <p class="period-label">{{ total.period_label }}{% if not total.has_data %} <span class="period-label-caveat">— {{ "no statement data for this period yet"|t }}</span>{% endif %}</p>
 
@@ -89,15 +84,26 @@
 
 {% block scripts %}
   <script>
-    // Show only the custom-period input relevant to the selected period -
-    // no framework needed, this is the one bit of interactivity the page has.
-    function syncCustomPeriodFields() {
-      var period = document.getElementById("period-select").value;
-      document.getElementById("month-field").style.display = period === "custom_month" ? "flex" : "none";
-      document.getElementById("year-field").style.display = period === "custom_year" ? "flex" : "none";
+    // The "Custom" pill reveals a small inline form (Month or Year + a Go
+    // button) instead of the previous boxed dropdown-and-Apply-button card.
+    var customToggle = document.getElementById("custom-period-toggle");
+    var customForm = document.getElementById("custom-period-form");
+    var customType = document.getElementById("custom-period-type");
+    var monthInput = document.getElementById("custom-month-input");
+    var yearInput = document.getElementById("custom-year-input");
+
+    function syncCustomInputs() {
+      var isMonth = customType.value === "custom_month";
+      monthInput.hidden = !isMonth;
+      yearInput.hidden = isMonth;
     }
-    document.getElementById("period-select").addEventListener("change", syncCustomPeriodFields);
-    syncCustomPeriodFields();
+
+    customToggle.addEventListener("click", function () {
+      customForm.hidden = !customForm.hidden;
+      if (!customForm.hidden) monthInput.focus();
+    });
+    customType.addEventListener("change", syncCustomInputs);
+    syncCustomInputs();
   </script>
 
   {% if noi_months %}

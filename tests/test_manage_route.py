@@ -1,7 +1,7 @@
 from datetime import date
 
 from app import create_app
-from app.models import Mortgage, Property, TaxReport, Transfer
+from app.models import Mortgage, TaxReport, Transfer
 from app.seed import seed
 
 
@@ -17,8 +17,6 @@ def test_manage_page_renders(db_session):
     assert "Mortgage" in body
     assert "Yearly Tax Payment" in body
     assert "Transfer to Israel" in body
-    assert "Brunswick" in body
-    assert "Colburn" in body
 
 
 def test_manage_upload_with_no_files_redirects_with_error(db_session):
@@ -31,43 +29,34 @@ def test_manage_upload_with_no_files_redirects_with_error(db_session):
     assert "No files selected" in response.get_data(as_text=True)
 
 
-def test_manage_mortgage_creates_then_updates(db_session):
+def test_manage_mortgage_creates_then_updates_a_single_combined_row(db_session):
+    """One combined mortgage for the whole portfolio (Adi confirmed
+    2026-08-23), not one per property."""
     seed(db_session)
-    brunswick = db_session.query(Property).filter_by(nickname="Brunswick").one()
 
     client = create_app().test_client()
     response = client.post(
-        "/manage/mortgage/Brunswick",
+        "/manage/mortgage",
         data={"lender": "Chase", "monthly_payment": "1200.50", "principal_balance": "150000", "start_date": "2022-01-01"},
         follow_redirects=True,
     )
 
     assert response.status_code == 200
-    assert "Mortgage updated for Brunswick" in response.get_data(as_text=True)
+    assert "Mortgage updated" in response.get_data(as_text=True)
 
-    mortgage = db_session.query(Mortgage).filter_by(property_id=brunswick.id).one()
+    mortgage = db_session.query(Mortgage).one()
     assert mortgage.lender == "Chase"
     assert float(mortgage.monthly_payment) == 1200.50
     assert mortgage.start_date == date(2022, 1, 1)
 
     # posting again updates the same row, doesn't create a second one
     client.post(
-        "/manage/mortgage/Brunswick",
+        "/manage/mortgage",
         data={"lender": "Chase", "monthly_payment": "1250.00", "principal_balance": "148000", "start_date": "2022-01-01"},
     )
-    assert db_session.query(Mortgage).filter_by(property_id=brunswick.id).count() == 1
+    assert db_session.query(Mortgage).count() == 1
     db_session.refresh(mortgage)
     assert float(mortgage.monthly_payment) == 1250.00
-
-
-def test_manage_mortgage_unknown_property_redirects_with_error(db_session):
-    seed(db_session)
-
-    client = create_app().test_client()
-    response = client.post("/manage/mortgage/NotAReal Property", data={}, follow_redirects=True)
-
-    assert response.status_code == 200
-    assert "Unknown property" in response.get_data(as_text=True)
 
 
 def test_manage_add_tax_report(db_session):
