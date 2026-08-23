@@ -10,7 +10,11 @@
   <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
-  <header class="page-header">
+  <header class="page-header" dir="ltr">
+    <!-- Deliberately LTR regardless of page language (Adi's request): the
+         nav order and the currency/language control's position shouldn't
+         mirror just because the page content does - only the words inside
+         them translate. -->
     <nav class="main-nav">
       <a href="/" class="{{ 'active' if active_nav == 'dashboard' else '' }}">{{ "Dashboard"|t }}</a>
       <a href="/trends" class="{{ 'active' if active_nav == 'trends' else '' }}">{{ "Trends"|t }}</a>

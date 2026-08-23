@@ -142,6 +142,7 @@ def test_landing_page_lang_cookie_switches_to_hebrew_nis_and_rtl(db_session):
     assert "₪" in body
     assert 'class="fx-rate-note"' in body
     assert "לוח בקרה" in body  # "Dashboard" nav link, translated
+    assert '<header class="page-header" dir="ltr">' in body  # nav/toggle never mirror, only their words translate
     assert "רווח תפעולי נקי" in body  # "Net Operating Income" row header, translated
 
 
