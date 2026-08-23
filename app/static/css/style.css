@@ -126,6 +126,16 @@ a {
   font-variant-numeric: tabular-nums;
 }
 
+.logout-link {
+  font-size: 0.78rem;
+  color: var(--ink-muted);
+  text-decoration: none;
+}
+
+.logout-link:hover {
+  color: var(--ink);
+}
+
 @media (max-width: 480px) {
   .page-header {
     flex-direction: column;

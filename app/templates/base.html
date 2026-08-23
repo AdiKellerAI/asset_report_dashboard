@@ -29,6 +29,9 @@
       {% if lang == "he" %}
       <span class="fx-rate-note">1 $ = {{ "%.2f"|format(usd_to_ils_rate) }} ₪</span>
       {% endif %}
+      {% if auth_enabled %}
+      <a href="/logout" class="logout-link">{{ "Log out"|t }}</a>
+      {% endif %}
     </div>
   </header>
 

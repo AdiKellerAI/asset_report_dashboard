@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Asset Report Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/css/style.css">
+  <style>
+    .login-page {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+    }
+    .login-card {
+      width: 100%;
+      max-width: 360px;
+      background: var(--surface-raised);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-raised);
+      padding: 32px 28px;
+    }
+    .login-card h1 {
+      margin: 0 0 6px;
+      font-size: 1.15rem;
+      font-weight: 700;
+      color: var(--ink);
+    }
+    .login-card p.hint {
+      margin: 0 0 24px;
+      color: var(--ink-muted);
+      font-size: 0.85rem;
+    }
+    .login-card input[type="password"] {
+      width: 100%;
+      box-sizing: border-box;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      color: var(--ink);
+      padding: 12px 14px;
+      font-size: 0.95rem;
+    }
+    .login-card input[type="password"]:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-ring);
+    }
+    .login-card button {
+      width: 100%;
+      margin-top: 16px;
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .login-card button:hover { background: var(--accent-strong); }
+    .login-error {
+      margin: -8px 0 16px;
+      color: #e5484d;
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-page">
+    <div class="login-card">
+      <h1>Asset Report Dashboard</h1>
+      <p class="hint">Enter the password to continue.</p>
+      {% if error %}
+      <p class="login-error">Incorrect password.</p>
+      {% endif %}
+      <form method="post" action="/login">
+        <input type="password" name="password" autofocus required>
+        <button type="submit">Enter</button>
+      </form>
+    </div>
+  </div>
+</body>
+</html>

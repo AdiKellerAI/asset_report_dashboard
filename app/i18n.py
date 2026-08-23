@@ -13,6 +13,7 @@ TRANSLATIONS = {
     # Chrome / nav
     "Asset Report Dashboard": "לוח נכסים",
     "Dashboard": "לוח בקרה",
+    "Log out": "התנתקות",
     "Trends": "מגמות",
     "Manage": "ניהול",
     # Filters
