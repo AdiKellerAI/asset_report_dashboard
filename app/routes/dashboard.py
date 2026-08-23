@@ -1,5 +1,6 @@
 from flask import Blueprint, g, render_template, request
 
+from app.cache import get_or_set
 from app.db import SessionLocal
 from app.i18n import translate
 from app.reports import PERIOD_CHOICES, dashboard_breakdown, recent_noi_trend
@@ -18,8 +19,11 @@ def landing():
 
     session = SessionLocal()
     try:
-        breakdown = dashboard_breakdown(session, period, month=month, year=year)
-        noi_trend = recent_noi_trend(session, months=6)
+        breakdown = get_or_set(
+            ("dashboard_breakdown", period, month, year),
+            lambda: dashboard_breakdown(session, period, month=month, year=year),
+        )
+        noi_trend = get_or_set(("recent_noi_trend", 6), lambda: recent_noi_trend(session, months=6))
     finally:
         session.close()
 

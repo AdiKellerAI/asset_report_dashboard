@@ -2,6 +2,7 @@ from datetime import date
 
 from flask import Blueprint, g, redirect, render_template, request, url_for
 
+from app.cache import invalidate_all
 from app.db import SessionLocal
 from app.i18n import translate_message
 from app.ingestion import process_upload
@@ -71,6 +72,7 @@ def upload_reports():
         needs_review = session.query(Document).filter_by(source_batch_id=batch.id, status="needs_review").count()
     finally:
         session.close()
+    invalidate_all()
 
     msg = translate_message("Uploaded batch processed: {count} file(s) ingested", g.lang, count=batch.file_count)
     if needs_review:
@@ -105,6 +107,7 @@ def update_mortgage(nickname):
         session.commit()
     finally:
         session.close()
+    invalidate_all()
 
     return _redirect_with_message("Mortgage updated for {name}.", name=nickname)
 
@@ -134,6 +137,7 @@ def add_tax_report():
             return _redirect_with_message("Couldn't save the tax payment - check the amount/date.", "error")
     finally:
         session.close()
+    invalidate_all()
 
     return _redirect_with_message("Tax payment for {year} recorded.", year=year)
 
@@ -161,5 +165,6 @@ def add_transfer():
             return _redirect_with_message("Couldn't save the transfer - check the amount/fee.", "error")
     finally:
         session.close()
+    invalidate_all()
 
     return _redirect_with_message("Transfer for {when} recorded.", when=transfer_date.strftime("%B %Y"))

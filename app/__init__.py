@@ -8,12 +8,14 @@ def create_app(config_object=Config):
     app.config.from_object(config_object)
 
     from app.routes.dashboard import dashboard_bp
+    from app.routes.data_browser import data_browser_bp
     from app.routes.health import health_bp
     from app.routes.language import language_bp
     from app.routes.manage import manage_bp
     from app.routes.trends import trends_bp
     from app.routes.upload import upload_bp
     app.register_blueprint(dashboard_bp)
+    app.register_blueprint(data_browser_bp)
     app.register_blueprint(health_bp)
     app.register_blueprint(language_bp)
     app.register_blueprint(manage_bp)
@@ -51,13 +53,9 @@ def create_app(config_object=Config):
         conversion, and the whole page (not just numbers) is in the same
         language/currency mode since it's a real page render, not a
         client-side toggle."""
-        from app.fx import get_usd_to_ils_rate
+        from app.fx import format_money
 
-        value = float(value)
-        if g.lang == "he":
-            value = value * get_usd_to_ils_rate()
-            return f"{value:,.2f} ₪"
-        return f"{value:,.2f} $"
+        return format_money(value, g.lang)
 
     @app.cli.command("seed-db")
     def seed_db():

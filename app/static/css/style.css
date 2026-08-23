@@ -762,3 +762,91 @@ a {
   background-position: left 0.6rem center;
   padding: 0.35rem 0.6rem 0.35rem 1.75rem;
 }
+
+/* ---------- Tables page ---------- */
+
+.table-tabs {
+  display: flex;
+  gap: 0.5rem;
+  overflow-x: auto;
+  padding-bottom: 0.25rem;
+  margin-bottom: 0.6rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table-tab {
+  flex-shrink: 0;
+  white-space: nowrap;
+  color: var(--ink-secondary);
+  text-decoration: none;
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.45rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid var(--border-soft);
+  background: var(--surface);
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.table-tab:hover {
+  color: var(--ink);
+  border-color: var(--accent);
+}
+
+.table-tab.active {
+  color: var(--ink);
+  background: var(--accent-soft);
+  border-color: var(--accent);
+}
+
+.table-swipe-hint {
+  margin: 0 0 1rem;
+}
+
+.data-table-wrap {
+  overflow-x: auto;
+}
+
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.data-table th,
+.data-table td {
+  text-align: left;
+  padding: 0.65rem 0.9rem;
+  font-size: 0.82rem;
+}
+
+[dir="rtl"] .data-table th,
+[dir="rtl"] .data-table td {
+  text-align: right;
+}
+
+.data-table thead th {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--ink-muted);
+  border-bottom: 1px solid var(--border);
+}
+
+.data-table tbody tr:not(:last-child) td {
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.data-table tbody tr:hover {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.data-table td {
+  color: var(--ink);
+}
+
+.load-sentinel {
+  height: 1px;
+}

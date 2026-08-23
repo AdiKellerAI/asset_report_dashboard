@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% set active_nav = "tables" %}
+{% block title %}{{ "Tables"|t }} - {{ "Asset Report Dashboard"|t }}{% endblock %}
+
+{% block content %}
+  <nav class="table-tabs" id="table-tabs">
+    {% for name in table_names %}
+    <a href="/tables?table={{ name }}" class="table-tab {{ 'active' if name == selected }}" data-table="{{ name }}">
+      {{ table_labels[name]|t }}
+    </a>
+    {% endfor %}
+  </nav>
+
+  <p class="empty-state-note table-swipe-hint">{{ "Swipe left/right to switch tables"|t }}</p>
+
+  <div class="table-wrap data-table-wrap" id="data-table-wrap" dir="{{ dir }}">
+    <table class="data-table">
+      <thead>
+        <tr>
+          {% for h in headers %}
+          <th scope="col">{{ h|t }}</th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody id="data-table-body">
+        {% for row in rows %}
+        <tr>
+          {% for cell in row %}
+          <td>{{ cell }}</td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <div id="load-sentinel" class="load-sentinel"></div>
+    <p id="load-status" class="empty-state-note"></p>
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  <script>
+    (function () {
+      const tableName = {{ selected|tojson }};
+      const pageSize = {{ page_size|tojson }};
+      const total = {{ total|tojson }};
+      let loaded = {{ rows|length }};
+      let loading = false;
+
+      const tbody = document.getElementById("data-table-body");
+      const status = document.getElementById("load-status");
+      const sentinel = document.getElementById("load-sentinel");
+
+      function renderRow(cells) {
+        const tr = document.createElement("tr");
+        cells.forEach((value) => {
+          const td = document.createElement("td");
+          td.textContent = value;
+          tr.appendChild(td);
+        });
+        return tr;
+      }
+
+      function loadMore() {
+        if (loading || loaded >= total) return;
+        loading = true;
+        status.textContent = "…";
+        fetch(`/tables/${tableName}/rows?offset=${loaded}&limit=${pageSize}`)
+          .then((r) => r.json())
+          .then((data) => {
+            data.rows.forEach((cells) => tbody.appendChild(renderRow(cells)));
+            loaded += data.rows.length;
+            status.textContent = loaded < total ? "" : "";
+            loading = false;
+            if (loaded >= total && observer) observer.disconnect();
+          })
+          .catch(() => {
+            status.textContent = "";
+            loading = false;
+          });
+      }
+
+      // Lazy-load (infinite scroll): only fetch the next page once the
+      // sentinel row at the bottom actually comes into view.
+      let observer = null;
+      if (loaded < total && "IntersectionObserver" in window) {
+        observer = new IntersectionObserver((entries) => {
+          if (entries[0].isIntersecting) loadMore();
+        });
+        observer.observe(sentinel);
+      }
+
+      // Swipe left/right between tables on touch devices.
+      const tabs = Array.from(document.querySelectorAll(".table-tab"));
+      const currentIndex = tabs.findIndex((t) => t.dataset.table === tableName);
+      let touchStartX = null;
+      let touchStartY = null;
+      let touchInsideTable = false;
+
+      document.addEventListener(
+        "touchstart",
+        (e) => {
+          touchStartX = e.touches[0].clientX;
+          touchStartY = e.touches[0].clientY;
+          // The data table itself scrolls horizontally to reveal columns
+          // that don't fit (its own overflow-x) - don't hijack that
+          // gesture into a table-switch, only swipes starting outside it
+          // (the tab strip, the hint text, empty margins) switch tables.
+          touchInsideTable = !!e.target.closest(".data-table-wrap");
+        },
+        { passive: true }
+      );
+
+      document.addEventListener(
+        "touchend",
+        (e) => {
+          if (touchStartX === null || touchInsideTable) {
+            touchStartX = null;
+            return;
+          }
+          const dx = e.changedTouches[0].clientX - touchStartX;
+          const dy = e.changedTouches[0].clientY - touchStartY;
+          touchStartX = null;
+          if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return; // mostly-vertical scroll, ignore
+
+          // In RTL, a "swipe left" (negative dx) should feel like moving to
+          // the next tab visually to the left - i.e. forward either way,
+          // this is about screen direction, not table order, so we keep
+          // the same index math and only flip which physical swipe means
+          // "next" under RTL.
+          const isRtl = document.documentElement.getAttribute("dir") === "rtl";
+          const forward = isRtl ? dx > 0 : dx < 0;
+          const nextIndex = forward ? currentIndex + 1 : currentIndex - 1;
+          if (nextIndex >= 0 && nextIndex < tabs.length) {
+            window.location = tabs[nextIndex].href;
+          }
+        },
+        { passive: true }
+      );
+    })();
+  </script>
+{% endblock %}

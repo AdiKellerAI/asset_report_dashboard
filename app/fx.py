@@ -30,3 +30,14 @@ def get_usd_to_ils_rate():
     _cache["day"] = today
     _cache["rate"] = rate
     return rate
+
+
+def format_money(value, lang):
+    """Shared by the `money` Jinja filter and anywhere else (the tables
+    page) that needs the same USD/NIS display formatting outside a
+    template."""
+    value = float(value)
+    if lang == "he":
+        value = value * get_usd_to_ils_rate()
+        return f"{value:,.2f} ₪"
+    return f"{value:,.2f} $"

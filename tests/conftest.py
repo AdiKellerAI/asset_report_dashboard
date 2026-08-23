@@ -29,6 +29,12 @@ def _migrated_db():
 
 @pytest.fixture
 def db_session():
+    from app.cache import invalidate_all
+
+    invalidate_all()  # app/cache.py is a module-level (process-wide) dict -
+    # without this, a route test could read a count/result cached by an
+    # earlier test's now-truncated data.
+
     engine = make_engine(TEST_DATABASE_URL)
     session = sessionmaker(bind=engine)()
     try:

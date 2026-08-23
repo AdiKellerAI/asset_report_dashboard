@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request
 
+from app.cache import invalidate_all
 from app.db import SessionLocal
 from app.ingestion import process_upload
 from app.models import Document
@@ -23,7 +24,7 @@ def upload():
             .filter_by(source_batch_id=batch.id, status="needs_review")
             .count()
         )
-        return jsonify(
+        result = dict(
             batch_id=batch.id,
             source=batch.source,
             file_count=batch.file_count,
@@ -32,3 +33,5 @@ def upload():
         )
     finally:
         session.close()
+    invalidate_all()
+    return jsonify(**result)
