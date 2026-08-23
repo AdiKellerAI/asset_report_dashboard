@@ -117,15 +117,16 @@ def test_landing_page_has_currency_toggle_defaulting_to_usd_english(db_session):
     assert response.status_code == 200
     body = response.get_data(as_text=True)
     assert '15,107.93 $' in body
-    assert 'class="lang-switch"' in body
-    assert 'class="fx-rate-note"' not in body  # only shown in Hebrew/NIS mode
+    assert 'class="currency-btn"' in body
+    assert 'class="fx-rate-bar"' in body  # shown regardless of language, per Adi's request
     assert '<html lang="en" dir="ltr">' in body
 
 
-def test_landing_page_lang_cookie_switches_to_hebrew_nis_and_rtl(db_session):
+def test_landing_page_lang_cookie_switches_to_hebrew_nis_but_keeps_ltr_layout(db_session):
     """The header toggle sets a `lang` cookie (app/routes/language.py) - a
-    real page render, not a client-side flip, since RTL needs a fresh
-    layout. One cookie drives both language and currency together."""
+    real page render, not a client-side flip. Text and currency switch to
+    Hebrew, but the layout deliberately stays LTR throughout (Adi's request,
+    2026-08-23: translate the words, never mirror the page)."""
     seed(db_session)
     brunswick = db_session.query(Property).filter_by(nickname="Brunswick").one()
     db_session.add(MonthlyStatement(property_id=brunswick.id, month=date(2026, 7, 1), net_owner_funds=15107.93))
@@ -137,12 +138,12 @@ def test_landing_page_lang_cookie_switches_to_hebrew_nis_and_rtl(db_session):
 
     assert response.status_code == 200
     body = response.get_data(as_text=True)
-    assert '<html lang="he" dir="rtl">' in body
+    assert '<html lang="he" dir="ltr">' in body
     assert "15,107.93 $" not in body  # no longer the raw USD figure
     assert "₪" in body
-    assert 'class="fx-rate-note"' in body
+    assert 'class="fx-rate-bar"' in body
     assert "לוח בקרה" in body  # "Dashboard" nav link, translated
-    assert '<header class="page-header" dir="ltr">' in body  # nav/toggle never mirror, only their words translate
+    assert '<header class="page-header">' in body  # no dir override needed - the whole page stays LTR now
     assert "רווח תפעולי נקי" in body  # "Net Operating Income" row header, translated
 
 

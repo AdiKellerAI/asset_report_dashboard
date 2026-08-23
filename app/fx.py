@@ -3,13 +3,18 @@ all math stay USD-only everywhere - this only feeds the site-wide currency
 toggle. Cached once per calendar day so a page load doesn't hit the external
 API every time; falls back to the last known (or a static approximate) rate
 if the lookup fails, so a network hiccup never breaks the page.
+
+Uses open.er-api.com (exchangerate-api.com's free tier, no key required,
+refreshes once a day) rather than frankfurter.app - frankfurter sources ECB
+rates, which only update on ECB business days, so it lags stale over
+weekends/holidays instead of reflecting "today's" rate as Adi wants.
 """
 
 import json
 import urllib.request
 from datetime import date
 
-FX_API_URL = "https://api.frankfurter.app/latest?from=USD&to=ILS"
+FX_API_URL = "https://open.er-api.com/v6/latest/USD"
 FALLBACK_RATE = 3.7  # a reasonable static approximation, used only if no rate has ever been fetched
 
 _cache = {"day": None, "rate": None}

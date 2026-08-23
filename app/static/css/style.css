@@ -80,48 +80,40 @@ a {
   padding: 0.25rem;
 }
 
-/* A minimal segmented control (not a switch) - two currency symbols side
-   by side, the active one filled with the gold "money" accent. */
+/* A single button, not a two-option toggle - shows the currently active
+   currency symbol; tapping switches to the other language/currency. */
 .currency-widget {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   gap: 0.6rem;
 }
 
-.lang-switch {
-  display: flex;
-  background: var(--surface);
-  border: 1px solid var(--border-soft);
-  border-radius: 999px;
-  padding: 0.2rem;
-  gap: 0.15rem;
-}
-
-.lang-switch-option {
+.currency-btn {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 30px;
-  padding: 0.3rem 0.6rem;
+  min-width: 40px;
+  min-height: 38px;
+  padding: 0.4rem 0.7rem;
   border-radius: 999px;
-  font-size: 0.85rem;
+  background: var(--surface);
+  border: 1px solid var(--border-soft);
+  font-size: 0.9rem;
   font-weight: 700;
-  color: var(--ink-muted);
-  text-decoration: none;
-  transition: color 0.2s ease, background 0.2s ease;
-}
-
-.lang-switch-option:hover {
-  color: var(--ink);
-}
-
-.lang-switch-option.active {
   color: #0d1117;
   background: linear-gradient(135deg, var(--gold), #f0c96b);
+  text-decoration: none;
+  transition: filter 0.2s ease;
 }
 
-.fx-rate-note {
-  font-size: 0.72rem;
+.currency-btn:hover {
+  filter: brightness(1.08);
+}
+
+.fx-rate-bar {
+  margin: -1.25rem 0 1.5rem;
+  font-size: 0.75rem;
   color: var(--ink-muted);
   font-variant-numeric: tabular-nums;
 }
@@ -137,9 +129,36 @@ a {
 }
 
 @media (max-width: 480px) {
+  /* Genuinely fixed - never wraps AND never needs a swipe to see the rest
+     (Adi's request). Everything shrinks to fit one line instead. */
   .page-header {
-    flex-direction: column;
-    align-items: flex-start;
+    flex-wrap: nowrap;
+    gap: 0.4rem;
+  }
+
+  .main-nav {
+    gap: 0.1rem;
+    padding: 0.2rem;
+  }
+
+  .main-nav a {
+    padding: 0.35rem 0.5rem;
+    font-size: 0.68rem;
+  }
+
+  .currency-widget {
+    gap: 0.4rem;
+  }
+
+  .currency-btn {
+    min-width: 34px;
+    min-height: 34px;
+    padding: 0.3rem 0.5rem;
+    font-size: 0.8rem;
+  }
+
+  .logout-link {
+    font-size: 0.68rem;
   }
 }
 
@@ -279,6 +298,19 @@ a {
 .period-pill:hover {
   color: var(--ink);
   border-color: var(--accent);
+}
+
+@media (max-width: 480px) {
+  /* One line, never wrapped - scrolls horizontally if it doesn't all fit. */
+  .period-pills {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .period-pill {
+    flex-shrink: 0;
+  }
 }
 
 .period-pill.active {
@@ -608,6 +640,51 @@ a {
   }
 }
 
+.metric-short {
+  display: none;
+}
+
+@media (max-width: 480px) {
+  /* Fixed layout + abbreviated metric labels instead of letting the table
+     scroll sideways (Adi's request: no side-scroll on mobile, shorten the
+     text instead). */
+  .table-wrap {
+    overflow-x: hidden;
+  }
+
+  .compare-table {
+    table-layout: fixed;
+    white-space: normal;
+  }
+
+  .compare-table .metric-col,
+  .compare-table th[scope="row"] {
+    width: 30%;
+  }
+
+  .compare-table th,
+  .compare-table td {
+    padding: 0.55rem 0.3rem;
+    font-size: 0.7rem;
+  }
+
+  .compare-table td {
+    white-space: nowrap;
+  }
+
+  .compare-table thead th {
+    font-size: 0.58rem;
+  }
+
+  .metric-short {
+    display: inline;
+  }
+
+  .metric-full {
+    display: none;
+  }
+}
+
 /* ---------- Chart ---------- */
 
 .chart-wrap {
@@ -841,20 +918,6 @@ a {
   transform: translateY(-1px);
 }
 
-/* ---------- RTL (Hebrew) overrides ---------- */
-/* Setting dir="rtl" on <html> already mirrors flexbox/grid/table order for
-   free (the browser reverses main-axis order under RTL automatically) -
-   this is just the one spot with a hardcoded LTR assumption (a right-side
-   dropdown arrow). Charts opt back into dir="ltr" explicitly (see the
-   templates) - numeric/date axes conventionally stay LTR even inside an
-   RTL page. */
-
-[dir="rtl"] .filter-bar select,
-[dir="rtl"] .manage-form select {
-  background-position: left 0.6rem center;
-  padding: 0.35rem 0.6rem 0.35rem 1.75rem;
-}
-
 /* ---------- Tables page ---------- */
 
 .table-tabs {
@@ -911,11 +974,6 @@ a {
   text-align: left;
   padding: 0.65rem 0.9rem;
   font-size: 0.82rem;
-}
-
-[dir="rtl"] .data-table th,
-[dir="rtl"] .data-table td {
-  text-align: right;
 }
 
 .data-table thead th {

@@ -1,4 +1,5 @@
 from flask import Flask, current_app, g, redirect, request, session
+from jinja2 import pass_context
 
 from app.config import Config
 
@@ -40,13 +41,17 @@ def create_app(config_object=Config):
 
     @app.before_request
     def set_language_context():
-        # The currency toggle also flips the whole site to Hebrew/RTL (a
+        # The currency toggle also switches the whole site's text to Hebrew (a
         # single "lang" cookie drives both - see app/routes/language.py) -
         # read once per request rather than threading it through every
-        # route/render_template call.
+        # route/render_template call. Layout direction deliberately stays LTR
+        # even in Hebrew (Adi's request, 2026-08-23: translate the words, but
+        # never mirror the page) - `dir` is kept as a template variable rather
+        # than removed outright since some charts/inputs still opt out of it
+        # explicitly.
         lang = request.cookies.get("lang", "en")
         g.lang = lang if lang in ("en", "he") else "en"
-        g.dir = "rtl" if g.lang == "he" else "ltr"
+        g.dir = "ltr"
 
     @app.context_processor
     def inject_globals():
@@ -60,10 +65,32 @@ def create_app(config_object=Config):
         }
 
     @app.template_filter("t")
-    def translate_filter(text):
+    @pass_context
+    def translate_filter(ctx, text):
+        # `@pass_context` isn't for its own sake here (we don't read `ctx`) -
+        # it's the only way to stop Jinja from constant-folding this filter.
+        # Every call site is `{{ "some literal string"|t }}`, and Jinja's
+        # compiler treats a filter applied to a literal as a pure function of
+        # that literal: it evaluates it ONCE at template-compile time (the
+        # template's first render in this process) and bakes the result into
+        # the compiled bytecode forever after - which silently freezes the
+        # whole site in whatever language happened to be active during that
+        # first render, no matter what `g.lang` is on later requests. Marking
+        # the filter as context-dependent tells Jinja it can't assume that,
+        # so it re-evaluates on every render like `money` (applied to a
+        # variable, never a literal, so it was never eligible for folding).
         from app.i18n import translate
 
         return translate(text, g.lang)
+
+    @app.after_request
+    def prevent_caching_of_language_dependent_pages(response):
+        # Every page's HTML depends on the `lang` cookie - without an
+        # explicit no-store, some mobile browsers will serve a cached copy of
+        # "/" from before the cookie changed instead of re-fetching, which
+        # looks exactly like "switching to Hebrew didn't do anything".
+        response.headers["Cache-Control"] = "no-store"
+        return response
 
     @app.template_filter("money")
     def money_filter(value):
