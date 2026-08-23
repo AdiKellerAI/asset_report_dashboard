@@ -4,66 +4,66 @@
 {% block content %}
   <form class="filter-bar" method="get" action="/">
     <label>
-      Period
+      {{ "Period"|t }}
       <select name="period" id="period-select">
-        <option value="this_month" {{ "selected" if selected_period == "this_month" }}>This Month</option>
-        <option value="this_year" {{ "selected" if selected_period == "this_year" }}>This Year</option>
-        <option value="custom_month" {{ "selected" if selected_period == "custom_month" }}>Custom Month</option>
-        <option value="custom_year" {{ "selected" if selected_period == "custom_year" }}>Custom Year</option>
-        <option value="all_time" {{ "selected" if selected_period == "all_time" }}>All Time</option>
+        <option value="this_month" {{ "selected" if selected_period == "this_month" }}>{{ "This Month"|t }}</option>
+        <option value="this_year" {{ "selected" if selected_period == "this_year" }}>{{ "This Year"|t }}</option>
+        <option value="custom_month" {{ "selected" if selected_period == "custom_month" }}>{{ "Custom Month"|t }}</option>
+        <option value="custom_year" {{ "selected" if selected_period == "custom_year" }}>{{ "Custom Year"|t }}</option>
+        <option value="all_time" {{ "selected" if selected_period == "all_time" }}>{{ "All Time"|t }}</option>
       </select>
     </label>
 
     <label id="month-field" class="custom-period-field">
-      Month
+      {{ "Month"|t }}
       <input type="month" name="month" value="{{ selected_month }}">
     </label>
 
     <label id="year-field" class="custom-period-field">
-      Year
+      {{ "Year"|t }}
       <input type="number" name="year" min="2020" max="2100" value="{{ selected_year }}">
     </label>
 
-    <button type="submit">Apply</button>
+    <button type="submit">{{ "Apply"|t }}</button>
   </form>
 
-  <p class="period-label">{{ total.period_label }}{% if not total.has_data %} <span class="period-label-caveat">— no statement data for this period yet</span>{% endif %}</p>
+  <p class="period-label">{{ total.period_label }}{% if not total.has_data %} <span class="period-label-caveat">— {{ "no statement data for this period yet"|t }}</span>{% endif %}</p>
 
   <div class="table-wrap">
     <table class="compare-table">
       <thead>
         <tr>
-          <th scope="col" class="metric-col">Metric</th>
+          <th scope="col" class="metric-col">{{ "Metric"|t }}</th>
           {% for p in properties %}
           <th scope="col">{{ p.nickname }}</th>
           {% endfor %}
-          <th scope="col" class="total-col">Total</th>
+          <th scope="col" class="total-col">{{ "Total"|t }}</th>
         </tr>
       </thead>
       <tbody>
         <tr>
-          <th scope="row">Gross Rent Collected</th>
+          <th scope="row">{{ "Gross Rent Collected"|t }}</th>
           {% for p in properties %}
           <td>{{ p.gross_rent|money }}</td>
           {% endfor %}
           <td class="total-col">{{ total.gross_rent|money }}</td>
         </tr>
         <tr>
-          <th scope="row">Total Property Expenses</th>
+          <th scope="row">{{ "Total Property Expenses"|t }}</th>
           {% for p in properties %}
           <td>{{ p.total_expenses|money }}</td>
           {% endfor %}
           <td class="total-col">{{ total.total_expenses|money }}</td>
         </tr>
         <tr>
-          <th scope="row">Net Operating Income</th>
+          <th scope="row">{{ "Net Operating Income"|t }}</th>
           {% for p in properties %}
           <td>{{ p.noi|money }}</td>
           {% endfor %}
           <td class="total-col">{{ total.noi|money }}</td>
         </tr>
         <tr>
-          <th scope="row">Net to Adi</th>
+          <th scope="row">{{ "Net to Adi"|t }}</th>
           {% for p in properties %}
           <td>{{ p.net_to_adi|money }}</td>
           {% endfor %}
@@ -74,15 +74,15 @@
   </div>
 
   <section class="card card-accent card-accumulated">
-    <h2>Accumulated Balance</h2>
+    <h2>{{ "Accumulated Balance"|t }}</h2>
     <p class="card-value">{{ total.accumulated_balance|money }}</p>
-    <p class="card-note">Still with Overland, not yet transferred — portfolio-wide, as of now</p>
+    <p class="card-note">{{ "Still with Overland, not yet transferred — portfolio-wide, as of now"|t }}</p>
   </section>
 
   {% if noi_months %}
-  <section class="chart-wrap income-chart">
-    <h2 class="chart-title">Net Operating Income — Last 5 Months</h2>
-    <canvas id="noi-chart" role="img" aria-label="Net operating income per property and total, last 5 months"></canvas>
+  <section class="chart-wrap income-chart" dir="ltr">
+    <h2 class="chart-title">{{ "Net Operating Income — Last {n} Months"|t|replace("{n}", noi_months|length|string) }}</h2>
+    <canvas id="noi-chart" role="img" aria-label="Net operating income per property and total, last {{ noi_months|length }} months"></canvas>
   </section>
   {% endif %}
 {% endblock %}
@@ -107,7 +107,9 @@
     const noiLines = {{ noi_lines|tojson }};
     // Total gets the gold accent (it's the headline aggregate, not a raw
     // category); properties get the validated dark categorical order so
-    // colors stay consistent with the Trends page.
+    // colors stay consistent with the Trends page. Charts stay internally
+    // LTR (numbers/axes) even in Hebrew/RTL mode - standard practice for
+    // numeric charts in RTL apps - see .chart-wrap[dir="ltr"] in style.css.
     const LINE_COLORS = { "Total": "#c98500" };
     const PROPERTY_PALETTE = ["#3987e5", "#d95926", "#199e70", "#d55181"];
 
@@ -119,11 +121,12 @@
       return `rgba(${r}, ${g}, ${b}, ${alpha})`;
     }
 
+    const TOTAL_LABEL = {{ total_label|tojson }};
     let propertyIndex = 0;
     const datasets = Object.entries(noiLines).map(([name, values]) => {
       const color = LINE_COLORS[name] || PROPERTY_PALETTE[propertyIndex++ % PROPERTY_PALETTE.length];
       return {
-        label: name,
+        label: name === "Total" ? TOTAL_LABEL : name,
         data: values,
         borderColor: color,
         backgroundColor: withAlpha(color, 0.1),
@@ -170,7 +173,6 @@
         },
       },
     });
-    window.moneyCharts.push(noiChart);
   </script>
   {% endif %}
 {% endblock %}

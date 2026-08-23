@@ -614,3 +614,151 @@ a {
   /* This app is deliberately dark-only (Adi's preference) - a light OS
      theme still gets the dark palette, not an inverted light one. */
 }
+
+/* ---------- Manage page ---------- */
+
+.flash-message {
+  padding: 0.75rem 1rem;
+  border-radius: var(--radius-md);
+  font-size: 0.9rem;
+  font-weight: 600;
+  margin: 0 0 1.25rem;
+}
+
+.flash-success {
+  color: #7fe0b0;
+  background: rgba(25, 158, 112, 0.12);
+  border: 1px solid rgba(25, 158, 112, 0.3);
+}
+
+.flash-error {
+  color: #f0a0a0;
+  background: rgba(230, 103, 103, 0.12);
+  border: 1px solid rgba(230, 103, 103, 0.3);
+}
+
+.manage-card {
+  background: linear-gradient(160deg, var(--surface-raised), var(--surface));
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-card);
+  padding: 1.25rem 1.4rem;
+  margin-bottom: 1.25rem;
+}
+
+.manage-card-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 0 0 0.4rem;
+}
+
+.manage-card-hint {
+  font-size: 0.82rem;
+  color: var(--ink-muted);
+  margin: 0 0 1rem;
+}
+
+.manage-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 1rem;
+}
+
+.manage-subcard {
+  border: 1px solid var(--border-soft);
+  border-radius: var(--radius-md);
+  padding: 1rem;
+}
+
+.manage-subcard h3 {
+  font-size: 0.85rem;
+  margin: 0 0 0.75rem;
+  color: var(--ink-secondary);
+}
+
+.manage-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+.manage-form-stacked {
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.manage-form label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--ink-muted);
+}
+
+.manage-form input[type="text"],
+.manage-form input[type="number"],
+.manage-form input[type="date"],
+.manage-form input[type="month"],
+.manage-form input[type="file"] {
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0.4rem 0.6rem;
+  font: inherit;
+  font-size: 0.85rem;
+  min-height: 34px;
+}
+
+.manage-form input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-ring);
+}
+
+.manage-form button {
+  appearance: none;
+  border: none;
+  border-radius: 8px;
+  padding: 0.5rem 1.1rem;
+  min-height: 34px;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #0d1117;
+  background: linear-gradient(135deg, var(--accent-strong), var(--accent));
+  cursor: pointer;
+  transition: filter 0.2s ease, transform 0.2s ease;
+}
+
+.manage-form button:hover {
+  filter: brightness(1.08);
+  transform: translateY(-1px);
+}
+
+.manage-table-wrap {
+  margin-top: 1.25rem;
+  margin-bottom: 0;
+}
+
+/* ---------- RTL (Hebrew) overrides ---------- */
+/* Setting dir="rtl" on <html> already mirrors flexbox/grid/table order for
+   free (the browser reverses main-axis order under RTL automatically) -
+   these are just the spots with a hardcoded LTR assumption (a leftward
+   thumb slide, a right-side dropdown arrow). Charts opt back into dir="ltr"
+   explicitly (see the templates) - numeric/date axes conventionally stay
+   LTR even inside an RTL page. */
+
+[dir="rtl"] .currency-toggle.is-nis .currency-toggle-thumb {
+  transform: translateX(-18px);
+}
+
+[dir="rtl"] .filter-bar select,
+[dir="rtl"] .manage-form select {
+  background-position: left 0.6rem center;
+  padding: 0.35rem 0.6rem 0.35rem 1.75rem;
+}

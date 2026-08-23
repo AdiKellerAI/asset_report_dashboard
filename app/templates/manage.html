@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% set active_nav = "manage" %}
+{% block title %}{{ "Manage"|t }} - {{ "Asset Report Dashboard"|t }}{% endblock %}
+
+{% block content %}
+  {% if message %}
+  <p class="flash-message flash-{{ message_level }}">{{ message }}</p>
+  {% endif %}
+
+  <section class="manage-card">
+    <h2 class="manage-card-title">{{ "Upload New Reports"|t }}</h2>
+    <p class="manage-card-hint">{{ "Select the report files (zip or individual files, as downloaded)."|t }}</p>
+    <form method="post" action="/manage/upload" enctype="multipart/form-data" class="manage-form">
+      <input type="file" name="files" multiple>
+      <button type="submit">{{ "Upload"|t }}</button>
+    </form>
+  </section>
+
+  <section class="manage-card">
+    <h2 class="manage-card-title">{{ "Mortgage"|t }}</h2>
+    <div class="manage-grid">
+      {% for p in properties %}
+      {% set m = mortgages_by_property.get(p.id) %}
+      <div class="manage-subcard">
+        <h3>{{ p.nickname }}</h3>
+        <form method="post" action="/manage/mortgage/{{ p.nickname }}" class="manage-form manage-form-stacked">
+          <label>
+            {{ "Lender"|t }}
+            <input type="text" name="lender" value="{{ m.lender if m else '' }}">
+          </label>
+          <label>
+            {{ "Monthly Payment (USD)"|t }}
+            <input type="number" step="0.01" name="monthly_payment" value="{{ m.monthly_payment if m else '' }}">
+          </label>
+          <label>
+            {{ "Principal Balance (USD)"|t }}
+            <input type="number" step="0.01" name="principal_balance" value="{{ m.principal_balance if m else '' }}">
+          </label>
+          <label>
+            {{ "Start Date"|t }}
+            <input type="date" name="start_date" value="{{ m.start_date.isoformat() if m and m.start_date else '' }}">
+          </label>
+          <button type="submit">{{ "Save"|t }}</button>
+        </form>
+      </div>
+      {% endfor %}
+    </div>
+  </section>
+
+  <section class="manage-card">
+    <h2 class="manage-card-title">{{ "Yearly Tax Payment"|t }}</h2>
+    <form method="post" action="/manage/tax" class="manage-form">
+      <label>
+        {{ "Year"|t }}
+        <input type="number" name="year" min="2000" max="2100" required>
+      </label>
+      <label>
+        {{ "Provider"|t }}
+        <input type="text" name="provider" value="VirtueTax">
+      </label>
+      <label>
+        {{ "Amount Paid (USD)"|t }}
+        <input type="number" step="0.01" name="amount_paid">
+      </label>
+      <label>
+        {{ "What It Covers"|t }}
+        <input type="text" name="what_it_covers">
+      </label>
+      <label>
+        {{ "Filed Date"|t }}
+        <input type="date" name="filed_date">
+      </label>
+      <button type="submit">{{ "Add Tax Payment"|t }}</button>
+    </form>
+
+    {% if tax_reports %}
+    <div class="table-wrap manage-table-wrap">
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th scope="col" class="metric-col">{{ "Year"|t }}</th>
+            <th scope="col">{{ "Provider"|t }}</th>
+            <th scope="col">{{ "Amount"|t }}</th>
+            <th scope="col">{{ "Filed"|t }}</th>
+            <th scope="col">{{ "Covers"|t }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for t in tax_reports %}
+          <tr>
+            <th scope="row">{{ t.year }}</th>
+            <td>{{ t.provider }}</td>
+            <td>{{ t.amount_paid|money if t.amount_paid is not none else "—" }}</td>
+            <td>{{ t.filed_date.isoformat() if t.filed_date else "—" }}</td>
+            <td>{{ t.what_it_covers or "—" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="empty-state-note">{{ "No tax payments recorded yet."|t }}</p>
+    {% endif %}
+  </section>
+
+  <section class="manage-card">
+    <h2 class="manage-card-title">{{ "Transfer to Israel"|t }}</h2>
+    <form method="post" action="/manage/transfer" class="manage-form">
+      <label>
+        {{ "Month"|t }} / {{ "Year"|t }}
+        <input type="month" name="transfer_month" required>
+      </label>
+      <label>
+        {{ "Amount Sent (USD)"|t }}
+        <input type="number" step="0.01" name="amount_sent" required>
+      </label>
+      <label>
+        {{ "Fee (USD)"|t }}
+        <input type="number" step="0.01" name="fee" value="30">
+      </label>
+      <label>
+        {{ "Note"|t }}
+        <input type="text" name="note">
+      </label>
+      <button type="submit">{{ "Add Transfer"|t }}</button>
+    </form>
+
+    {% if transfers %}
+    <div class="table-wrap manage-table-wrap">
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th scope="col" class="metric-col">{{ "Month"|t }}</th>
+            <th scope="col">{{ "Amount Sent"|t }}</th>
+            <th scope="col">{{ "Fee"|t }}</th>
+            <th scope="col">{{ "Note"|t }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for tr in transfers %}
+          <tr>
+            <th scope="row">{{ tr.transfer_date.strftime("%B %Y") }}</th>
+            <td>{{ tr.amount_sent|money }}</td>
+            <td>{{ tr.fee|money }}</td>
+            <td>{{ tr.note or "—" }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="empty-state-note">{{ "No transfers recorded yet."|t }}</p>
+    {% endif %}
+  </section>
+{% endblock %}

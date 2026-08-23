@@ -1,5 +1,4 @@
-from flask import Flask
-from markupsafe import Markup
+from flask import Flask, g, request
 
 from app.config import Config
 
@@ -10,26 +9,55 @@ def create_app(config_object=Config):
 
     from app.routes.dashboard import dashboard_bp
     from app.routes.health import health_bp
+    from app.routes.language import language_bp
+    from app.routes.manage import manage_bp
     from app.routes.trends import trends_bp
     from app.routes.upload import upload_bp
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(health_bp)
+    app.register_blueprint(language_bp)
+    app.register_blueprint(manage_bp)
     app.register_blueprint(trends_bp)
     app.register_blueprint(upload_bp)
 
-    @app.template_filter("money")
-    def money_filter(value):
-        """1234.5 -> a <span> showing "1,234.50 $" (Adi's preferred format -
-        dollar sign as a suffix, comma thousands separator) that also carries
-        the raw USD value so the site-wide currency toggle (base.html) can
-        re-render it in NIS client-side without a page reload."""
-        return Markup(f'<span class="money" data-usd="{value}">{value:,.2f} $</span>')
+    @app.before_request
+    def set_language_context():
+        # The currency toggle also flips the whole site to Hebrew/RTL (a
+        # single "lang" cookie drives both - see app/routes/language.py) -
+        # read once per request rather than threading it through every
+        # route/render_template call.
+        lang = request.cookies.get("lang", "en")
+        g.lang = lang if lang in ("en", "he") else "en"
+        g.dir = "rtl" if g.lang == "he" else "ltr"
 
     @app.context_processor
-    def inject_fx_rate():
+    def inject_globals():
         from app.fx import get_usd_to_ils_rate
 
-        return {"usd_to_ils_rate": get_usd_to_ils_rate()}
+        return {"lang": g.lang, "dir": g.dir, "usd_to_ils_rate": get_usd_to_ils_rate()}
+
+    @app.template_filter("t")
+    def translate_filter(text):
+        from app.i18n import translate
+
+        return translate(text, g.lang)
+
+    @app.template_filter("money")
+    def money_filter(value):
+        """1234.5 -> "1,234.50 $" (or, in Hebrew mode, the NIS equivalent
+        with a ₪ suffix) - Adi's preferred format (currency symbol as a
+        suffix, comma thousands separator). Storage/math everywhere else
+        stays USD-only (dev-plan.md sec 15); this is purely a display
+        conversion, and the whole page (not just numbers) is in the same
+        language/currency mode since it's a real page render, not a
+        client-side toggle."""
+        from app.fx import get_usd_to_ils_rate
+
+        value = float(value)
+        if g.lang == "he":
+            value = value * get_usd_to_ils_rate()
+            return f"{value:,.2f} ₪"
+        return f"{value:,.2f} $"
 
     @app.cli.command("seed-db")
     def seed_db():

@@ -345,7 +345,61 @@ as part of the landing page. Resolved directly with Adi:
   originally-planned trend chart from §5.1 rather than the landing page's first-3-cards
   order).
 - **Filtering:** Property (All/Brunswick/Colburn), same as the landing page.
-  No period/date-range filter - shows every month with data, full history.
 - Implemented as its own page (`GET /trends`) rather than embedded in the landing
   page, since "every parameter, user-selectable" doesn't fit a fixed headline-card
   layout. Built with Chart.js (already the planned charting library per §7).
+
+**Range picker added 2026-08-23** (Adi's request): "no period filter, full history
+always" turned out wrong in practice - a Range picker (Last 6mo/1yr/2yr/3yr/5yr/All
+Time, default 1 year) was added, `trend_series()`'s new `months_limit` param slicing
+the tail of the months/values arrays.
+
+---
+
+## 17. `/manage` page and full Hebrew/RTL i18n (2026-08-23)
+
+**`/manage` page** - Adi asked for "a new page" bundling several things at once:
+uploading new report zips/files, updating mortgage, entering the yearly tax payment,
+and logging Wise transfer fees (with month/year). All the data models already existed
+in the schema (`mortgage`, `tax_report`, `transfer` - §4) so this was pure routes/
+templates/forms (`app/routes/manage.py`, `app/templates/manage.html`), no migration.
+This is effectively Phase 3's Mortgage settings page (§5.6) and Tax tracker page
+(§5.5, basic form only - no VirtueTax filing history view yet) plus the previously-
+deferred `transfer-log` item, all pulled forward into Phase 1. Feedback after a form
+submit is a redirect with a `?msg=`/`level=` query param, not a Flask session/flash -
+simpler, and this app has no auth/session infrastructure yet anyway.
+
+**Full Hebrew + RTL i18n** - the site-wide USD/NIS currency toggle from §15 grew into
+also flipping the entire UI to Hebrew, one cookie driving both (Adi wants them as a
+single unit, not two independent settings). Resolved directly with Adi: **full RTL**
+(mirrored layout, right-aligned text, nav/table order flipped) over the simpler
+"translate the words, keep the current LTR layout" option.
+
+Architecture:
+- A `lang` cookie (`en`/`he`), set by a real redirect - `GET /set-language/<lang>`
+  (`app/routes/language.py`) - not a client-side toggle. An RTL layout mirror needs a
+  fresh server render (translated text baked into the HTML, `dir="rtl"` on `<html>`
+  from the first byte), so a live DOM-patching toggle isn't the right shape here,
+  unlike the currency-only version this replaced.
+- Read once per request into `g.lang`/`g.dir` (a `before_request` hook in
+  `app/__init__.py`), exposed to templates via a context processor plus a new `t`
+  Jinja filter.
+- `app/i18n.py`'s `TRANSLATIONS` dict is keyed by the **English source string
+  itself** (gettext-style), not an abstract key namespace - `translate()` falls back
+  to the original text for anything not yet covered, so partial coverage degrades
+  gracefully instead of raising or showing a blank. `MESSAGE_TEMPLATES` covers the
+  `/manage` flash-style messages, which have interpolated values (a count, a
+  property name) - translated as format-string templates, then `.format()`-filled.
+- The `money` Jinja filter now renders directly in NIS when `g.lang == "he"` -
+  server-side, no client JS needed. This replaced the currency-only version's
+  client-side `.money`/`data-usd`/`moneyCharts` mechanism entirely, since a real
+  page reload already happens for the language flip - simpler, less code, no longer
+  two toggle mechanisms to keep in sync.
+- Setting `dir="rtl"` on `<html>` mirrors nearly everything **for free** - flexbox/
+  grid/table column order all auto-reverse under RTL per the CSS spec, native form
+  controls too. The only manual RTL CSS needed was the currency-toggle thumb's slide
+  direction and the select dropdown arrow's side.
+- Charts deliberately stay `dir="ltr"` internally (numeric/date axes conventionally
+  read LTR even inside RTL apps) - only their legends/tooltips/labels are translated.
+- Property nicknames (Brunswick, Colburn) and user-typed free text (transfer notes,
+  "what it covers") are deliberately never translated - only UI chrome.

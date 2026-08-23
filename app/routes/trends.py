@@ -1,6 +1,7 @@
-from flask import Blueprint, render_template, request
+from flask import Blueprint, g, render_template, request
 
 from app.db import SessionLocal
+from app.i18n import translate
 from app.models import Property
 from app.reports import (
     DEFAULT_RANGE,
@@ -33,6 +34,10 @@ def trends():
     finally:
         session.close()
 
+    # Chart labels are embedded via |tojson (raw JS), bypassing the `t`
+    # Jinja filter used everywhere else - translate them here instead.
+    series = {key: {**value, "label": translate(value["label"], g.lang)} for key, value in data["series"].items()}
+
     return render_template(
         "trends.html",
         properties=properties,
@@ -42,5 +47,5 @@ def trends():
         selected_series=selected_series,
         selected_range=selected_range,
         months=[m.isoformat() for m in data["months"]],
-        series=data["series"],
+        series=series,
     )

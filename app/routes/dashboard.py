@@ -1,6 +1,7 @@
-from flask import Blueprint, render_template, request
+from flask import Blueprint, g, render_template, request
 
 from app.db import SessionLocal
+from app.i18n import translate
 from app.reports import PERIOD_CHOICES, dashboard_breakdown, recent_noi_trend
 
 dashboard_bp = Blueprint("dashboard", __name__)
@@ -18,7 +19,7 @@ def landing():
     session = SessionLocal()
     try:
         breakdown = dashboard_breakdown(session, period, month=month, year=year)
-        noi_trend = recent_noi_trend(session, months=5)
+        noi_trend = recent_noi_trend(session, months=6)
     finally:
         session.close()
 
@@ -31,4 +32,5 @@ def landing():
         selected_year=year or "",
         noi_months=[m.isoformat() for m in noi_trend["months"]],
         noi_lines=noi_trend["lines"],
+        total_label=translate("Total", g.lang),
     )

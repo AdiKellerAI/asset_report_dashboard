@@ -1,13 +1,13 @@
 {% extends "base.html" %}
 {% set active_nav = "trends" %}
-{% block title %}Trends - Asset Report Dashboard{% endblock %}
+{% block title %}{{ "Trends"|t }} - {{ "Asset Report Dashboard"|t }}{% endblock %}
 
 {% block content %}
   <form class="filter-bar filter-bar-wrap" method="get" action="/trends">
     <label>
-      Property
+      {{ "Property"|t }}
       <select name="property">
-        <option value="all" {{ "selected" if selected_property == "all" }}>All Properties</option>
+        <option value="all" {{ "selected" if selected_property == "all" }}>{{ "All Properties"|t }}</option>
         {% for p in properties %}
         <option value="{{ p.nickname }}" {{ "selected" if selected_property == p.nickname }}>{{ p.nickname }}</option>
         {% endfor %}
@@ -15,50 +15,50 @@
     </label>
 
     <label>
-      Range
+      {{ "Range"|t }}
       <select name="range">
-        <option value="6m" {{ "selected" if selected_range == "6m" }}>Last 6 Months</option>
-        <option value="1y" {{ "selected" if selected_range == "1y" }}>Last 1 Year</option>
-        <option value="2y" {{ "selected" if selected_range == "2y" }}>Last 2 Years</option>
-        <option value="3y" {{ "selected" if selected_range == "3y" }}>Last 3 Years</option>
-        <option value="5y" {{ "selected" if selected_range == "5y" }}>Last 5 Years</option>
-        <option value="all" {{ "selected" if selected_range == "all" }}>All Time</option>
+        <option value="6m" {{ "selected" if selected_range == "6m" }}>{{ "Last 6 Months"|t }}</option>
+        <option value="1y" {{ "selected" if selected_range == "1y" }}>{{ "Last 1 Year"|t }}</option>
+        <option value="2y" {{ "selected" if selected_range == "2y" }}>{{ "Last 2 Years"|t }}</option>
+        <option value="3y" {{ "selected" if selected_range == "3y" }}>{{ "Last 3 Years"|t }}</option>
+        <option value="5y" {{ "selected" if selected_range == "5y" }}>{{ "Last 5 Years"|t }}</option>
+        <option value="all" {{ "selected" if selected_range == "all" }}>{{ "All Time"|t }}</option>
       </select>
     </label>
 
     <fieldset class="series-picker">
-      <legend>Summary</legend>
+      <legend>{{ "Summary"|t }}</legend>
       <div class="checkbox-grid">
         {% for key, label in summary_series.items() %}
         <label class="checkbox-label">
           <input type="checkbox" name="series" value="{{ key }}" {{ "checked" if key in selected_series }}>
-          {{ label }}
+          {{ label|t }}
         </label>
         {% endfor %}
       </div>
     </fieldset>
 
     <details class="category-picker" {{ "open" if selected_series|select("in", category_series)|list else "" }}>
-      <summary>By Category</summary>
+      <summary>{{ "By Category"|t }}</summary>
       <div class="checkbox-grid">
         {% for key, label in category_series.items() %}
         <label class="checkbox-label">
           <input type="checkbox" name="series" value="{{ key }}" {{ "checked" if key in selected_series }}>
-          {{ label }}
+          {{ label|t }}
         </label>
         {% endfor %}
       </div>
     </details>
 
-    <button type="submit">Apply</button>
+    <button type="submit">{{ "Apply"|t }}</button>
   </form>
 
   {% if months %}
-  <div class="chart-wrap">
+  <div class="chart-wrap" dir="ltr">
     <canvas id="trend-chart" role="img" aria-label="Selected parameters over time"></canvas>
   </div>
   {% else %}
-  <p class="empty-state-note">No monthly_statement data yet for this property.</p>
+  <p class="empty-state-note">{{ "No monthly_statement data yet for this property."|t }}</p>
   {% endif %}
 {% endblock %}
 
@@ -89,7 +89,7 @@
 
     const ctx = document.getElementById("trend-chart");
     if (ctx) {
-      const trendChart = new Chart(ctx, {
+      new Chart(ctx, {
         type: "line",
         data: {
           labels: months,
@@ -147,7 +147,6 @@
           },
         },
       });
-      window.moneyCharts.push(trendChart);
     }
   </script>
 {% endblock %}
