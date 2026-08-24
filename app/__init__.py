@@ -27,6 +27,33 @@ def create_app(config_object=Config):
     app.register_blueprint(trends_bp)
     app.register_blueprint(upload_bp)
 
+    # Pay Neon's serverless cold-start tax (a suspended compute waking up
+    # can take several real seconds) and the exchange-rate API's first
+    # network round trip HERE, once per process at startup, instead of on
+    # whichever real request happens to land first (Adi's "very very slow"
+    # report, 2026-08-24) - best-effort, since a failure here shouldn't
+    # block the app from starting; the normal per-request paths (pool
+    # pre-ping, fx-rate's own fallback) still handle a cold/failed warm-up
+    # gracefully either way.
+    try:
+        from sqlalchemy import text
+
+        from app.db import SessionLocal
+
+        warm_session = SessionLocal()
+        try:
+            warm_session.execute(text("SELECT 1"))
+        finally:
+            warm_session.close()
+    except Exception:  # noqa: BLE001
+        pass
+    try:
+        from app.fx import get_usd_to_ils_rate
+
+        get_usd_to_ils_rate()
+    except Exception:  # noqa: BLE001
+        pass
+
     @app.before_request
     def require_login():
         # Single shared-password gate (dev-plan.md sec 13.3) - a no-op

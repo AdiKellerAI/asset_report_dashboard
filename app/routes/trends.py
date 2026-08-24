@@ -3,13 +3,13 @@ from flask import Blueprint, g, render_template, request
 from app.cache import get_or_set
 from app.db import SessionLocal
 from app.i18n import translate
-from app.models import Property
 from app.reports import (
     DEFAULT_RANGE,
     DEFAULT_TREND_SERIES,
     RANGE_CHOICES,
     SUMMARY_SERIES,
     available_category_series,
+    properties_summary,
     trend_series,
 )
 
@@ -30,8 +30,8 @@ def trends():
         # floats) is cached here, not the ORM Property/ExpenseType rows
         # below - those stay a live per-request query so nothing risks
         # being read off a since-closed session on a later cache hit.
-        properties = session.query(Property).order_by(Property.nickname).all()
-        category_series = available_category_series(session)
+        properties = get_or_set(("properties_summary",), lambda: properties_summary(session))
+        category_series = get_or_set(("category_series",), lambda: available_category_series(session))
         valid_keys = set(SUMMARY_SERIES) | set(category_series)
         selected_series = [k for k in selected_series if k in valid_keys] or DEFAULT_TREND_SERIES
 

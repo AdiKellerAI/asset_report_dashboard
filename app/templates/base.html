@@ -10,6 +10,27 @@
   <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
+  <div class="page-subheader">
+    <span class="fx-rate-bar">1 $ = {{ "%.2f"|format(usd_to_ils_rate) }} ₪</span>
+    <h1 class="page-title">
+      {% if active_nav == "dashboard" %}{{ "Dashboard"|t }}
+      {% elif active_nav == "trends" %}{{ "Trends"|t }}
+      {% elif active_nav == "report" %}{{ "Report"|t }}
+      {% elif active_nav == "manage" %}{{ "Manage"|t }}
+      {% elif active_nav == "tables" %}{{ "Tables"|t }}
+      {% endif %}
+    </h1>
+    <div class="page-subheader-right">
+      <div class="currency-widget">
+        <a href="/set-language/{{ 'he' if lang == 'en' else 'en' }}" class="currency-btn" aria-label="Switch language">{{ "EN" if lang == "en" else "HE" }}</a>
+        <a href="/set-currency/{{ 'nis' if currency == 'usd' else 'usd' }}" class="currency-btn" aria-label="Switch currency">{{ "$" if currency == "usd" else "₪" }}</a>
+        {% if auth_enabled %}
+        <a href="/logout" class="logout-link">{{ "Log out"|t }}</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
   <header class="page-header">
     <nav class="main-nav">
       <a href="/" class="{{ 'active' if active_nav == 'dashboard' else '' }}">
@@ -34,28 +55,6 @@
       </a>
     </nav>
   </header>
-
-  <div class="page-subheader">
-    <span class="page-subheader-spacer"></span>
-    <h1 class="page-title">
-      {% if active_nav == "dashboard" %}{{ "Dashboard"|t }}
-      {% elif active_nav == "trends" %}{{ "Trends"|t }}
-      {% elif active_nav == "report" %}{{ "Report"|t }}
-      {% elif active_nav == "manage" %}{{ "Manage"|t }}
-      {% elif active_nav == "tables" %}{{ "Tables"|t }}
-      {% endif %}
-    </h1>
-    <div class="page-subheader-right">
-      <span class="fx-rate-bar">1 $ = {{ "%.2f"|format(usd_to_ils_rate) }} ₪</span>
-      <div class="currency-widget">
-        <a href="/set-language/{{ 'he' if lang == 'en' else 'en' }}" class="currency-btn" aria-label="Switch language">{{ "EN" if lang == "en" else "HE" }}</a>
-        <a href="/set-currency/{{ 'nis' if currency == 'usd' else 'usd' }}" class="currency-btn" aria-label="Switch currency">{{ "$" if currency == "usd" else "₪" }}</a>
-        {% if auth_enabled %}
-        <a href="/logout" class="logout-link">{{ "Log out"|t }}</a>
-        {% endif %}
-      </div>
-    </div>
-  </div>
 
   {% block content %}{% endblock %}
 

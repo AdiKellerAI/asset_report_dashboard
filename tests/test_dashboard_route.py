@@ -175,7 +175,7 @@ def test_landing_page_lang_cookie_translates_text_but_leaves_currency_alone(db_s
     assert 'class="fx-rate-bar"' in body
     assert "לוח בקרה" in body  # "Dashboard" nav link, translated
     assert '<header class="page-header">' in body  # no dir override needed - the whole page stays LTR now
-    assert "רווח תפעולי נקי" in body  # "Net Operating Income" row header, translated
+    assert "נטו (NOI)" in body  # "Net (NOI)" row header, translated
 
 
 def test_landing_page_currency_cookie_converts_money_but_leaves_text_alone(db_session):

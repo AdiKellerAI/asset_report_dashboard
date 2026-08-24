@@ -2,11 +2,12 @@ from datetime import date
 
 from flask import Blueprint, g, redirect, render_template, request, url_for
 
-from app.cache import invalidate_all
+from app.cache import get_or_set, invalidate_all
 from app.db import SessionLocal
 from app.i18n import translate_message
 from app.ingestion import process_upload
 from app.models import Document, Mortgage, Property, TaxReport, Transfer
+from app.reports import properties_summary
 
 manage_bp = Blueprint("manage", __name__)
 
@@ -37,14 +38,56 @@ def _redirect_with_message(template, level="success", **kwargs):
     return redirect(url_for("manage.manage", msg=msg, level=level))
 
 
+def _mortgage_dict(mortgage):
+    if mortgage is None:
+        return None
+    return {
+        "lender": mortgage.lender,
+        "monthly_payment": mortgage.monthly_payment,
+        "principal_balance": mortgage.principal_balance,
+        "start_date": mortgage.start_date,
+    }
+
+
+def _tax_report_dict(t):
+    return {
+        "year": t.year,
+        "provider": t.provider,
+        "amount_paid": t.amount_paid,
+        "filed_date": t.filed_date,
+        "what_it_covers": t.what_it_covers,
+    }
+
+
+def _transfer_dict(tr):
+    return {"amount_sent": tr.amount_sent, "fee": tr.fee, "note": tr.note, "transfer_date": tr.transfer_date}
+
+
 @manage_bp.get("/manage")
 def manage():
+    # Plain-dict conversions (not the ORM objects themselves) so these are
+    # cacheable via app/cache.py without risking a DetachedInstanceError on
+    # a later cache hit, once the fetching session has closed - this page's
+    # 4 queries were previously uncached, paying a full Neon round trip on
+    # every single visit even though nothing here changes except right after
+    # a /manage write (which already calls invalidate_all()).
     session = SessionLocal()
     try:
-        properties = session.query(Property).order_by(Property.nickname).all()
-        mortgage = session.query(Mortgage).order_by(Mortgage.id.desc()).first()
-        tax_reports = session.query(TaxReport).order_by(TaxReport.year.desc()).all()
-        transfers = session.query(Transfer).order_by(Transfer.transfer_date.desc()).all()
+        properties = get_or_set(("properties_summary",), lambda: properties_summary(session))
+        mortgage = get_or_set(
+            ("mortgage_summary",),
+            lambda: _mortgage_dict(session.query(Mortgage).order_by(Mortgage.id.desc()).first()),
+        )
+        tax_reports = get_or_set(
+            ("tax_reports_summary",),
+            lambda: [_tax_report_dict(t) for t in session.query(TaxReport).order_by(TaxReport.year.desc()).all()],
+        )
+        transfers = get_or_set(
+            ("transfers_summary",),
+            lambda: [
+                _transfer_dict(tr) for tr in session.query(Transfer).order_by(Transfer.transfer_date.desc()).all()
+            ],
+        )
     finally:
         session.close()
 

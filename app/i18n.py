@@ -59,6 +59,7 @@ TRANSLATIONS = {
     "Total Property Expenses": "סך הוצאות הנכס",
     "Expenses": "הוצאות",
     "Net Operating Income": "רווח תפעולי נקי",
+    "Net (NOI)": "נטו (NOI)",
     "Net After Mortgage": "נטו לאחר משכנתא",
     "Net": "נטו",
     "Change in Cash Balance": "שינוי ביתרת המזומנים",

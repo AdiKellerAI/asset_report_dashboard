@@ -4,8 +4,7 @@ from flask import Blueprint, render_template, request
 
 from app.cache import get_or_set
 from app.db import SessionLocal
-from app.models import Property
-from app.reports import available_report_months, latest_reported_month, report_breakdown
+from app.reports import available_report_months, latest_reported_month, properties_summary, report_breakdown
 
 report_bp = Blueprint("report", __name__)
 
@@ -16,8 +15,8 @@ def report():
 
     session = SessionLocal()
     try:
-        properties = session.query(Property).order_by(Property.nickname).all()
-        if property_filter != "all" and property_filter not in [p.nickname for p in properties]:
+        properties = get_or_set(("properties_summary",), lambda: properties_summary(session))
+        if property_filter != "all" and property_filter not in [p["nickname"] for p in properties]:
             property_filter = "all"
 
         months = get_or_set(("available_report_months",), lambda: available_report_months(session))
@@ -26,7 +25,9 @@ def report():
             year_part, month_part = month_param.split("-")
             selected_month = date(int(year_part), int(month_part), 1)
         else:
-            selected_month = latest_reported_month(session) or date.today().replace(day=1)
+            selected_month = get_or_set(
+                ("latest_reported_month",), lambda: latest_reported_month(session)
+            ) or date.today().replace(day=1)
 
         breakdown = get_or_set(
             ("report_breakdown", selected_month.isoformat(), property_filter),

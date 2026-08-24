@@ -12,6 +12,17 @@ from app.models import ExpenseType, Mortgage, MonthlyStatement, Property, Transa
 
 PERIOD_CHOICES = ("this_month", "this_year", "custom_month", "custom_year", "all_time")
 
+
+def properties_summary(session):
+    """Plain-dict property list (id/nickname/value) for pages that just loop
+    over properties rather than aggregating - cacheable as primitives via
+    app/cache.py, unlike the ORM objects themselves (which risk
+    DetachedInstanceError if touched after the fetching session closes)."""
+    return [
+        {"id": p.id, "nickname": p.nickname, "value": float(p.value) if p.value else None}
+        for p in session.query(Property).order_by(Property.nickname).all()
+    ]
+
 # The trends page's selectable "summary" series (dev-plan.md sec 5.1's trend
 # chart, generalized to every monthly_statement figure, per Adi's request).
 # rent_income is deliberately not duplicated here as a category series - it's

@@ -51,14 +51,7 @@
           <td class="total-col">{{ total.total_expenses|money }}</td>
         </tr>
         <tr>
-          <th scope="row"><span class="metric-full">{{ "Net Operating Income"|t }}</span><span class="metric-short">NOI</span></th>
-          {% for p in properties %}
-          <td>{{ p.noi|money }}</td>
-          {% endfor %}
-          <td class="total-col">{{ total.noi|money }}</td>
-        </tr>
-        <tr>
-          <th scope="row"><span class="metric-full">{{ "Net After Mortgage"|t }}</span><span class="metric-short">{{ "Net"|t }}</span></th>
+          <th scope="row">{{ "Net (NOI)"|t }}</th>
           {% for p in properties %}
           <td>{{ p.net_after_mortgage|money }}</td>
           {% endfor %}

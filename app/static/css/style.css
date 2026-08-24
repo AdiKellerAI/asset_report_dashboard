@@ -64,20 +64,22 @@ a {
   flex-wrap: wrap;
   align-items: center;
   gap: 1rem;
-  margin-bottom: 1.25rem;
+  margin-bottom: 1.75rem;
   padding-bottom: 1.25rem;
   border-bottom: 1px solid var(--border-soft);
 }
 
-/* Page title centered regardless of how wide the right-side controls are -
-   a 3-column grid with an empty left spacer keeps the center column
-   centered on the row instead of just on the leftover space. */
+/* Page title centered regardless of how wide the left/right columns are - a
+   3-column grid keeps the center column centered on the row instead of
+   just on the leftover space. Sits above the nav (Adi's request,
+   2026-08-24): exchange rate on the far left, title centered, currency/
+   language controls on the right. */
 .page-subheader {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   gap: 0.75rem;
-  margin-bottom: 1.75rem;
+  margin: 0.5rem 0 1.25rem;
 }
 
 .page-title {
@@ -152,6 +154,8 @@ a {
 }
 
 .fx-rate-bar {
+  grid-column: 1;
+  justify-self: start;
   margin: 0;
   font-size: 0.85rem;
   font-weight: 700;
@@ -806,13 +810,24 @@ body.chart-fullscreen-open {
   padding: 3.5rem 1.5rem 1.5rem !important;
   display: flex;
   flex-direction: column;
+  justify-content: center;
   overflow: auto;
 }
 
-.chart-wrap-fullscreen canvas {
-  flex: 1;
-  min-height: 0;
-  max-height: none;
+/* Portrait: let the chart keep its own proportions (Chart.js's default
+   maintainAspectRatio) instead of being force-stretched to fill the tall,
+   narrow viewport - Adi's feedback, 2026-08-24: pre-rotation stretching
+   looked bad. Landscape: actually grow to fill the wider space - the
+   !important here beats Chart.js's own inline width/height (recalculated
+   by the chart.resize() call in base.html on orientationchange). */
+@media (orientation: landscape) {
+  .chart-wrap-fullscreen canvas {
+    flex: 1;
+    min-height: 0;
+    max-height: none;
+    width: 100% !important;
+    height: 100% !important;
+  }
 }
 
 .chart-fullscreen-close {
