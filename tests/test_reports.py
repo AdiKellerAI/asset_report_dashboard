@@ -132,7 +132,7 @@ def test_net_to_adi_uses_latest_month_unpaid_bills_not_a_sum(db_session):
 def test_net_to_adi_subtracts_mortgage_per_month_present_for_all_properties(db_session):
     """The mortgage is one combined loan for the whole portfolio (Adi
     confirmed 2026-08-23), not per property - it only ever affects the "all
-    properties" Net Cash Flow, never an individual property's own column."""
+    properties" figures, never an individual property's own column."""
     seed(db_session)
     brunswick = _property(db_session, "Brunswick")
     db_session.add(Mortgage(monthly_payment=250))
@@ -387,13 +387,15 @@ def test_report_breakdown_builds_waterfall_from_income_to_net_cash_flow(db_sessi
     assert result["noi"] == pytest.approx(-358.01)
     assert result["unpaid_bills"] == pytest.approx(-1314.00)
     assert result["monthly_mortgage"] == 0.0  # only applies to "all" scope
+    assert result["net_after_mortgage"] == pytest.approx(-358.01)  # no mortgage at this scope
     assert result["net_cash_flow"] == pytest.approx(-358.01 - 1314.00)
 
     waterfall = result["waterfall"]
     assert waterfall[0] == {"label": "Gross Rent Collected", "start": 0, "end": 1460.0, "kind": "income"}
-    assert waterfall[-1]["label"] == "Net Cash Flow"
+    assert waterfall[-1]["label"] == "Change in Cash Balance"
     assert waterfall[-1]["kind"] == "total"
     assert waterfall[-1]["end"] == pytest.approx(-358.01 - 1314.00)
+    assert "Net After Mortgage" not in [s["label"] for s in waterfall]  # no mortgage step at this scope
 
 
 def test_report_breakdown_includes_mortgage_only_for_all_properties_scope(db_session):
@@ -407,8 +409,11 @@ def test_report_breakdown_includes_mortgage_only_for_all_properties_scope(db_ses
     brunswick_result = report_breakdown(db_session, date(2026, 5, 1), "Brunswick")
 
     assert total_result["monthly_mortgage"] == 500.0
-    assert total_result["net_cash_flow"] == pytest.approx(500.0)  # 1000 noi - 500 mortgage
+    assert total_result["net_after_mortgage"] == pytest.approx(500.0)  # 1000 noi - 500 mortgage
+    assert total_result["net_cash_flow"] == pytest.approx(500.0)  # no unpaid bills here
+    assert "Net After Mortgage" in [s["label"] for s in total_result["waterfall"]]
     assert brunswick_result["monthly_mortgage"] == 0.0
+    assert brunswick_result["net_after_mortgage"] == pytest.approx(1000.0)
     assert brunswick_result["net_cash_flow"] == pytest.approx(1000.0)
 
 

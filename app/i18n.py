@@ -44,12 +44,16 @@ TRANSLATIONS = {
     # Landing page
     "Metric": "מדד",
     "Total": "סה\"כ",
-    "Income": "הכנסה",
-    "Expense": "הוצאה",
-    "Subtotal": "סכום ביניים",
+    "Income - adds to the total": "הכנסה - מוסיפה לסכום",
+    "Expense - subtracts from it": "הוצאה - מפחיתה ממנו",
+    "Checkpoint (measured from zero)": "נקודת ביניים (נמדדת מאפס)",
+    "Final result": "תוצאה סופית",
+    "Each bar starts where the previous one ended - the dotted line shows the connection. Checkpoint and final-result bars are measured from zero instead, and every bar shows its own amount.": (
+        "כל עמודה מתחילה במקום שבו הקודמת הסתיימה - הקו המקווקו מראה את החיבור. עמודות נקודת ביניים ותוצאה סופית נמדדות מאפס, וכל עמודה מציגה את הסכום שלה."
+    ),
     "Understand This Report": "הבנת הדוח",
-    "Select a month to see the full breakdown from income down to Net Cash Flow.": (
-        "בחר חודש כדי לראות את הפירוט המלא מההכנסה ועד לתזרים המזומנים נטו."
+    "Select a month to see the full breakdown from income down to the change in cash balance.": (
+        "בחר חודש כדי לראות את הפירוט המלא מההכנסה ועד לשינוי ביתרת המזומנים."
     ),
     "No report data for this month yet.": "אין עדיין נתוני דוח לחודש זה.",
     "How we got there": "איך הגענו לתוצאה",
@@ -58,7 +62,9 @@ TRANSLATIONS = {
     "Total Property Expenses": "סך הוצאות הנכס",
     "Expenses": "הוצאות",
     "Net Operating Income": "רווח תפעולי נקי",
-    "Net Cash Flow": "תזרים מזומנים נטו",
+    "Net After Mortgage": "נטו לאחר משכנתא",
+    "Net": "נטו",
+    "Change in Cash Balance": "שינוי ביתרת המזומנים",
     "Accumulated Balance": "יתרה שנצברה",
     "Still with Overland, not yet transferred — portfolio-wide, as of now": (
         "עדיין אצל אוברלנד, טרם הועבר — עבור כלל התיק, נכון לעכשיו"

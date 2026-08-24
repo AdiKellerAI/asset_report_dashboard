@@ -4,7 +4,7 @@
 
 {% block content %}
   <p class="period-label">{{ "Understand This Report"|t }}</p>
-  <p class="empty-state-note">{{ "Select a month to see the full breakdown from income down to Net Cash Flow."|t }}</p>
+  <p class="empty-state-note">{{ "Select a month to see the full breakdown from income down to the change in cash balance."|t }}</p>
 
   <div class="period-selector">
     <nav class="period-pills">
@@ -29,13 +29,19 @@
   <p class="empty-state-note">{{ "No report data for this month yet."|t }}</p>
   {% else %}
   <section class="chart-wrap income-chart" dir="ltr">
-    <h2 class="chart-title">{{ "How we got there"|t }}</h2>
-    <div class="waterfall-legend">
-      <span class="waterfall-legend-item"><span class="waterfall-dot waterfall-dot-income"></span>{{ "Income"|t }}</span>
-      <span class="waterfall-legend-item"><span class="waterfall-dot waterfall-dot-expense"></span>{{ "Expense"|t }}</span>
-      <span class="waterfall-legend-item"><span class="waterfall-dot waterfall-dot-subtotal"></span>{{ "Subtotal"|t }}</span>
-      <span class="waterfall-legend-item"><span class="waterfall-dot waterfall-dot-total"></span>{{ "Total"|t }}</span>
+    <div class="chart-header-row">
+      <h2 class="chart-title">{{ "How we got there"|t }}</h2>
+      <button type="button" class="chart-expand-btn" aria-label="Expand chart" onclick="window.openChartFullscreen('waterfall-chart')">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 3H3v6M15 3h6v6M21 15v6h-6M3 15v6h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
     </div>
+    <div class="waterfall-legend">
+      <span class="waterfall-legend-item"><span class="waterfall-dot waterfall-dot-income"></span>{{ "Income - adds to the total"|t }}</span>
+      <span class="waterfall-legend-item"><span class="waterfall-dot waterfall-dot-expense"></span>{{ "Expense - subtracts from it"|t }}</span>
+      <span class="waterfall-legend-item"><span class="waterfall-dot waterfall-dot-subtotal"></span>{{ "Checkpoint (measured from zero)"|t }}</span>
+      <span class="waterfall-legend-item"><span class="waterfall-dot waterfall-dot-total"></span>{{ "Final result"|t }}</span>
+    </div>
+    <p class="empty-state-note waterfall-hint">{{ "Each bar starts where the previous one ended - the dotted line shows the connection. Checkpoint and final-result bars are measured from zero instead, and every bar shows its own amount."|t }}</p>
     <canvas id="waterfall-chart" role="img" aria-label="Waterfall from gross rent to net cash flow, {{ selected_month.strftime('%B %Y') }}"></canvas>
   </section>
 
@@ -60,20 +66,24 @@
           <th scope="row">{{ "Net Operating Income"|t }}</th>
           <td class="total-col">{{ breakdown.noi|money }}</td>
         </tr>
+        {% if breakdown.monthly_mortgage %}
+        <tr>
+          <th scope="row">{{ "Mortgage"|t }}</th>
+          <td>-{{ breakdown.monthly_mortgage|money }}</td>
+        </tr>
+        <tr>
+          <th scope="row">{{ "Net After Mortgage"|t }}</th>
+          <td class="total-col">{{ breakdown.net_after_mortgage|money }}</td>
+        </tr>
+        {% endif %}
         {% if breakdown.unpaid_bills %}
         <tr>
           <th scope="row">{{ "Unpaid Bills"|t }}</th>
           <td>{{ breakdown.unpaid_bills|money }}</td>
         </tr>
         {% endif %}
-        {% if breakdown.monthly_mortgage %}
         <tr>
-          <th scope="row">{{ "Mortgage"|t }}</th>
-          <td>-{{ breakdown.monthly_mortgage|money }}</td>
-        </tr>
-        {% endif %}
-        <tr>
-          <th scope="row">{{ "Net Cash Flow"|t }}</th>
+          <th scope="row">{{ "Change in Cash Balance"|t }}</th>
           <td class="total-col">{{ breakdown.net_cash_flow|money }}</td>
         </tr>
       </tbody>
@@ -97,6 +107,58 @@
 
       Chart.defaults.font.family = "'Manrope', system-ui, sans-serif";
 
+      function stepLabel(step) {
+        const amount = Math.abs(step.end - step.start);
+        const formatted = window.formatMoney(amount);
+        if (step.kind === "income") return "+" + formatted;
+        if (step.kind === "expense") return "−" + formatted; // real minus sign, not a hyphen
+        return window.formatMoney(step.end); // checkpoint/total bars show the running value, not a delta
+      }
+
+      // Two things a plain Chart.js bar chart doesn't give you, and both are
+      // exactly what made this unreadable before (Adi's feedback,
+      // 2026-08-24): a dotted connector showing each bar picks up exactly
+      // where the last one ended, and the bar's own amount/sign printed
+      // right on it - so the chart is self-explanatory without reading the
+      // legend first.
+      const waterfallLabelsPlugin = {
+        id: "waterfallLabels",
+        afterDatasetsDraw(chart) {
+          const { ctx } = chart;
+          const meta = chart.getDatasetMeta(0);
+          const yScale = chart.scales.y;
+
+          ctx.save();
+          ctx.strokeStyle = "rgba(255,255,255,0.22)";
+          ctx.setLineDash([3, 3]);
+          ctx.lineWidth = 1;
+          for (let i = 0; i < steps.length - 1; i++) {
+            const bar = meta.data[i];
+            const nextBar = meta.data[i + 1];
+            if (!bar || !nextBar) continue;
+            const connectY = yScale.getPixelForValue(steps[i].end);
+            const halfWidth = (bar.width || 24) / 2;
+            ctx.beginPath();
+            ctx.moveTo(bar.x + halfWidth, connectY);
+            ctx.lineTo(nextBar.x - halfWidth, connectY);
+            ctx.stroke();
+          }
+          ctx.restore();
+
+          ctx.save();
+          ctx.font = "700 11px 'Manrope', system-ui, sans-serif";
+          ctx.textAlign = "center";
+          meta.data.forEach((bar, i) => {
+            if (!bar) return;
+            const step = steps[i];
+            ctx.fillStyle = step.kind === "expense" ? "#e08a8a" : step.kind === "income" ? "#7ed3a0" : "#c3c2b7";
+            const topPx = Math.min(yScale.getPixelForValue(step.start), yScale.getPixelForValue(step.end));
+            ctx.fillText(stepLabel(step), bar.x, topPx - 8);
+          });
+          ctx.restore();
+        },
+      };
+
       new Chart(document.getElementById("waterfall-chart"), {
         type: "bar",
         data: {
@@ -106,11 +168,14 @@
               data: steps.map((s) => [Math.min(s.start, s.end), Math.max(s.start, s.end)]),
               backgroundColor: steps.map((s) => KIND_COLORS[s.kind]),
               borderRadius: 4,
+              barPercentage: 0.6,
             },
           ],
         },
+        plugins: [waterfallLabelsPlugin],
         options: {
           responsive: true,
+          layout: { padding: { top: 24 } },
           plugins: {
             legend: { display: false },
             tooltip: {
@@ -122,7 +187,7 @@
               padding: 12,
               cornerRadius: 10,
               callbacks: {
-                label: (item) => window.formatMoney(Math.abs(steps[item.dataIndex].end - steps[item.dataIndex].start)),
+                label: (item) => stepLabel(steps[item.dataIndex]),
               },
             },
           },
@@ -133,7 +198,10 @@
               ticks: { color: "#898781", maxRotation: 45, minRotation: 0 },
             },
             y: {
-              grid: { color: "#2c2c2a" },
+              grid: {
+                color: (ctx) => (ctx.tick.value === 0 ? "rgba(255,255,255,0.35)" : "#2c2c2a"),
+                lineWidth: (ctx) => (ctx.tick.value === 0 ? 2 : 1),
+              },
               border: { color: "#383835" },
               ticks: { color: "#898781", callback: (value) => window.formatMoney(value) },
             },

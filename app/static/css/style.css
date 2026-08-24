@@ -80,6 +80,16 @@ a {
   padding: 0.25rem;
 }
 
+.nav-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.nav-label {
+  white-space: nowrap;
+}
+
 /* A single button, not a two-option toggle - shows the currently active
    currency symbol; tapping switches to the other language/currency. */
 .currency-widget {
@@ -129,40 +139,50 @@ a {
 }
 
 @media (max-width: 480px) {
-  /* Genuinely fixed - never wraps AND never needs a swipe to see the rest
-     (Adi's request). Everything shrinks to fit one line instead. */
+  /* Genuinely fixed on mobile - never wraps, never scrolls, never gets
+     clipped (Adi's request, twice). Two changes make this actually work
+     instead of just being tight: nav switches to icons-only (no text to
+     run out of room for), and the currency/language row moves onto its
+     own line below the nav instead of competing with it for width. */
   .page-header {
-    flex-wrap: nowrap;
-    gap: 0.4rem;
+    flex-wrap: wrap;
+    gap: 0.5rem;
   }
 
   .main-nav {
-    gap: 0.05rem;
-    padding: 0.15rem;
+    width: 100%;
+    justify-content: space-between;
+    gap: 0;
+    padding: 0.2rem;
   }
 
   .main-nav a {
-    padding: 0.3rem 0.4rem;
-    font-size: 0.62rem;
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    padding: 0.5rem 0;
+  }
+
+  .nav-icon {
+    width: 19px;
+    height: 19px;
+  }
+
+  .nav-label {
+    display: none;
   }
 
   .currency-widget {
-    gap: 0.3rem;
-  }
-
-  .currency-btn {
-    min-width: 30px;
-    min-height: 30px;
-    padding: 0.25rem 0.4rem;
-    font-size: 0.7rem;
-  }
-
-  .logout-link {
-    font-size: 0.62rem;
+    width: 100%;
+    justify-content: flex-end;
+    gap: 0.5rem;
   }
 }
 
 .main-nav a {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
   color: var(--ink-secondary);
   text-decoration: none;
   font-size: 0.85rem;
@@ -702,6 +722,81 @@ a {
   display: block;
 }
 
+.chart-expand-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--ink-muted);
+  cursor: pointer;
+  transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.chart-expand-btn:hover {
+  color: var(--ink);
+  border-color: var(--accent);
+}
+
+.chart-expand-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+body.chart-fullscreen-open {
+  overflow: hidden;
+}
+
+.chart-fullscreen-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(8, 8, 9, 0.92);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2.5rem 1rem 1rem;
+}
+
+.chart-fullscreen-canvas-wrap {
+  width: 100%;
+  height: 100%;
+  max-width: 1400px;
+}
+
+.chart-fullscreen-close {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  background: var(--surface-raised);
+  color: var(--ink-secondary);
+  cursor: pointer;
+}
+
+.chart-fullscreen-close:hover {
+  color: var(--ink);
+  border-color: var(--accent);
+}
+
+.chart-fullscreen-close svg {
+  width: 18px;
+  height: 18px;
+}
+
 .income-chart {
   margin-top: 1.1rem;
 }
@@ -727,10 +822,16 @@ a {
   margin: 0 0 1rem;
 }
 
+.chart-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
 .range-pills {
   display: flex;
   gap: 0.3rem;
-  margin-bottom: 1rem;
 }
 
 .range-pill {
@@ -784,6 +885,10 @@ a {
 .waterfall-dot-expense { background: #d24545; }
 .waterfall-dot-subtotal { background: var(--accent); }
 .waterfall-dot-total { background: var(--gold); }
+
+.waterfall-hint {
+  margin: 0 0 1.25rem;
+}
 
 @media (prefers-color-scheme: light) {
   /* This app is deliberately dark-only (Adi's preference) - a light OS

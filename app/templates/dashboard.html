@@ -58,7 +58,14 @@
           <td class="total-col">{{ total.noi|money }}</td>
         </tr>
         <tr>
-          <th scope="row">{{ "Net Cash Flow"|t }}</th>
+          <th scope="row"><span class="metric-full">{{ "Net After Mortgage"|t }}</span><span class="metric-short">{{ "Net"|t }}</span></th>
+          {% for p in properties %}
+          <td>{{ p.net_after_mortgage|money }}</td>
+          {% endfor %}
+          <td class="total-col">{{ total.net_after_mortgage|money }}</td>
+        </tr>
+        <tr>
+          <th scope="row">{{ "Change in Cash Balance"|t }}</th>
           {% for p in properties %}
           <td>{{ p.net_to_adi|money }}</td>
           {% endfor %}
@@ -76,7 +83,12 @@
 
   {% if noi_months %}
   <section class="chart-wrap income-chart" dir="ltr">
-    <h2 class="chart-title">{{ "Net Operating Income — Last {n} Months"|t|replace("{n}", noi_months|length|string) }}</h2>
+    <div class="chart-header-row">
+      <h2 class="chart-title">{{ "Net Operating Income — Last {n} Months"|t|replace("{n}", noi_months|length|string) }}</h2>
+      <button type="button" class="chart-expand-btn" aria-label="Expand chart" onclick="window.openChartFullscreen('noi-chart')">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 3H3v6M15 3h6v6M21 15v6h-6M3 15v6h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+    </div>
     <canvas id="noi-chart" role="img" aria-label="Net operating income per property and total, last {{ noi_months|length }} months"></canvas>
   </section>
   {% endif %}
@@ -85,11 +97,16 @@
     {% set yield_base_qs = "period=" ~ selected_period ~ "&month=" ~ selected_month ~ "&year=" ~ selected_year %}
     <div class="chart-header-row">
       <h2 class="chart-title">{{ "Annual Yield"|t }}</h2>
-      <nav class="range-pills">
-        <a href="/?{{ yield_base_qs }}&yield_range=3y" class="range-pill {{ 'active' if selected_yield_range == '3y' }}">{{ "3Y"|t }}</a>
-        <a href="/?{{ yield_base_qs }}&yield_range=6y" class="range-pill {{ 'active' if selected_yield_range == '6y' }}">{{ "6Y"|t }}</a>
-        <a href="/?{{ yield_base_qs }}&yield_range=all" class="range-pill {{ 'active' if selected_yield_range == 'all' }}">{{ "All"|t }}</a>
-      </nav>
+      <div class="chart-header-actions">
+        <nav class="range-pills">
+          <a href="/?{{ yield_base_qs }}&yield_range=3y" class="range-pill {{ 'active' if selected_yield_range == '3y' }}">{{ "3Y"|t }}</a>
+          <a href="/?{{ yield_base_qs }}&yield_range=6y" class="range-pill {{ 'active' if selected_yield_range == '6y' }}">{{ "6Y"|t }}</a>
+          <a href="/?{{ yield_base_qs }}&yield_range=all" class="range-pill {{ 'active' if selected_yield_range == 'all' }}">{{ "All"|t }}</a>
+        </nav>
+        <button type="button" class="chart-expand-btn" aria-label="Expand chart" onclick="window.openChartFullscreen('yield-chart')">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 3H3v6M15 3h6v6M21 15v6h-6M3 15v6h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
     </div>
     {% if yield_years %}
     <canvas id="yield-chart" role="img" aria-label="Annual net yield per property and total, by year"></canvas>

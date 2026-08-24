@@ -12,11 +12,26 @@
 <body>
   <header class="page-header">
     <nav class="main-nav">
-      <a href="/" class="{{ 'active' if active_nav == 'dashboard' else '' }}">{{ "Dashboard"|t }}</a>
-      <a href="/trends" class="{{ 'active' if active_nav == 'trends' else '' }}">{{ "Trends"|t }}</a>
-      <a href="/report" class="{{ 'active' if active_nav == 'report' else '' }}">{{ "Report"|t }}</a>
-      <a href="/manage" class="{{ 'active' if active_nav == 'manage' else '' }}">{{ "Manage"|t }}</a>
-      <a href="/tables" class="{{ 'active' if active_nav == 'tables' else '' }}">{{ "Tables"|t }}</a>
+      <a href="/" class="{{ 'active' if active_nav == 'dashboard' else '' }}">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 11.5 12 4l8 7.5M6 10v9a1 1 0 0 0 1 1h3v-5h4v5h3a1 1 0 0 0 1-1v-9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="nav-label">{{ "Dashboard"|t }}</span>
+      </a>
+      <a href="/trends" class="{{ 'active' if active_nav == 'trends' else '' }}">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 16l5-5 3 3 6-7M14 7h4v4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="nav-label">{{ "Trends"|t }}</span>
+      </a>
+      <a href="/report" class="{{ 'active' if active_nav == 'report' else '' }}">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="6" y="3" width="12" height="18" rx="1.5" stroke="currentColor" stroke-width="1.7"/><path d="M9 8h6M9 12h6M9 16h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        <span class="nav-label">{{ "Report"|t }}</span>
+      </a>
+      <a href="/manage" class="{{ 'active' if active_nav == 'manage' else '' }}">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h13M21 18h-2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="16" cy="6" r="2" stroke="currentColor" stroke-width="1.7"/><circle cx="9" cy="12" r="2" stroke="currentColor" stroke-width="1.7"/><circle cx="17" cy="18" r="2" stroke="currentColor" stroke-width="1.7"/></svg>
+        <span class="nav-label">{{ "Manage"|t }}</span>
+      </a>
+      <a href="/tables" class="{{ 'active' if active_nav == 'tables' else '' }}">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.7"/><rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.7"/><rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.7"/><rect x="14" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.7"/></svg>
+        <span class="nav-label">{{ "Tables"|t }}</span>
+      </a>
     </nav>
     <div class="currency-widget">
       <a href="/set-language/{{ 'he' if lang == 'en' else 'en' }}" class="currency-btn" aria-label="Switch language">{{ "EN" if lang == "en" else "HE" }}</a>
@@ -47,6 +62,63 @@
         return nis.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " ₪";
       }
       return Number(usdValue).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " $";
+    };
+
+    // Shared "expand chart" behavior for every Chart.js canvas on every page
+    // (Adi's request, 2026-08-24) - re-parents the existing canvas into a
+    // fullscreen overlay instead of building a second Chart instance, so
+    // there's only ever one source of truth for each chart's data/state.
+    // Chart.js v4's own resize handling (triggered here on open/close/rotate)
+    // is what makes the chart actually redraw wider in landscape - no manual
+    // rotation logic needed.
+    window.openChartFullscreen = function (canvasId) {
+      var canvas = document.getElementById(canvasId);
+      if (!canvas) return;
+      var chart = window.Chart && window.Chart.getChart ? window.Chart.getChart(canvas) : null;
+      var placeholder = document.createComment("chart-placeholder");
+      canvas.parentElement.insertBefore(placeholder, canvas);
+
+      var overlay = document.createElement("div");
+      overlay.className = "chart-fullscreen-overlay";
+      var closeBtn = document.createElement("button");
+      closeBtn.type = "button";
+      closeBtn.className = "chart-fullscreen-close";
+      closeBtn.setAttribute("aria-label", "Close");
+      closeBtn.innerHTML =
+        '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
+      var canvasWrap = document.createElement("div");
+      canvasWrap.className = "chart-fullscreen-canvas-wrap";
+      canvasWrap.appendChild(canvas);
+      overlay.appendChild(closeBtn);
+      overlay.appendChild(canvasWrap);
+      document.body.appendChild(overlay);
+      document.body.classList.add("chart-fullscreen-open");
+
+      function doResize() {
+        if (chart) chart.resize();
+      }
+      requestAnimationFrame(doResize);
+      window.addEventListener("resize", doResize);
+      window.addEventListener("orientationchange", doResize);
+
+      function close() {
+        placeholder.parentElement.insertBefore(canvas, placeholder);
+        placeholder.remove();
+        overlay.remove();
+        document.body.classList.remove("chart-fullscreen-open");
+        window.removeEventListener("resize", doResize);
+        window.removeEventListener("orientationchange", doResize);
+        document.removeEventListener("keydown", onKeydown);
+        if (chart) requestAnimationFrame(doResize);
+      }
+      function onKeydown(e) {
+        if (e.key === "Escape") close();
+      }
+      closeBtn.addEventListener("click", close);
+      overlay.addEventListener("click", function (e) {
+        if (e.target === overlay) close();
+      });
+      document.addEventListener("keydown", onKeydown);
     };
   </script>
 

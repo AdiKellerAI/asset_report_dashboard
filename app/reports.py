@@ -20,7 +20,8 @@ SUMMARY_SERIES = {
     "gross_rent": "Gross Rent Collected",
     "total_expenses": "Total Property Expenses",
     "noi": "Net Operating Income",
-    "net_to_adi": "Net Cash Flow",
+    "net_after_mortgage": "Net After Mortgage",
+    "net_to_adi": "Change in Cash Balance",
     "net_owner_funds": "Net Owner Funds",
     "beginning_balance": "Beginning Balance",
     "ending_balance": "Ending Balance",
@@ -122,17 +123,25 @@ def dashboard_summary(
     if monthly_mortgage_total is None:
         # The mortgage is one combined loan for the whole portfolio (Adi
         # confirmed 2026-08-23), not per property - it only ever affects the
-        # "all properties" Net Cash Flow, never an individual property's own.
+        # "all properties" figures below, never an individual property's own.
         monthly_mortgage_total = 0.0
         if property_nickname == "all":
             mortgage = session.query(Mortgage).order_by(Mortgage.id.desc()).first()
             monthly_mortgage_total = float(mortgage.monthly_payment or 0) if mortgage else 0.0
-    net_to_adi = noi + unpaid_bills - monthly_mortgage_total * len(months_present)
+    mortgage_for_period = monthly_mortgage_total * len(months_present)
+    # Two distinct "after mortgage" figures, per Adi's request (2026-08-24) -
+    # he wants both visible, not one replacing the other: net_after_mortgage
+    # is the pure financing-level result (NOI minus mortgage, nothing else),
+    # while net_to_adi also folds in the unpaid-bills snapshot (dev-plan.md
+    # sec 14) - it's how much the accumulated balance actually changed.
+    net_after_mortgage = noi - mortgage_for_period
+    net_to_adi = noi + unpaid_bills - mortgage_for_period
 
     return {
         "gross_rent": gross_rent,
         "total_expenses": total_expenses,
         "noi": noi,
+        "net_after_mortgage": net_after_mortgage,
         "net_to_adi": net_to_adi,
         "accumulated_balance": (
             accumulated_balance if accumulated_balance is not None else _accumulated_balance(session, properties)
@@ -242,9 +251,9 @@ def trend_series(
     months = sorted(by_month.keys())
 
     # The mortgage is one combined loan for the whole portfolio, not per
-    # property - only affects the "all properties" Net Cash Flow line.
+    # property - only affects the "all properties" lines below.
     monthly_mortgage_total = 0.0
-    if "net_to_adi" in series_keys and property_nickname == "all":
+    if {"net_to_adi", "net_after_mortgage"} & set(series_keys) and property_nickname == "all":
         mortgage = session.query(Mortgage).order_by(Mortgage.id.desc()).first()
         monthly_mortgage_total = float(mortgage.monthly_payment or 0) if mortgage else 0.0
 
@@ -284,6 +293,9 @@ def trend_series(
                 values.append(sum(float(s.total_operating_expense or 0) for s in stmts))
             elif key == "noi":
                 values.append(sum(float(s.noi or 0) for s in stmts))
+            elif key == "net_after_mortgage":
+                noi_total = sum(float(s.noi or 0) for s in stmts)
+                values.append(noi_total - monthly_mortgage_total)
             elif key == "net_to_adi":
                 noi_total = sum(float(s.noi or 0) for s in stmts)
                 unpaid_total = sum(float(s.unpaid_bills or 0) for s in stmts)
@@ -394,7 +406,13 @@ def report_breakdown(session, month, property_nickname="all"):
         mortgage = session.query(Mortgage).order_by(Mortgage.id.desc()).first()
         monthly_mortgage = float(mortgage.monthly_payment or 0) if mortgage else 0.0
 
-    net_cash_flow = noi + unpaid_bills - monthly_mortgage
+    # Two distinct "after mortgage" figures, per Adi's request (2026-08-24) -
+    # he wants both visible: net_after_mortgage is the pure financing-level
+    # result (NOI minus mortgage, nothing else), while net_to_adi also folds
+    # in the unpaid-bills snapshot - it's how much the accumulated balance
+    # actually changed.
+    net_after_mortgage = noi - monthly_mortgage
+    net_cash_flow = net_after_mortgage + unpaid_bills
 
     next_month = date(month.year + 1, 1, 1) if month.month == 12 else date(month.year, month.month + 1, 1)
     category_rows = (
@@ -418,9 +436,9 @@ def report_breakdown(session, month, property_nickname="all"):
 
     # The waterfall: each step is a (start, end) span a floating bar draws
     # between - "income"/"expense" steps chain off the running total,
-    # "subtotal"/"total" steps are checkpoints anchored back to zero (NOI and
-    # the final Net Cash Flow), matching dev-plan.md sec 5.2's original
-    # "literal waterfall chart" concept.
+    # "subtotal"/"total" steps are checkpoints anchored back to zero (NOI,
+    # Net After Mortgage, and the final Change in Cash Balance), matching
+    # dev-plan.md sec 5.2's original "literal waterfall chart" concept.
     waterfall = [{"label": "Gross Rent Collected", "start": 0, "end": gross_rent, "kind": "income"}]
     running = gross_rent
     for cat in expense_categories:
@@ -428,6 +446,12 @@ def report_breakdown(session, month, property_nickname="all"):
         running -= cat["amount"]
     waterfall.append({"label": "Net Operating Income", "start": 0, "end": noi, "kind": "subtotal"})
     running = noi
+    if monthly_mortgage:
+        waterfall.append({"label": "Mortgage", "start": running, "end": running - monthly_mortgage, "kind": "expense"})
+        running -= monthly_mortgage
+        waterfall.append(
+            {"label": "Net After Mortgage", "start": 0, "end": net_after_mortgage, "kind": "subtotal"}
+        )
     if unpaid_bills:
         waterfall.append(
             {
@@ -438,10 +462,7 @@ def report_breakdown(session, month, property_nickname="all"):
             }
         )
         running += unpaid_bills
-    if monthly_mortgage:
-        waterfall.append({"label": "Mortgage", "start": running, "end": running - monthly_mortgage, "kind": "expense"})
-        running -= monthly_mortgage
-    waterfall.append({"label": "Net Cash Flow", "start": 0, "end": net_cash_flow, "kind": "total"})
+    waterfall.append({"label": "Change in Cash Balance", "start": 0, "end": net_cash_flow, "kind": "total"})
 
     return {
         "month": month,
@@ -452,6 +473,7 @@ def report_breakdown(session, month, property_nickname="all"):
         "noi": noi,
         "unpaid_bills": unpaid_bills,
         "monthly_mortgage": monthly_mortgage,
+        "net_after_mortgage": net_after_mortgage,
         "net_cash_flow": net_cash_flow,
         "waterfall": waterfall,
     }
