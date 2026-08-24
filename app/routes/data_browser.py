@@ -10,6 +10,7 @@ from flask import Blueprint, g, jsonify, render_template, request
 from app.cache import get_or_set
 from app.db import SessionLocal
 from app.fx import format_money
+from app.i18n import translate
 from app.models import (
     Document,
     ExpenseType,
@@ -200,6 +201,10 @@ def tables_page():
         "tables.html",
         table_names=table_names,
         table_labels={name: cfg["label"] for name, cfg in configs.items()},
+        # Pre-translated for the JS-driven prev/next buttons and <select>
+        # options, which bypass the `t` Jinja filter (client-side table
+        # switching swaps this text in directly, without a fresh render).
+        table_labels_translated={name: translate(cfg["label"], g.lang) for name, cfg in configs.items()},
         selected=selected,
         headers=headers,
         rows=cells,
@@ -220,5 +225,5 @@ def table_rows(table_name):
     except ValueError:
         return jsonify(error="invalid offset/limit"), 400
 
-    _headers, cells, total = _fetch_page(table_name, offset, limit)
-    return jsonify(rows=cells, has_more=offset + len(cells) < total, total=total)
+    headers, cells, total = _fetch_page(table_name, offset, limit)
+    return jsonify(rows=cells, headers=headers, has_more=offset + len(cells) < total, total=total)

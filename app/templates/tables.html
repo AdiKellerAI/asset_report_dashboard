@@ -3,19 +3,27 @@
 {% block title %}{{ "Tables"|t }} - {{ "Asset Report Dashboard"|t }}{% endblock %}
 
 {% block content %}
-  <nav class="table-tabs" id="table-tabs">
-    {% for name in table_names %}
-    <a href="/tables?table={{ name }}" class="table-tab {{ 'active' if name == selected }}" data-table="{{ name }}">
-      {{ table_labels[name]|t }}
-    </a>
-    {% endfor %}
-  </nav>
+  <div class="table-selector">
+    <button type="button" class="table-nav-btn" id="table-prev" aria-label="Previous table">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M15 5l-7 7 7 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span class="table-nav-label" id="table-prev-label"></span>
+    </button>
 
-  <p class="empty-state-note table-swipe-hint">{{ "Swipe left/right to switch tables"|t }}</p>
+    <select id="table-select" class="table-select">
+      {% for name in table_names %}
+      <option value="{{ name }}" {{ "selected" if name == selected }}>{{ table_labels[name]|t }}</option>
+      {% endfor %}
+    </select>
+
+    <button type="button" class="table-nav-btn" id="table-next" aria-label="Next table">
+      <span class="table-nav-label" id="table-next-label"></span>
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 5l7 7-7 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+    </button>
+  </div>
 
   <div class="table-wrap data-table-wrap" id="data-table-wrap" dir="{{ dir }}">
-    <table class="data-table">
-      <thead>
+    <table class="data-table" id="data-table">
+      <thead id="data-table-head">
         <tr>
           {% for h in headers %}
           <th scope="col">{{ h|t }}</th>
@@ -40,15 +48,26 @@
 {% block scripts %}
   <script>
     (function () {
-      const tableName = {{ selected|tojson }};
+      const tableNames = {{ table_names|tojson }};
+      const tableLabels = {{ table_labels_translated|tojson }};
       const pageSize = {{ page_size|tojson }};
-      const total = {{ total|tojson }};
+
+      let tableName = {{ selected|tojson }};
+      let total = {{ total|tojson }};
       let loaded = {{ rows|length }};
       let loading = false;
+      let observer = null;
 
+      const wrap = document.getElementById("data-table-wrap");
+      const thead = document.getElementById("data-table-head");
       const tbody = document.getElementById("data-table-body");
       const status = document.getElementById("load-status");
       const sentinel = document.getElementById("load-sentinel");
+      const select = document.getElementById("table-select");
+      const prevBtn = document.getElementById("table-prev");
+      const nextBtn = document.getElementById("table-next");
+      const prevLabel = document.getElementById("table-prev-label");
+      const nextLabel = document.getElementById("table-next-label");
 
       function renderRow(cells) {
         const tr = document.createElement("tr");
@@ -60,6 +79,26 @@
         return tr;
       }
 
+      function renderHead(headers) {
+        const tr = document.createElement("tr");
+        headers.forEach((h) => {
+          const th = document.createElement("th");
+          th.scope = "col";
+          th.textContent = h;
+          tr.appendChild(th);
+        });
+        thead.replaceChildren(tr);
+      }
+
+      function updateNav() {
+        const i = tableNames.indexOf(tableName);
+        select.value = tableName;
+        prevBtn.disabled = i <= 0;
+        nextBtn.disabled = i >= tableNames.length - 1;
+        prevLabel.textContent = i > 0 ? tableLabels[tableNames[i - 1]] : "";
+        nextLabel.textContent = i < tableNames.length - 1 ? tableLabels[tableNames[i + 1]] : "";
+      }
+
       function loadMore() {
         if (loading || loaded >= total) return;
         loading = true;
@@ -69,7 +108,7 @@
           .then((data) => {
             data.rows.forEach((cells) => tbody.appendChild(renderRow(cells)));
             loaded += data.rows.length;
-            status.textContent = loaded < total ? "" : "";
+            status.textContent = "";
             loading = false;
             if (loaded >= total && observer) observer.disconnect();
           })
@@ -79,19 +118,61 @@
           });
       }
 
-      // Lazy-load (infinite scroll): only fetch the next page once the
-      // sentinel row at the bottom actually comes into view.
-      let observer = null;
-      if (loaded < total && "IntersectionObserver" in window) {
-        observer = new IntersectionObserver((entries) => {
-          if (entries[0].isIntersecting) loadMore();
-        });
-        observer.observe(sentinel);
+      function watchSentinel() {
+        if (observer) observer.disconnect();
+        observer = null;
+        if (loaded < total && "IntersectionObserver" in window) {
+          observer = new IntersectionObserver((entries) => {
+            if (entries[0].isIntersecting) loadMore();
+          });
+          observer.observe(sentinel);
+        }
       }
 
-      // Swipe left/right between tables on touch devices.
-      const tabs = Array.from(document.querySelectorAll(".table-tab"));
-      const currentIndex = tabs.findIndex((t) => t.dataset.table === tableName);
+      // Switching tables fetches the new table's first page and fades it in
+      // in place (Adi's request, 2026-08-25: "elegant and smooth movement
+      // between tables") instead of a full page reload - lazy-loading via
+      // the sentinel/IntersectionObserver picks back up exactly as before
+      // once the new table's first page is in.
+      function switchTable(name) {
+        if (name === tableName || !tableNames.includes(name)) return;
+        wrap.classList.add("table-wrap-fading");
+        window.setTimeout(() => {
+          fetch(`/tables/${name}/rows?offset=0&limit=${pageSize}`)
+            .then((r) => r.json())
+            .then((data) => {
+              tableName = name;
+              total = data.total;
+              loaded = data.rows.length;
+              renderHead(data.headers);
+              tbody.replaceChildren(...data.rows.map(renderRow));
+              status.textContent = "";
+              updateNav();
+              watchSentinel();
+              history.pushState({}, "", `/tables?table=${name}`);
+              wrap.classList.remove("table-wrap-fading");
+            })
+            .catch(() => {
+              wrap.classList.remove("table-wrap-fading");
+            });
+        }, 160);
+      }
+
+      select.addEventListener("change", () => switchTable(select.value));
+      prevBtn.addEventListener("click", () => {
+        const i = tableNames.indexOf(tableName);
+        if (i > 0) switchTable(tableNames[i - 1]);
+      });
+      nextBtn.addEventListener("click", () => {
+        const i = tableNames.indexOf(tableName);
+        if (i < tableNames.length - 1) switchTable(tableNames[i + 1]);
+      });
+
+      updateNav();
+      watchSentinel();
+
+      // Swipe left/right between tables on touch devices - same smooth
+      // switchTable() transition as the buttons/dropdown.
       let touchStartX = null;
       let touchStartY = null;
       let touchInsideTable = false;
@@ -104,7 +185,7 @@
           // The data table itself scrolls horizontally to reveal columns
           // that don't fit (its own overflow-x) - don't hijack that
           // gesture into a table-switch, only swipes starting outside it
-          // (the tab strip, the hint text, empty margins) switch tables.
+          // switch tables.
           touchInsideTable = !!e.target.closest(".data-table-wrap");
         },
         { passive: true }
@@ -122,16 +203,11 @@
           touchStartX = null;
           if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy) * 1.5) return; // mostly-vertical scroll, ignore
 
-          // In RTL, a "swipe left" (negative dx) should feel like moving to
-          // the next tab visually to the left - i.e. forward either way,
-          // this is about screen direction, not table order, so we keep
-          // the same index math and only flip which physical swipe means
-          // "next" under RTL.
-          const isRtl = document.documentElement.getAttribute("dir") === "rtl";
-          const forward = isRtl ? dx > 0 : dx < 0;
-          const nextIndex = forward ? currentIndex + 1 : currentIndex - 1;
-          if (nextIndex >= 0 && nextIndex < tabs.length) {
-            window.location = tabs[nextIndex].href;
+          const i = tableNames.indexOf(tableName);
+          const forward = dx < 0;
+          const nextIndex = forward ? i + 1 : i - 1;
+          if (nextIndex >= 0 && nextIndex < tableNames.length) {
+            switchTable(tableNames[nextIndex]);
           }
         },
         { passive: true }

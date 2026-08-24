@@ -13,7 +13,7 @@ def test_tables_page_defaults_to_first_table(db_session):
 
     assert response.status_code == 200
     body = response.get_data(as_text=True)
-    assert "table-tabs" in body
+    assert 'id="table-select"' in body
     assert "Nickname" in body  # a Property column header - the default table
 
 
@@ -65,6 +65,7 @@ def test_table_rows_endpoint_paginates(db_session):
     assert first_page["total"] == 5
     assert len(first_page["rows"]) == 2
     assert first_page["has_more"] is True
+    assert "Gross Income" in first_page["headers"]  # switching tables client-side needs the new headers too
     assert len(second_page["rows"]) == 2
     assert second_page["has_more"] is True
 
