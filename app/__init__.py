@@ -41,17 +41,19 @@ def create_app(config_object=Config):
 
     @app.before_request
     def set_language_context():
-        # The currency toggle also switches the whole site's text to Hebrew (a
-        # single "lang" cookie drives both - see app/routes/language.py) -
-        # read once per request rather than threading it through every
-        # route/render_template call. Layout direction deliberately stays LTR
-        # even in Hebrew (Adi's request, 2026-08-23: translate the words, but
-        # never mirror the page) - `dir` is kept as a template variable rather
-        # than removed outright since some charts/inputs still opt out of it
-        # explicitly.
+        # Language (text) and currency (display) are two independent cookies
+        # driving two independent header buttons (Adi's request, 2026-08-24 -
+        # previously one combined toggle) - read both once per request rather
+        # than threading them through every route/render_template call.
+        # Layout direction deliberately stays LTR even in Hebrew (Adi's
+        # request, 2026-08-23: translate the words, but never mirror the
+        # page) - `dir` is kept as a template variable rather than removed
+        # outright since some charts/inputs still opt out of it explicitly.
         lang = request.cookies.get("lang", "en")
         g.lang = lang if lang in ("en", "he") else "en"
         g.dir = "ltr"
+        currency = request.cookies.get("currency", "usd")
+        g.currency = currency if currency in ("usd", "nis") else "usd"
 
     @app.context_processor
     def inject_globals():
@@ -60,6 +62,7 @@ def create_app(config_object=Config):
         return {
             "lang": g.lang,
             "dir": g.dir,
+            "currency": g.currency,
             "usd_to_ils_rate": get_usd_to_ils_rate(),
             "auth_enabled": bool(current_app.config["APP_PASSWORD"]),
         }
@@ -94,16 +97,16 @@ def create_app(config_object=Config):
 
     @app.template_filter("money")
     def money_filter(value):
-        """1234.5 -> "1,234.50 $" (or, in Hebrew mode, the NIS equivalent
-        with a ₪ suffix) - Adi's preferred format (currency symbol as a
-        suffix, comma thousands separator). Storage/math everywhere else
-        stays USD-only (dev-plan.md sec 15); this is purely a display
-        conversion, and the whole page (not just numbers) is in the same
-        language/currency mode since it's a real page render, not a
-        client-side toggle."""
+        """1234.5 -> "1,234.50 $" (or, in NIS mode, the ILS equivalent with a
+        ₪ suffix) - Adi's preferred format (currency symbol as a suffix,
+        comma thousands separator). Storage/math everywhere else stays
+        USD-only (dev-plan.md sec 15); this is purely a display conversion,
+        independent of the text language (Adi's request, 2026-08-24), and
+        it's a real page render (not a client-side toggle) so the whole
+        page's numbers switch together."""
         from app.fx import format_money
 
-        return format_money(value, g.lang)
+        return format_money(value, g.currency)
 
     @app.cli.command("seed-db")
     def seed_db():

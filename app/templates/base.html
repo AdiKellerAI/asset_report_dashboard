@@ -18,7 +18,8 @@
       <a href="/tables" class="{{ 'active' if active_nav == 'tables' else '' }}">{{ "Tables"|t }}</a>
     </nav>
     <div class="currency-widget">
-      <a href="/set-language/{{ 'he' if lang == 'en' else 'en' }}" class="currency-btn" aria-label="Switch currency and language">{{ "$" if lang == "en" else "₪" }}</a>
+      <a href="/set-language/{{ 'he' if lang == 'en' else 'en' }}" class="currency-btn" aria-label="Switch language">{{ "EN" if lang == "en" else "HE" }}</a>
+      <a href="/set-currency/{{ 'nis' if currency == 'usd' else 'usd' }}" class="currency-btn" aria-label="Switch currency">{{ "$" if currency == "usd" else "₪" }}</a>
       {% if auth_enabled %}
       <a href="/logout" class="logout-link">{{ "Log out"|t }}</a>
       {% endif %}
@@ -32,15 +33,15 @@
   <script>
     // Chart.js tick/tooltip labels are JS-rendered, so they need their own
     // formatter - everything else (tables, cards) is server-rendered
-    // already in the right currency by the `money` Jinja filter. The
-    // language/currency mode itself is set by a full page reload
-    // (app/routes/language.py), not client-side, since a real RTL flip
-    // needs a fresh render.
-    window.CURRENT_LANG = {{ lang|tojson }};
+    // already in the right currency by the `money` Jinja filter. Language
+    // and currency are two independent cookies/buttons (Adi's request,
+    // 2026-08-24) set via a full page reload (app/routes/language.py), not
+    // client-side, since translating every string needs a fresh render.
+    window.CURRENT_CURRENCY = {{ currency|tojson }};
     window.FX_RATE_USD_TO_ILS = {{ usd_to_ils_rate|tojson }};
 
     window.formatMoney = function (usdValue) {
-      if (window.CURRENT_LANG === "he") {
+      if (window.CURRENT_CURRENCY === "nis") {
         var nis = usdValue * window.FX_RATE_USD_TO_ILS;
         return nis.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " ₪";
       }

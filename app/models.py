@@ -120,7 +120,7 @@ class Mortgage(Base):
     """One combined mortgage for the whole portfolio (Adi confirmed 2026-08-23
     it's a single loan covering both properties, not one per property) -
     portfolio-level like `transfer`, no property_id. Only ever affects the
-    Total column of "Net to Adi", never an individual property's own column,
+    Total column of "Net Cash Flow", never an individual property's own column,
     since it isn't attributable to one property alone."""
 
     __tablename__ = "mortgage"

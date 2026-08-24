@@ -14,7 +14,7 @@ def test_landing_page_renders_default_filters(db_session):
     assert response.status_code == 200
     body = response.get_data(as_text=True)
     assert "Gross Rent Collected" in body
-    assert "Net to Adi" in body
+    assert "Net Cash Flow" in body
     assert "Accumulated Balance" in body
 
 
@@ -152,11 +152,13 @@ def test_landing_page_has_currency_toggle_defaulting_to_usd_english(db_session):
     assert '<html lang="en" dir="ltr">' in body
 
 
-def test_landing_page_lang_cookie_switches_to_hebrew_nis_but_keeps_ltr_layout(db_session):
-    """The header toggle sets a `lang` cookie (app/routes/language.py) - a
-    real page render, not a client-side flip. Text and currency switch to
-    Hebrew, but the layout deliberately stays LTR throughout (Adi's request,
-    2026-08-23: translate the words, never mirror the page)."""
+def test_landing_page_lang_cookie_translates_text_but_leaves_currency_alone(db_session):
+    """Language and currency are two independent cookies/buttons (Adi's
+    request, 2026-08-24 - previously one combined toggle). Switching only the
+    `lang` cookie translates every string, but money stays in USD until the
+    separate `currency` cookie is also switched. Layout deliberately stays
+    LTR throughout regardless (Adi's request, 2026-08-23: translate the
+    words, never mirror the page)."""
     seed(db_session)
     brunswick = db_session.query(Property).filter_by(nickname="Brunswick").one()
     db_session.add(MonthlyStatement(property_id=brunswick.id, month=date(2026, 7, 1), net_owner_funds=15107.93))
@@ -169,12 +171,29 @@ def test_landing_page_lang_cookie_switches_to_hebrew_nis_but_keeps_ltr_layout(db
     assert response.status_code == 200
     body = response.get_data(as_text=True)
     assert '<html lang="he" dir="ltr">' in body
-    assert "15,107.93 $" not in body  # no longer the raw USD figure
-    assert "₪" in body
+    assert "15,107.93 $" in body  # still USD - currency cookie wasn't touched
     assert 'class="fx-rate-bar"' in body
     assert "לוח בקרה" in body  # "Dashboard" nav link, translated
     assert '<header class="page-header">' in body  # no dir override needed - the whole page stays LTR now
     assert "רווח תפעולי נקי" in body  # "Net Operating Income" row header, translated
+
+
+def test_landing_page_currency_cookie_converts_money_but_leaves_text_alone(db_session):
+    seed(db_session)
+    brunswick = db_session.query(Property).filter_by(nickname="Brunswick").one()
+    db_session.add(MonthlyStatement(property_id=brunswick.id, month=date(2026, 7, 1), net_owner_funds=15107.93))
+    db_session.commit()
+
+    client = create_app().test_client()
+    client.set_cookie("currency", "nis")
+    response = client.get("/?period=custom_month&month=2026-07")
+
+    assert response.status_code == 200
+    body = response.get_data(as_text=True)
+    assert '<html lang="en" dir="ltr">' in body
+    assert "15,107.93 $" not in body  # converted to NIS
+    assert "₪" in body
+    assert ">Dashboard<" in body  # nav stays English - only currency switched
 
 
 def test_set_language_route_sets_cookie_and_redirects():
@@ -184,3 +203,12 @@ def test_set_language_route_sets_cookie_and_redirects():
     assert response.status_code == 302
     assert response.headers["Location"] == "/trends"
     assert "lang=he" in response.headers.get("Set-Cookie", "")
+
+
+def test_set_currency_route_sets_cookie_and_redirects():
+    client = create_app().test_client()
+    response = client.get("/set-currency/nis", headers={"Referer": "/trends"})
+
+    assert response.status_code == 302
+    assert response.headers["Location"] == "/trends"
+    assert "currency=nis" in response.headers.get("Set-Cookie", "")

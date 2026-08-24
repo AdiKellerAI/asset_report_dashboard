@@ -48,13 +48,16 @@ TRANSLATIONS = {
     "Total Property Expenses": "סך הוצאות הנכס",
     "Expenses": "הוצאות",
     "Net Operating Income": "רווח תפעולי נקי",
-    "Net to Adi": "נטו לעדי",
+    "Net Cash Flow": "תזרים מזומנים נטו",
     "Accumulated Balance": "יתרה שנצברה",
     "Still with Overland, not yet transferred — portfolio-wide, as of now": (
         "עדיין אצל אוברלנד, טרם הועבר — עבור כלל התיק, נכון לעכשיו"
     ),
     "Net Operating Income — Last {n} Months": "רווח תפעולי נקי — {n} חודשים אחרונים",
     "Annual Yield": "תשואה שנתית",
+    "3Y": "3 שנים",
+    "6Y": "6 שנים",
+    "All": "הכל",
     "No property values set yet - add them in Manage to see this chart.": (
         "עדיין לא הוגדר שווי לנכסים - הוסף אותו בעמוד הניהול כדי לראות גרף זה."
     ),

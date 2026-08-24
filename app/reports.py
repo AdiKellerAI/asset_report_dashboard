@@ -20,7 +20,7 @@ SUMMARY_SERIES = {
     "gross_rent": "Gross Rent Collected",
     "total_expenses": "Total Property Expenses",
     "noi": "Net Operating Income",
-    "net_to_adi": "Net to Adi",
+    "net_to_adi": "Net Cash Flow",
     "net_owner_funds": "Net Owner Funds",
     "beginning_balance": "Beginning Balance",
     "ending_balance": "Ending Balance",
@@ -122,7 +122,7 @@ def dashboard_summary(
     if monthly_mortgage_total is None:
         # The mortgage is one combined loan for the whole portfolio (Adi
         # confirmed 2026-08-23), not per property - it only ever affects the
-        # "all properties" Net to Adi, never an individual property's own.
+        # "all properties" Net Cash Flow, never an individual property's own.
         monthly_mortgage_total = 0.0
         if property_nickname == "all":
             mortgage = session.query(Mortgage).order_by(Mortgage.id.desc()).first()
@@ -242,7 +242,7 @@ def trend_series(
     months = sorted(by_month.keys())
 
     # The mortgage is one combined loan for the whole portfolio, not per
-    # property - only affects the "all properties" Net to Adi line.
+    # property - only affects the "all properties" Net Cash Flow line.
     monthly_mortgage_total = 0.0
     if "net_to_adi" in series_keys and property_nickname == "all":
         mortgage = session.query(Mortgage).order_by(Mortgage.id.desc()).first()
@@ -315,13 +315,19 @@ RANGE_CHOICES = {
 DEFAULT_RANGE = "1y"
 
 
-def annual_yield_series(session):
+YIELD_RANGE_CHOICES = {"3y": 3, "6y": 6, "all": None}
+DEFAULT_YIELD_RANGE = "3y"
+
+
+def annual_yield_series(session, years_limit=None):
     """Net yield (annual NOI / property value) per property and portfolio
     Total, one point per calendar year that has any monthly_statement data -
     the landing page's "Annual Yield" chart, below the NOI trend chart.
     `Property.value` (manually entered via /manage) is the denominator; a
     property with no value set yet is left out of its own line and out of
-    the Total's denominator, rather than silently treating it as free/zero."""
+    the Total's denominator, rather than silently treating it as free/zero.
+    `years_limit` keeps only the most recent N years (the chart's Range
+    picker - defaults to the last 3 years, with 6-year/all-time options)."""
     properties = session.query(Property).order_by(Property.nickname).all()
     property_ids = [p.id for p in properties]
     statements = (
@@ -341,6 +347,8 @@ def annual_yield_series(session):
         prior = noi_by_year_and_property[year].get(s.property_id, 0.0)
         noi_by_year_and_property[year][s.property_id] = prior + float(s.noi or 0)
     years.sort()
+    if years_limit is not None:
+        years = years[-years_limit:]
 
     valued_properties = [p for p in properties if p.value]
     lines = {}

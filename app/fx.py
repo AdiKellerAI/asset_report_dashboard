@@ -37,12 +37,13 @@ def get_usd_to_ils_rate():
     return rate
 
 
-def format_money(value, lang):
+def format_money(value, currency):
     """Shared by the `money` Jinja filter and anywhere else (the tables
     page) that needs the same USD/NIS display formatting outside a
-    template."""
+    template. `currency` is independent of the text language (Adi's
+    request, 2026-08-24: two separate buttons, not one combined toggle)."""
     value = float(value)
-    if lang == "he":
+    if currency == "nis":
         value = value * get_usd_to_ils_rate()
         return f"{value:,.2f} ₪"
     return f"{value:,.2f} $"

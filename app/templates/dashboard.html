@@ -58,7 +58,7 @@
           <td class="total-col">{{ total.noi|money }}</td>
         </tr>
         <tr>
-          <th scope="row">{{ "Net to Adi"|t }}</th>
+          <th scope="row">{{ "Net Cash Flow"|t }}</th>
           {% for p in properties %}
           <td>{{ p.net_to_adi|money }}</td>
           {% endfor %}
@@ -82,7 +82,15 @@
   {% endif %}
 
   <section class="chart-wrap income-chart" dir="ltr">
-    <h2 class="chart-title">{{ "Annual Yield"|t }}</h2>
+    {% set yield_base_qs = "period=" ~ selected_period ~ "&month=" ~ selected_month ~ "&year=" ~ selected_year %}
+    <div class="chart-header-row">
+      <h2 class="chart-title">{{ "Annual Yield"|t }}</h2>
+      <nav class="range-pills">
+        <a href="/?{{ yield_base_qs }}&yield_range=3y" class="range-pill {{ 'active' if selected_yield_range == '3y' }}">{{ "3Y"|t }}</a>
+        <a href="/?{{ yield_base_qs }}&yield_range=6y" class="range-pill {{ 'active' if selected_yield_range == '6y' }}">{{ "6Y"|t }}</a>
+        <a href="/?{{ yield_base_qs }}&yield_range=all" class="range-pill {{ 'active' if selected_yield_range == 'all' }}">{{ "All"|t }}</a>
+      </nav>
+    </div>
     {% if yield_years %}
     <canvas id="yield-chart" role="img" aria-label="Annual net yield per property and total, by year"></canvas>
     {% else %}

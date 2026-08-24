@@ -130,7 +130,7 @@ def test_net_to_adi_uses_latest_month_unpaid_bills_not_a_sum(db_session):
 def test_net_to_adi_subtracts_mortgage_per_month_present_for_all_properties(db_session):
     """The mortgage is one combined loan for the whole portfolio (Adi
     confirmed 2026-08-23), not per property - it only ever affects the "all
-    properties" Net to Adi, never an individual property's own column."""
+    properties" Net Cash Flow, never an individual property's own column."""
     seed(db_session)
     brunswick = _property(db_session, "Brunswick")
     db_session.add(Mortgage(monthly_payment=250))

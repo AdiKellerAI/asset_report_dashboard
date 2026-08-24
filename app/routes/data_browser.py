@@ -36,7 +36,7 @@ def _datetime(value):
 
 
 def _money(value):
-    return format_money(value, g.lang) if value is not None else "—"
+    return format_money(value, g.currency) if value is not None else "—"
 
 
 def _property_label(prop):
@@ -45,7 +45,7 @@ def _property_label(prop):
 
 def _table_configs():
     """Built per-call (not module-level) since column renderers close over
-    `g.lang` for money formatting, and `g` only exists during a request."""
+    `g.currency` for money formatting, and `g` only exists during a request."""
     return {
         "property": {
             "label": "Properties",

@@ -137,28 +137,28 @@ a {
   }
 
   .main-nav {
-    gap: 0.1rem;
-    padding: 0.2rem;
+    gap: 0.05rem;
+    padding: 0.15rem;
   }
 
   .main-nav a {
-    padding: 0.35rem 0.5rem;
-    font-size: 0.68rem;
+    padding: 0.3rem 0.4rem;
+    font-size: 0.62rem;
   }
 
   .currency-widget {
-    gap: 0.4rem;
+    gap: 0.3rem;
   }
 
   .currency-btn {
-    min-width: 34px;
-    min-height: 34px;
-    padding: 0.3rem 0.5rem;
-    font-size: 0.8rem;
+    min-width: 30px;
+    min-height: 30px;
+    padding: 0.25rem 0.4rem;
+    font-size: 0.7rem;
   }
 
   .logout-link {
-    font-size: 0.68rem;
+    font-size: 0.62rem;
   }
 }
 
@@ -713,6 +713,47 @@ a {
   letter-spacing: 0.07em;
   color: var(--ink-muted);
   margin: 0 0 1rem;
+}
+
+.chart-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.chart-header-row .chart-title {
+  margin: 0 0 1rem;
+}
+
+.range-pills {
+  display: flex;
+  gap: 0.3rem;
+  margin-bottom: 1rem;
+}
+
+.range-pill {
+  border: 1px solid var(--border-soft);
+  background: var(--surface);
+  color: var(--ink-secondary);
+  text-decoration: none;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 0.3rem 0.65rem;
+  border-radius: 999px;
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.range-pill:hover {
+  color: var(--ink);
+  border-color: var(--accent);
+}
+
+.range-pill.active {
+  color: var(--ink);
+  background: var(--accent-soft);
+  border-color: var(--accent);
 }
 
 @media (prefers-color-scheme: light) {
