@@ -756,6 +756,35 @@ a {
   border-color: var(--accent);
 }
 
+/* ---------- Report page (waterfall) ---------- */
+
+.waterfall-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin: -0.5rem 0 1rem;
+}
+
+.waterfall-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  color: var(--ink-secondary);
+}
+
+.waterfall-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  display: inline-block;
+}
+
+.waterfall-dot-income { background: #2f9e58; }
+.waterfall-dot-expense { background: #d24545; }
+.waterfall-dot-subtotal { background: var(--accent); }
+.waterfall-dot-total { background: var(--gold); }
+
 @media (prefers-color-scheme: light) {
   /* This app is deliberately dark-only (Adi's preference) - a light OS
      theme still gets the dark palette, not an inverted light one. */

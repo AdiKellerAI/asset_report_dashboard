@@ -6,9 +6,11 @@ from app.models import ExpenseType, MonthlyStatement, Mortgage, Property, Transa
 from app.reports import (
     annual_yield_series,
     available_category_series,
+    available_report_months,
     dashboard_breakdown,
     dashboard_summary,
     recent_noi_trend,
+    report_breakdown,
     resolve_period,
     trend_series,
 )
@@ -353,6 +355,83 @@ def test_annual_yield_series_skips_properties_with_no_value_set(db_session):
     assert "Colburn" not in result["lines"]
     # Total only reflects the valued property, not a silently-wrong blend
     assert result["lines"]["Total"] == pytest.approx([1.0])  # 1000/100000, Colburn excluded
+
+
+def test_report_breakdown_builds_waterfall_from_income_to_net_cash_flow(db_session):
+    seed(db_session)
+    brunswick = _property(db_session, "Brunswick")
+    mgmt = db_session.query(ExpenseType).filter_by(code="management_fee").one()
+    tax = db_session.query(ExpenseType).filter_by(code="property_tax").one()
+    db_session.add(
+        MonthlyStatement(
+            property_id=brunswick.id,
+            month=date(2026, 5, 1),
+            gross_income=1460,
+            total_operating_expense=1818.01,
+            noi=-358.01,
+            unpaid_bills=-1314.00,
+        )
+    )
+    db_session.add(Transaction(property_id=brunswick.id, expense_type_id=mgmt.id, date=date(2026, 5, 6), amount=146.00))
+    db_session.add(Transaction(property_id=brunswick.id, expense_type_id=tax.id, date=date(2026, 5, 26), amount=1672.01))
+    db_session.commit()
+
+    result = report_breakdown(db_session, date(2026, 5, 1), "Brunswick")
+
+    assert result["has_data"] is True
+    assert result["gross_rent"] == pytest.approx(1460.0)
+    assert result["expense_categories"] == [
+        {"label": "Property Tax", "amount": pytest.approx(1672.01)},
+        {"label": "Management Fee", "amount": pytest.approx(146.0)},
+    ]  # sorted biggest first
+    assert result["noi"] == pytest.approx(-358.01)
+    assert result["unpaid_bills"] == pytest.approx(-1314.00)
+    assert result["monthly_mortgage"] == 0.0  # only applies to "all" scope
+    assert result["net_cash_flow"] == pytest.approx(-358.01 - 1314.00)
+
+    waterfall = result["waterfall"]
+    assert waterfall[0] == {"label": "Gross Rent Collected", "start": 0, "end": 1460.0, "kind": "income"}
+    assert waterfall[-1]["label"] == "Net Cash Flow"
+    assert waterfall[-1]["kind"] == "total"
+    assert waterfall[-1]["end"] == pytest.approx(-358.01 - 1314.00)
+
+
+def test_report_breakdown_includes_mortgage_only_for_all_properties_scope(db_session):
+    seed(db_session)
+    brunswick = _property(db_session, "Brunswick")
+    db_session.add(MonthlyStatement(property_id=brunswick.id, month=date(2026, 5, 1), noi=1000))
+    db_session.add(Mortgage(lender="Chase", monthly_payment=500))
+    db_session.commit()
+
+    total_result = report_breakdown(db_session, date(2026, 5, 1), "all")
+    brunswick_result = report_breakdown(db_session, date(2026, 5, 1), "Brunswick")
+
+    assert total_result["monthly_mortgage"] == 500.0
+    assert total_result["net_cash_flow"] == pytest.approx(500.0)  # 1000 noi - 500 mortgage
+    assert brunswick_result["monthly_mortgage"] == 0.0
+    assert brunswick_result["net_cash_flow"] == pytest.approx(1000.0)
+
+
+def test_report_breakdown_has_no_data_for_a_month_with_no_statement(db_session):
+    seed(db_session)
+
+    result = report_breakdown(db_session, date(2020, 1, 1), "all")
+
+    assert result["has_data"] is False
+
+
+def test_available_report_months_lists_distinct_months_newest_first(db_session):
+    seed(db_session)
+    brunswick = _property(db_session, "Brunswick")
+    colburn = _property(db_session, "Colburn")
+    db_session.add(MonthlyStatement(property_id=brunswick.id, month=date(2026, 5, 1)))
+    db_session.add(MonthlyStatement(property_id=colburn.id, month=date(2026, 5, 1)))
+    db_session.add(MonthlyStatement(property_id=brunswick.id, month=date(2026, 6, 1)))
+    db_session.commit()
+
+    result = available_report_months(db_session)
+
+    assert result == [date(2026, 6, 1), date(2026, 5, 1)]
 
 
 def test_dashboard_breakdown_gives_per_property_and_total_for_same_period(db_session):

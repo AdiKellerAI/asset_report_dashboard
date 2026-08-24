@@ -14,6 +14,7 @@ def create_app(config_object=Config):
     from app.routes.health import health_bp
     from app.routes.language import language_bp
     from app.routes.manage import manage_bp
+    from app.routes.report import report_bp
     from app.routes.trends import trends_bp
     from app.routes.upload import upload_bp
     app.register_blueprint(auth_bp)
@@ -22,6 +23,7 @@ def create_app(config_object=Config):
     app.register_blueprint(health_bp)
     app.register_blueprint(language_bp)
     app.register_blueprint(manage_bp)
+    app.register_blueprint(report_bp)
     app.register_blueprint(trends_bp)
     app.register_blueprint(upload_bp)
 

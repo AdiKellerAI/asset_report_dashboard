@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+{% set active_nav = "report" %}
+{% block title %}{{ "Report"|t }} - {{ "Asset Report Dashboard"|t }}{% endblock %}
+
+{% block content %}
+  <p class="period-label">{{ "Understand This Report"|t }}</p>
+  <p class="empty-state-note">{{ "Select a month to see the full breakdown from income down to Net Cash Flow."|t }}</p>
+
+  <div class="period-selector">
+    <nav class="period-pills">
+      <a href="/report?property=all&month={{ selected_month.strftime('%Y-%m') }}" class="period-pill {{ 'active' if selected_property == 'all' }}">{{ "All Properties"|t }}</a>
+      {% for p in properties %}
+      <a href="/report?property={{ p.nickname }}&month={{ selected_month.strftime('%Y-%m') }}" class="period-pill {{ 'active' if selected_property == p.nickname }}">{{ p.nickname }}</a>
+      {% endfor %}
+    </nav>
+
+    <form method="get" action="/report" class="custom-period-form">
+      <input type="hidden" name="property" value="{{ selected_property }}">
+      <select name="month">
+        {% for m in months %}
+        <option value="{{ m.strftime('%Y-%m') }}" {{ "selected" if m == selected_month }}>{{ m.strftime('%B %Y') }}</option>
+        {% endfor %}
+      </select>
+      <button type="submit">{{ "Go"|t }}</button>
+    </form>
+  </div>
+
+  {% if not breakdown.has_data %}
+  <p class="empty-state-note">{{ "No report data for this month yet."|t }}</p>
+  {% else %}
+  <section class="chart-wrap income-chart" dir="ltr">
+    <h2 class="chart-title">{{ "How we got there"|t }}</h2>
+    <div class="waterfall-legend">
+      <span class="waterfall-legend-item"><span class="waterfall-dot waterfall-dot-income"></span>{{ "Income"|t }}</span>
+      <span class="waterfall-legend-item"><span class="waterfall-dot waterfall-dot-expense"></span>{{ "Expense"|t }}</span>
+      <span class="waterfall-legend-item"><span class="waterfall-dot waterfall-dot-subtotal"></span>{{ "Subtotal"|t }}</span>
+      <span class="waterfall-legend-item"><span class="waterfall-dot waterfall-dot-total"></span>{{ "Total"|t }}</span>
+    </div>
+    <canvas id="waterfall-chart" role="img" aria-label="Waterfall from gross rent to net cash flow, {{ selected_month.strftime('%B %Y') }}"></canvas>
+  </section>
+
+  <div class="table-wrap manage-table-wrap">
+    <table class="compare-table">
+      <tbody>
+        <tr>
+          <th scope="row">{{ "Gross Rent Collected"|t }}</th>
+          <td class="total-col">{{ breakdown.gross_rent|money }}</td>
+        </tr>
+        {% for cat in breakdown.expense_categories %}
+        <tr>
+          <th scope="row">{{ cat.label }}</th>
+          <td>-{{ cat.amount|money }}</td>
+        </tr>
+        {% endfor %}
+        <tr>
+          <th scope="row">{{ "Total Property Expenses"|t }}</th>
+          <td>-{{ breakdown.total_expenses|money }}</td>
+        </tr>
+        <tr>
+          <th scope="row">{{ "Net Operating Income"|t }}</th>
+          <td class="total-col">{{ breakdown.noi|money }}</td>
+        </tr>
+        {% if breakdown.unpaid_bills %}
+        <tr>
+          <th scope="row">{{ "Unpaid Bills"|t }}</th>
+          <td>{{ breakdown.unpaid_bills|money }}</td>
+        </tr>
+        {% endif %}
+        {% if breakdown.monthly_mortgage %}
+        <tr>
+          <th scope="row">{{ "Mortgage"|t }}</th>
+          <td>-{{ breakdown.monthly_mortgage|money }}</td>
+        </tr>
+        {% endif %}
+        <tr>
+          <th scope="row">{{ "Net Cash Flow"|t }}</th>
+          <td class="total-col">{{ breakdown.net_cash_flow|money }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  {% endif %}
+{% endblock %}
+
+{% block scripts %}
+  {% if breakdown.has_data %}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <script>
+    (function () {
+      const steps = {{ breakdown.waterfall|tojson }};
+      const KIND_COLORS = {
+        income: "#2f9e58",
+        expense: "#d24545",
+        subtotal: "#3987e5",
+        total: "#c98500",
+      };
+
+      Chart.defaults.font.family = "'Manrope', system-ui, sans-serif";
+
+      new Chart(document.getElementById("waterfall-chart"), {
+        type: "bar",
+        data: {
+          labels: steps.map((s) => s.label),
+          datasets: [
+            {
+              data: steps.map((s) => [Math.min(s.start, s.end), Math.max(s.start, s.end)]),
+              backgroundColor: steps.map((s) => KIND_COLORS[s.kind]),
+              borderRadius: 4,
+            },
+          ],
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: false },
+            tooltip: {
+              backgroundColor: "#1d1f24",
+              borderColor: "rgba(255,255,255,0.10)",
+              borderWidth: 1,
+              titleColor: "#ffffff",
+              bodyColor: "#c3c2b7",
+              padding: 12,
+              cornerRadius: 10,
+              callbacks: {
+                label: (item) => window.formatMoney(Math.abs(steps[item.dataIndex].end - steps[item.dataIndex].start)),
+              },
+            },
+          },
+          scales: {
+            x: {
+              grid: { color: "#2c2c2a" },
+              border: { color: "#383835" },
+              ticks: { color: "#898781", maxRotation: 45, minRotation: 0 },
+            },
+            y: {
+              grid: { color: "#2c2c2a" },
+              border: { color: "#383835" },
+              ticks: { color: "#898781", callback: (value) => window.formatMoney(value) },
+            },
+          },
+        },
+      });
+    })();
+  </script>
+  {% endif %}
+{% endblock %}

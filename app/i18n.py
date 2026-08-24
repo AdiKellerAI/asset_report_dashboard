@@ -15,6 +15,7 @@ TRANSLATIONS = {
     "Dashboard": "לוח בקרה",
     "Log out": "התנתקות",
     "Trends": "מגמות",
+    "Report": "דוח",
     "Manage": "ניהול",
     # Filters
     "Period": "תקופה",
@@ -43,6 +44,15 @@ TRANSLATIONS = {
     # Landing page
     "Metric": "מדד",
     "Total": "סה\"כ",
+    "Income": "הכנסה",
+    "Expense": "הוצאה",
+    "Subtotal": "סכום ביניים",
+    "Understand This Report": "הבנת הדוח",
+    "Select a month to see the full breakdown from income down to Net Cash Flow.": (
+        "בחר חודש כדי לראות את הפירוט המלא מההכנסה ועד לתזרים המזומנים נטו."
+    ),
+    "No report data for this month yet.": "אין עדיין נתוני דוח לחודש זה.",
+    "How we got there": "איך הגענו לתוצאה",
     "Gross Rent Collected": "שכר דירה שנגבה",
     "Rent": "שכירות",
     "Total Property Expenses": "סך הוצאות הנכס",

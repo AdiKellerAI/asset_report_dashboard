@@ -369,6 +369,101 @@ def annual_yield_series(session, years_limit=None):
     return {"years": years, "lines": lines}
 
 
+def report_breakdown(session, month, property_nickname="all"):
+    """The "understand the report" page (Adi's request, 2026-08-24): for one
+    selected month and property scope, the full waterfall from income down
+    to Net Cash Flow, plus the expense-category breakdown that explains the
+    gap between them. Deliberately NOT a comparison to any other period -
+    Adi wants this period's own numbers explained step by step, not a delta
+    against last month or last year."""
+    properties = session.query(Property).order_by(Property.nickname).all()
+    property_ids = _property_ids_for(property_nickname, properties)
+
+    statements = (
+        session.query(MonthlyStatement)
+        .filter(MonthlyStatement.property_id.in_(property_ids), MonthlyStatement.month == month)
+        .all()
+    )
+    gross_rent = sum(float(s.gross_income or 0) for s in statements)
+    total_expenses = sum(float(s.total_operating_expense or 0) for s in statements)
+    noi = sum(float(s.noi or 0) for s in statements)
+    unpaid_bills = sum(float(s.unpaid_bills or 0) for s in statements)
+
+    monthly_mortgage = 0.0
+    if property_nickname == "all":
+        mortgage = session.query(Mortgage).order_by(Mortgage.id.desc()).first()
+        monthly_mortgage = float(mortgage.monthly_payment or 0) if mortgage else 0.0
+
+    net_cash_flow = noi + unpaid_bills - monthly_mortgage
+
+    next_month = date(month.year + 1, 1, 1) if month.month == 12 else date(month.year, month.month + 1, 1)
+    category_rows = (
+        session.query(ExpenseType.label, func.sum(Transaction.amount))
+        .join(Transaction, Transaction.expense_type_id == ExpenseType.id)
+        .filter(
+            Transaction.property_id.in_(property_ids),
+            Transaction.date >= month,
+            Transaction.date < next_month,
+            ExpenseType.is_operating.is_(True),
+            ExpenseType.is_income.is_(False),
+        )
+        .group_by(ExpenseType.label)
+        .all()
+    )
+    expense_categories = sorted(
+        ({"label": label, "amount": float(total)} for label, total in category_rows if total),
+        key=lambda c: c["amount"],
+        reverse=True,
+    )
+
+    # The waterfall: each step is a (start, end) span a floating bar draws
+    # between - "income"/"expense" steps chain off the running total,
+    # "subtotal"/"total" steps are checkpoints anchored back to zero (NOI and
+    # the final Net Cash Flow), matching dev-plan.md sec 5.2's original
+    # "literal waterfall chart" concept.
+    waterfall = [{"label": "Gross Rent Collected", "start": 0, "end": gross_rent, "kind": "income"}]
+    running = gross_rent
+    for cat in expense_categories:
+        waterfall.append({"label": cat["label"], "start": running, "end": running - cat["amount"], "kind": "expense"})
+        running -= cat["amount"]
+    waterfall.append({"label": "Net Operating Income", "start": 0, "end": noi, "kind": "subtotal"})
+    running = noi
+    if unpaid_bills:
+        waterfall.append(
+            {
+                "label": "Unpaid Bills",
+                "start": running,
+                "end": running + unpaid_bills,
+                "kind": "income" if unpaid_bills > 0 else "expense",
+            }
+        )
+        running += unpaid_bills
+    if monthly_mortgage:
+        waterfall.append({"label": "Mortgage", "start": running, "end": running - monthly_mortgage, "kind": "expense"})
+        running -= monthly_mortgage
+    waterfall.append({"label": "Net Cash Flow", "start": 0, "end": net_cash_flow, "kind": "total"})
+
+    return {
+        "month": month,
+        "has_data": bool(statements),
+        "gross_rent": gross_rent,
+        "expense_categories": expense_categories,
+        "total_expenses": total_expenses,
+        "noi": noi,
+        "unpaid_bills": unpaid_bills,
+        "monthly_mortgage": monthly_mortgage,
+        "net_cash_flow": net_cash_flow,
+        "waterfall": waterfall,
+    }
+
+
+def available_report_months(session):
+    """Every month that has at least one monthly_statement - the report
+    page's month picker options, newest first."""
+    rows = session.query(MonthlyStatement.month).distinct().order_by(MonthlyStatement.month.desc()).all()
+    return [r[0] for r in rows]
+
+
 def recent_noi_trend(session, months=5):
     """Net Operating Income for the last N months that actually have a
     report, per property plus the portfolio Total - the landing page's
