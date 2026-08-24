@@ -4,6 +4,7 @@ import pytest
 
 from app.models import ExpenseType, MonthlyStatement, Mortgage, Property, Transaction, Transfer
 from app.reports import (
+    annual_yield_series,
     available_category_series,
     dashboard_breakdown,
     dashboard_summary,
@@ -313,6 +314,45 @@ def test_recent_noi_trend_returns_last_n_months_per_property_and_total(db_sessio
     assert result["lines"]["Brunswick"] == [200.0, 300.0, 400.0, 500.0, 600.0]
     assert result["lines"]["Colburn"] == [20.0, 30.0, 40.0, 50.0, 60.0]
     assert result["lines"]["Total"] == [220.0, 330.0, 440.0, 550.0, 660.0]
+
+
+def test_annual_yield_series_divides_annual_noi_by_property_value(db_session):
+    seed(db_session)
+    brunswick = _property(db_session, "Brunswick")
+    colburn = _property(db_session, "Colburn")
+    brunswick.value = 100_000
+    colburn.value = 50_000
+    db_session.add(MonthlyStatement(property_id=brunswick.id, month=date(2025, 6, 1), noi=5_000))
+    db_session.add(MonthlyStatement(property_id=brunswick.id, month=date(2025, 12, 1), noi=5_000))
+    db_session.add(MonthlyStatement(property_id=colburn.id, month=date(2025, 6, 1), noi=2_500))
+    db_session.add(MonthlyStatement(property_id=brunswick.id, month=date(2026, 3, 1), noi=3_000))
+    db_session.commit()
+
+    result = annual_yield_series(db_session)
+
+    assert result["years"] == [2025, 2026]
+    assert result["lines"]["Brunswick"] == pytest.approx([10.0, 3.0])  # 10000/100000, 3000/100000
+    assert result["lines"]["Colburn"] == pytest.approx([5.0, 0.0])  # 2500/50000, no 2026 data yet
+    # Total = combined NOI / combined value (150000)
+    assert result["lines"]["Total"] == pytest.approx([(10_000 + 2_500) / 1500, 3_000 / 1500])
+
+
+def test_annual_yield_series_skips_properties_with_no_value_set(db_session):
+    seed(db_session)
+    brunswick = _property(db_session, "Brunswick")
+    colburn = _property(db_session, "Colburn")
+    brunswick.value = 100_000
+    # Colburn.value left None - hasn't been entered yet
+    db_session.add(MonthlyStatement(property_id=brunswick.id, month=date(2026, 1, 1), noi=1_000))
+    db_session.add(MonthlyStatement(property_id=colburn.id, month=date(2026, 1, 1), noi=500))
+    db_session.commit()
+
+    result = annual_yield_series(db_session)
+
+    assert "Brunswick" in result["lines"]
+    assert "Colburn" not in result["lines"]
+    # Total only reflects the valued property, not a silently-wrong blend
+    assert result["lines"]["Total"] == pytest.approx([1.0])  # 1000/100000, Colburn excluded
 
 
 def test_dashboard_breakdown_gives_per_property_and_total_for_same_period(db_session):

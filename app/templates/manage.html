@@ -50,6 +50,20 @@
   </section>
 
   <section class="manage-card">
+    <h2 class="manage-card-title">{{ "Property Values"|t }}</h2>
+    <p class="manage-card-hint">{{ "Used as the denominator for the Annual Yield chart on the Dashboard."|t }}</p>
+    <form method="post" action="/manage/property-values" class="manage-form">
+      {% for p in properties %}
+      <label>
+        {{ p.nickname }} - {{ "Value (USD)"|t }}
+        <input type="number" step="0.01" name="value_{{ p.id }}" value="{{ p.value if p.value is not none else '' }}">
+      </label>
+      {% endfor %}
+      <button type="submit">{{ "Save"|t }}</button>
+    </form>
+  </section>
+
+  <section class="manage-card">
     <h2 class="manage-card-title">{{ "Yearly Tax Payment"|t }}</h2>
     <form method="post" action="/manage/tax" class="manage-form">
       <label>

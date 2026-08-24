@@ -80,6 +80,15 @@
     <canvas id="noi-chart" role="img" aria-label="Net operating income per property and total, last {{ noi_months|length }} months"></canvas>
   </section>
   {% endif %}
+
+  <section class="chart-wrap income-chart" dir="ltr">
+    <h2 class="chart-title">{{ "Annual Yield"|t }}</h2>
+    {% if yield_years %}
+    <canvas id="yield-chart" role="img" aria-label="Annual net yield per property and total, by year"></canvas>
+    {% else %}
+    <p class="empty-state-note">{{ "No property values set yet - add them in Manage to see this chart."|t }}</p>
+    {% endif %}
+  </section>
 {% endblock %}
 
 {% block scripts %}
@@ -179,6 +188,66 @@
         },
       },
     });
+  </script>
+  {% endif %}
+
+  {% if yield_years %}
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+  <script>
+    (function () {
+      const yieldYears = {{ yield_years|tojson }};
+      const yieldLines = {{ yield_lines|tojson }};
+      const LINE_COLORS = { "Total": "#c98500" };
+      const PROPERTY_PALETTE = ["#3987e5", "#d95926", "#199e70", "#d55181"];
+      const TOTAL_LABEL = {{ total_label|tojson }};
+
+      Chart.defaults.font.family = "'Manrope', system-ui, sans-serif";
+
+      let propertyIndex = 0;
+      const datasets = Object.entries(yieldLines).map(([name, values]) => {
+        const color = LINE_COLORS[name] || PROPERTY_PALETTE[propertyIndex++ % PROPERTY_PALETTE.length];
+        return {
+          label: name === "Total" ? TOTAL_LABEL : name,
+          data: values,
+          backgroundColor: color,
+          borderRadius: 4,
+        };
+      });
+
+      new Chart(document.getElementById("yield-chart"), {
+        type: "bar",
+        data: { labels: yieldYears, datasets },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: {
+              labels: { color: "#c3c2b7", usePointStyle: true, boxWidth: 8, boxHeight: 8, padding: 16 },
+            },
+            tooltip: {
+              backgroundColor: "#1d1f24",
+              borderColor: "rgba(255,255,255,0.10)",
+              borderWidth: 1,
+              titleColor: "#ffffff",
+              bodyColor: "#c3c2b7",
+              padding: 12,
+              cornerRadius: 10,
+              callbacks: {
+                label: (item) => `${item.dataset.label}: ${item.parsed.y.toFixed(2)}%`,
+              },
+            },
+          },
+          scales: {
+            x: { grid: { color: "#2c2c2a" }, border: { color: "#383835" }, ticks: { color: "#898781" } },
+            y: {
+              beginAtZero: true,
+              grid: { color: "#2c2c2a" },
+              border: { color: "#383835" },
+              ticks: { color: "#898781", callback: (value) => value + "%" },
+            },
+          },
+        },
+      });
+    })();
   </script>
   {% endif %}
 {% endblock %}

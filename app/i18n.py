@@ -54,6 +54,10 @@ TRANSLATIONS = {
         "עדיין אצל אוברלנד, טרם הועבר — עבור כלל התיק, נכון לעכשיו"
     ),
     "Net Operating Income — Last {n} Months": "רווח תפעולי נקי — {n} חודשים אחרונים",
+    "Annual Yield": "תשואה שנתית",
+    "No property values set yet - add them in Manage to see this chart.": (
+        "עדיין לא הוגדר שווי לנכסים - הוסף אותו בעמוד הניהול כדי לראות גרף זה."
+    ),
     # Trends summary series
     "Net Owner Funds": "כספי בעלים נטו",
     "Beginning Balance": "יתרת פתיחה",
@@ -83,6 +87,11 @@ TRANSLATIONS = {
     ),
     "Drop files here, or click to browse": "גרור קבצים לכאן, או לחץ לבחירה",
     "Upload": "העלה",
+    "Property Values": "שווי הנכסים",
+    "Used as the denominator for the Annual Yield chart on the Dashboard.": (
+        "משמש כמכנה בגרף התשואה השנתית בלוח הבקרה."
+    ),
+    "Value (USD)": "שווי (דולר)",
     "Mortgage": "משכנתא",
     "One combined mortgage for the whole portfolio.": "משכנתא אחת משותפת לכל התיק.",
     "Lender": "גורם מלווה",
@@ -155,6 +164,8 @@ MESSAGE_TEMPLATES = {
     ", {count} need review": ", {count} דורשים בדיקה",
     "Couldn't save mortgage - check the numbers/date.": "לא ניתן היה לשמור את המשכנתא - בדוק את המספרים/התאריך.",
     "Mortgage updated.": "המשכנתא עודכנה.",
+    "Couldn't save property values - check the numbers.": "לא ניתן היה לשמור את שווי הנכסים - בדוק את המספרים.",
+    "Property values updated.": "שווי הנכסים עודכן.",
     "Tax payment needs a valid year.": "תשלום המס דורש שנה תקינה.",
     "Couldn't save the tax payment - check the amount/date.": "לא ניתן היה לשמור את תשלום המס - בדוק את הסכום/התאריך.",
     "Tax payment for {year} recorded.": "תשלום המס עבור {year} נרשם.",

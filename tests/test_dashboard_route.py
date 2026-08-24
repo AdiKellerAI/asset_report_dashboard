@@ -90,6 +90,36 @@ def test_landing_page_includes_last_5_months_noi_chart_per_property_and_total(db
     assert "700.0" in body
 
 
+def test_landing_page_shows_annual_yield_chart_when_property_values_are_set(db_session):
+    seed(db_session)
+    brunswick = db_session.query(Property).filter_by(nickname="Brunswick").one()
+    brunswick.value = 96_500
+    db_session.add(MonthlyStatement(property_id=brunswick.id, month=date(2026, 7, 1), noi=800))
+    db_session.commit()
+
+    client = create_app().test_client()
+    response = client.get("/")
+
+    assert response.status_code == 200
+    body = response.get_data(as_text=True)
+    assert "Annual Yield" in body
+    assert 'id="yield-chart"' in body
+    assert '"Brunswick"' in body
+
+
+def test_landing_page_shows_empty_state_for_annual_yield_when_no_values_set(db_session):
+    seed(db_session)
+
+    client = create_app().test_client()
+    response = client.get("/")
+
+    assert response.status_code == 200
+    body = response.get_data(as_text=True)
+    assert "Annual Yield" in body
+    assert 'id="yield-chart"' not in body
+    assert "add them in Manage" in body
+
+
 def test_landing_page_money_format_uses_comma_and_dollar_suffix(db_session):
     seed(db_session)
     brunswick = db_session.query(Property).filter_by(nickname="Brunswick").one()

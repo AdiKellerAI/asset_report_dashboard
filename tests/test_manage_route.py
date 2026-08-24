@@ -1,7 +1,7 @@
 from datetime import date
 
 from app import create_app
-from app.models import Mortgage, TaxReport, Transfer
+from app.models import Mortgage, Property, TaxReport, Transfer
 from app.seed import seed
 
 
@@ -15,8 +15,30 @@ def test_manage_page_renders(db_session):
     body = response.get_data(as_text=True)
     assert "Upload New Reports" in body
     assert "Mortgage" in body
+    assert "Property Values" in body
     assert "Yearly Tax Payment" in body
     assert "Transfer to Israel" in body
+
+
+def test_manage_update_property_values(db_session):
+    seed(db_session)
+    brunswick = db_session.query(Property).filter_by(nickname="Brunswick").one()
+    colburn = db_session.query(Property).filter_by(nickname="Colburn").one()
+
+    client = create_app().test_client()
+    response = client.post(
+        "/manage/property-values",
+        data={f"value_{brunswick.id}": "96500", f"value_{colburn.id}": "113000"},
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    assert "Property values updated" in response.get_data(as_text=True)
+
+    db_session.refresh(brunswick)
+    db_session.refresh(colburn)
+    assert float(brunswick.value) == 96500.0
+    assert float(colburn.value) == 113000.0
 
 
 def test_manage_upload_with_no_files_redirects_with_error(db_session):

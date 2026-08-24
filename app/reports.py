@@ -315,6 +315,52 @@ RANGE_CHOICES = {
 DEFAULT_RANGE = "1y"
 
 
+def annual_yield_series(session):
+    """Net yield (annual NOI / property value) per property and portfolio
+    Total, one point per calendar year that has any monthly_statement data -
+    the landing page's "Annual Yield" chart, below the NOI trend chart.
+    `Property.value` (manually entered via /manage) is the denominator; a
+    property with no value set yet is left out of its own line and out of
+    the Total's denominator, rather than silently treating it as free/zero."""
+    properties = session.query(Property).order_by(Property.nickname).all()
+    property_ids = [p.id for p in properties]
+    statements = (
+        session.query(MonthlyStatement)
+        .filter(MonthlyStatement.property_id.in_(property_ids))
+        .order_by(MonthlyStatement.month)
+        .all()
+    )
+
+    noi_by_year_and_property = {}
+    years = []
+    for s in statements:
+        year = s.month.year
+        if year not in noi_by_year_and_property:
+            noi_by_year_and_property[year] = {}
+            years.append(year)
+        prior = noi_by_year_and_property[year].get(s.property_id, 0.0)
+        noi_by_year_and_property[year][s.property_id] = prior + float(s.noi or 0)
+    years.sort()
+
+    valued_properties = [p for p in properties if p.value]
+    lines = {}
+    for prop in valued_properties:
+        lines[prop.nickname] = [
+            100 * noi_by_year_and_property.get(year, {}).get(prop.id, 0.0) / float(prop.value) for year in years
+        ]
+
+    total_value = sum(float(p.value) for p in valued_properties)
+    if total_value:
+        lines["Total"] = [
+            100
+            * sum(noi_by_year_and_property.get(year, {}).get(p.id, 0.0) for p in valued_properties)
+            / total_value
+            for year in years
+        ]
+
+    return {"years": years, "lines": lines}
+
+
 def recent_noi_trend(session, months=5):
     """Net Operating Income for the last N months that actually have a
     report, per property plus the portfolio Total - the landing page's

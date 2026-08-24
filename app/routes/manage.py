@@ -6,7 +6,7 @@ from app.cache import invalidate_all
 from app.db import SessionLocal
 from app.i18n import translate_message
 from app.ingestion import process_upload
-from app.models import Document, Mortgage, TaxReport, Transfer
+from app.models import Document, Mortgage, Property, TaxReport, Transfer
 
 manage_bp = Blueprint("manage", __name__)
 
@@ -41,6 +41,7 @@ def _redirect_with_message(template, level="success", **kwargs):
 def manage():
     session = SessionLocal()
     try:
+        properties = session.query(Property).order_by(Property.nickname).all()
         mortgage = session.query(Mortgage).order_by(Mortgage.id.desc()).first()
         tax_reports = session.query(TaxReport).order_by(TaxReport.year.desc()).all()
         transfers = session.query(Transfer).order_by(Transfer.transfer_date.desc()).all()
@@ -49,6 +50,7 @@ def manage():
 
     return render_template(
         "manage.html",
+        properties=properties,
         mortgage=mortgage,
         tax_reports=tax_reports,
         transfers=transfers,
@@ -107,6 +109,30 @@ def update_mortgage():
     invalidate_all()
 
     return _redirect_with_message("Mortgage updated.")
+
+
+@manage_bp.post("/manage/property-values")
+def update_property_values():
+    """Per-property value (dev-plan.md's original per-property purchase/loan
+    info) - the denominator for the Annual Yield chart. Unlike the mortgage,
+    this genuinely varies per property, so it's one form field per property
+    rather than a single combined figure."""
+    session = SessionLocal()
+    try:
+        properties = session.query(Property).order_by(Property.nickname).all()
+        try:
+            for prop in properties:
+                prop.value = _parse_float(request.form.get(f"value_{prop.id}"))
+        except ValueError:
+            session.rollback()
+            return _redirect_with_message("Couldn't save property values - check the numbers.", "error")
+
+        session.commit()
+    finally:
+        session.close()
+    invalidate_all()
+
+    return _redirect_with_message("Property values updated.")
 
 
 @manage_bp.post("/manage/tax")

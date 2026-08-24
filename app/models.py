@@ -26,6 +26,10 @@ class Property(Base):
     address: Mapped[str | None] = mapped_column(String(255))
     unit_details: Mapped[str | None] = mapped_column(Text)
     purchase_info: Mapped[str | None] = mapped_column(Text)
+    # Current/purchase value in USD - the denominator for the Annual Yield
+    # chart (annual NOI / value). Manually entered via /manage, not parsed
+    # from any document.
+    value: Mapped[float | None] = mapped_column(Numeric(12, 2))
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
 
