@@ -44,13 +44,10 @@ TRANSLATIONS = {
     # Landing page
     "Metric": "מדד",
     "Total": "סה\"כ",
-    "Income - adds to the total": "הכנסה - מוסיפה לסכום",
-    "Expense - subtracts from it": "הוצאה - מפחיתה ממנו",
-    "Checkpoint (measured from zero)": "נקודת ביניים (נמדדת מאפס)",
+    "Income": "הכנסה",
+    "Expense": "הוצאה",
+    "Checkpoint": "נקודת ביניים",
     "Final result": "תוצאה סופית",
-    "Each bar starts where the previous one ended - the dotted line shows the connection. Checkpoint and final-result bars are measured from zero instead, and every bar shows its own amount.": (
-        "כל עמודה מתחילה במקום שבו הקודמת הסתיימה - הקו המקווקו מראה את החיבור. עמודות נקודת ביניים ותוצאה סופית נמדדות מאפס, וכל עמודה מציגה את הסכום שלה."
-    ),
     "Understand This Report": "הבנת הדוח",
     "Select a month to see the full breakdown from income down to the change in cash balance.": (
         "בחר חודש כדי לראות את הפירוט המלא מההכנסה ועד לשינוי ביתרת המזומנים."

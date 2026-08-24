@@ -36,13 +36,12 @@
       </button>
     </div>
     <div class="waterfall-legend">
-      <span class="waterfall-legend-item"><span class="waterfall-dot waterfall-dot-income"></span>{{ "Income - adds to the total"|t }}</span>
-      <span class="waterfall-legend-item"><span class="waterfall-dot waterfall-dot-expense"></span>{{ "Expense - subtracts from it"|t }}</span>
-      <span class="waterfall-legend-item"><span class="waterfall-dot waterfall-dot-subtotal"></span>{{ "Checkpoint (measured from zero)"|t }}</span>
+      <span class="waterfall-legend-item"><span class="waterfall-dot waterfall-dot-income"></span>{{ "Income"|t }}</span>
+      <span class="waterfall-legend-item"><span class="waterfall-dot waterfall-dot-expense"></span>{{ "Expense"|t }}</span>
+      <span class="waterfall-legend-item"><span class="waterfall-dot waterfall-dot-subtotal"></span>{{ "Checkpoint"|t }}</span>
       <span class="waterfall-legend-item"><span class="waterfall-dot waterfall-dot-total"></span>{{ "Final result"|t }}</span>
     </div>
-    <p class="empty-state-note waterfall-hint">{{ "Each bar starts where the previous one ended - the dotted line shows the connection. Checkpoint and final-result bars are measured from zero instead, and every bar shows its own amount."|t }}</p>
-    <canvas id="waterfall-chart" role="img" aria-label="Waterfall from gross rent to net cash flow, {{ selected_month.strftime('%B %Y') }}"></canvas>
+    <canvas id="waterfall-chart" role="img" aria-label="Income and expenses breakdown, {{ selected_month.strftime('%B %Y') }}"></canvas>
   </section>
 
   <div class="table-wrap manage-table-wrap">
@@ -107,75 +106,32 @@
 
       Chart.defaults.font.family = "'Manrope', system-ui, sans-serif";
 
-      function stepLabel(step) {
-        const amount = Math.abs(step.end - step.start);
-        const formatted = window.formatMoney(amount);
-        if (step.kind === "income") return "+" + formatted;
-        if (step.kind === "expense") return "−" + formatted; // real minus sign, not a hyphen
-        return window.formatMoney(step.end); // checkpoint/total bars show the running value, not a delta
-      }
-
-      // Two things a plain Chart.js bar chart doesn't give you, and both are
-      // exactly what made this unreadable before (Adi's feedback,
-      // 2026-08-24): a dotted connector showing each bar picks up exactly
-      // where the last one ended, and the bar's own amount/sign printed
-      // right on it - so the chart is self-explanatory without reading the
-      // legend first.
-      const waterfallLabelsPlugin = {
-        id: "waterfallLabels",
-        afterDatasetsDraw(chart) {
-          const { ctx } = chart;
-          const meta = chart.getDatasetMeta(0);
-          const yScale = chart.scales.y;
-
-          ctx.save();
-          ctx.strokeStyle = "rgba(255,255,255,0.22)";
-          ctx.setLineDash([3, 3]);
-          ctx.lineWidth = 1;
-          for (let i = 0; i < steps.length - 1; i++) {
-            const bar = meta.data[i];
-            const nextBar = meta.data[i + 1];
-            if (!bar || !nextBar) continue;
-            const connectY = yScale.getPixelForValue(steps[i].end);
-            const halfWidth = (bar.width || 24) / 2;
-            ctx.beginPath();
-            ctx.moveTo(bar.x + halfWidth, connectY);
-            ctx.lineTo(nextBar.x - halfWidth, connectY);
-            ctx.stroke();
-          }
-          ctx.restore();
-
-          ctx.save();
-          ctx.font = "700 11px 'Manrope', system-ui, sans-serif";
-          ctx.textAlign = "center";
-          meta.data.forEach((bar, i) => {
-            if (!bar) return;
-            const step = steps[i];
-            ctx.fillStyle = step.kind === "expense" ? "#e08a8a" : step.kind === "income" ? "#7ed3a0" : "#c3c2b7";
-            const topPx = Math.min(yScale.getPixelForValue(step.start), yScale.getPixelForValue(step.end));
-            ctx.fillText(stepLabel(step), bar.x, topPx - 8);
-          });
-          ctx.restore();
-        },
-      };
-
+      // Every bar is anchored at zero (Adi's feedback, 2026-08-24: floating
+      // bars that don't start from 0 read as meaningless slivers, and
+      // labels drawn on them overlapped). income/expense steps use their
+      // own signed delta (Chart.js draws a negative value as a bar going
+      // down from 0, which is exactly "this step subtracted"); checkpoint/
+      // total steps already have start=0 in report_breakdown()'s waterfall,
+      // so end-start naturally gives their actual value too - one formula
+      // covers every step kind. Direction reads straight off the bar itself
+      // (up = income, down = expense) plus color, same as any other bar
+      // chart in the app - the amount is available via tooltip, also same
+      // as every other chart here, so nothing extra needs to be drawn on
+      // the bars themselves.
       new Chart(document.getElementById("waterfall-chart"), {
         type: "bar",
         data: {
           labels: steps.map((s) => s.label),
           datasets: [
             {
-              data: steps.map((s) => [Math.min(s.start, s.end), Math.max(s.start, s.end)]),
+              data: steps.map((s) => s.end - s.start),
               backgroundColor: steps.map((s) => KIND_COLORS[s.kind]),
               borderRadius: 4,
-              barPercentage: 0.6,
             },
           ],
         },
-        plugins: [waterfallLabelsPlugin],
         options: {
           responsive: true,
-          layout: { padding: { top: 24 } },
           plugins: {
             legend: { display: false },
             tooltip: {
@@ -187,7 +143,7 @@
               padding: 12,
               cornerRadius: 10,
               callbacks: {
-                label: (item) => stepLabel(steps[item.dataIndex]),
+                label: (item) => window.formatMoney(Math.abs(item.parsed.y)),
               },
             },
           },
@@ -198,10 +154,8 @@
               ticks: { color: "#898781", maxRotation: 45, minRotation: 0 },
             },
             y: {
-              grid: {
-                color: (ctx) => (ctx.tick.value === 0 ? "rgba(255,255,255,0.35)" : "#2c2c2a"),
-                lineWidth: (ctx) => (ctx.tick.value === 0 ? 2 : 1),
-              },
+              beginAtZero: true,
+              grid: { color: "#2c2c2a" },
               border: { color: "#383835" },
               ticks: { color: "#898781", callback: (value) => window.formatMoney(value) },
             },

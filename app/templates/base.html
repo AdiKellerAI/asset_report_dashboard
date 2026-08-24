@@ -33,16 +33,29 @@
         <span class="nav-label">{{ "Tables"|t }}</span>
       </a>
     </nav>
-    <div class="currency-widget">
-      <a href="/set-language/{{ 'he' if lang == 'en' else 'en' }}" class="currency-btn" aria-label="Switch language">{{ "EN" if lang == "en" else "HE" }}</a>
-      <a href="/set-currency/{{ 'nis' if currency == 'usd' else 'usd' }}" class="currency-btn" aria-label="Switch currency">{{ "$" if currency == "usd" else "₪" }}</a>
-      {% if auth_enabled %}
-      <a href="/logout" class="logout-link">{{ "Log out"|t }}</a>
-      {% endif %}
-    </div>
   </header>
 
-  <p class="fx-rate-bar">1 $ = {{ "%.2f"|format(usd_to_ils_rate) }} ₪</p>
+  <div class="page-subheader">
+    <span class="page-subheader-spacer"></span>
+    <h1 class="page-title">
+      {% if active_nav == "dashboard" %}{{ "Dashboard"|t }}
+      {% elif active_nav == "trends" %}{{ "Trends"|t }}
+      {% elif active_nav == "report" %}{{ "Report"|t }}
+      {% elif active_nav == "manage" %}{{ "Manage"|t }}
+      {% elif active_nav == "tables" %}{{ "Tables"|t }}
+      {% endif %}
+    </h1>
+    <div class="page-subheader-right">
+      <span class="fx-rate-bar">1 $ = {{ "%.2f"|format(usd_to_ils_rate) }} ₪</span>
+      <div class="currency-widget">
+        <a href="/set-language/{{ 'he' if lang == 'en' else 'en' }}" class="currency-btn" aria-label="Switch language">{{ "EN" if lang == "en" else "HE" }}</a>
+        <a href="/set-currency/{{ 'nis' if currency == 'usd' else 'usd' }}" class="currency-btn" aria-label="Switch currency">{{ "$" if currency == "usd" else "₪" }}</a>
+        {% if auth_enabled %}
+        <a href="/logout" class="logout-link">{{ "Log out"|t }}</a>
+        {% endif %}
+      </div>
+    </div>
+  </div>
 
   {% block content %}{% endblock %}
 
@@ -65,33 +78,30 @@
     };
 
     // Shared "expand chart" behavior for every Chart.js canvas on every page
-    // (Adi's request, 2026-08-24) - re-parents the existing canvas into a
-    // fullscreen overlay instead of building a second Chart instance, so
-    // there's only ever one source of truth for each chart's data/state.
-    // Chart.js v4's own resize handling (triggered here on open/close/rotate)
-    // is what makes the chart actually redraw wider in landscape - no manual
-    // rotation logic needed.
+    // (Adi's request, 2026-08-24). Deliberately does NOT move the canvas to
+    // a new element - Chart.js wraps the canvas in its own auto-generated
+    // sizing wrapper at creation time and watches that specific element with
+    // a ResizeObserver, so re-parenting the canvas elsewhere silently broke
+    // that (an empty container - Adi's bug report). Instead this just
+    // CSS-fullscreens the canvas's own existing chart-wrap section in place -
+    // nothing moves in the DOM, so Chart.js's own responsive machinery
+    // keeps working, and calling chart.resize() on open/close/rotate is what
+    // makes it actually redraw at the new size.
     window.openChartFullscreen = function (canvasId) {
       var canvas = document.getElementById(canvasId);
       if (!canvas) return;
+      var wrap = canvas.closest(".chart-wrap");
+      if (!wrap) return;
       var chart = window.Chart && window.Chart.getChart ? window.Chart.getChart(canvas) : null;
-      var placeholder = document.createComment("chart-placeholder");
-      canvas.parentElement.insertBefore(placeholder, canvas);
 
-      var overlay = document.createElement("div");
-      overlay.className = "chart-fullscreen-overlay";
       var closeBtn = document.createElement("button");
       closeBtn.type = "button";
       closeBtn.className = "chart-fullscreen-close";
       closeBtn.setAttribute("aria-label", "Close");
       closeBtn.innerHTML =
         '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>';
-      var canvasWrap = document.createElement("div");
-      canvasWrap.className = "chart-fullscreen-canvas-wrap";
-      canvasWrap.appendChild(canvas);
-      overlay.appendChild(closeBtn);
-      overlay.appendChild(canvasWrap);
-      document.body.appendChild(overlay);
+      wrap.appendChild(closeBtn);
+      wrap.classList.add("chart-wrap-fullscreen");
       document.body.classList.add("chart-fullscreen-open");
 
       function doResize() {
@@ -102,9 +112,8 @@
       window.addEventListener("orientationchange", doResize);
 
       function close() {
-        placeholder.parentElement.insertBefore(canvas, placeholder);
-        placeholder.remove();
-        overlay.remove();
+        wrap.classList.remove("chart-wrap-fullscreen");
+        closeBtn.remove();
         document.body.classList.remove("chart-fullscreen-open");
         window.removeEventListener("resize", doResize);
         window.removeEventListener("orientationchange", doResize);
@@ -115,9 +124,6 @@
         if (e.key === "Escape") close();
       }
       closeBtn.addEventListener("click", close);
-      overlay.addEventListener("click", function (e) {
-        if (e.target === overlay) close();
-      });
       document.addEventListener("keydown", onKeydown);
     };
   </script>
