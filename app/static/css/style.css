@@ -725,6 +725,15 @@ a {
   overflow: hidden;
 }
 
+/* The Trends page's chart sits inside .filter-bar now (Adi's request,
+   2026-08-26: graph before the Summary/By Category pickers, so all 3 need
+   to be in the same form for one Apply button) - .filter-bar's own width
+   is fit-content, so without this the chart would size to its own content
+   instead of spanning the full row, same as .series-picker already does. */
+.filter-bar > .chart-wrap {
+  width: 100%;
+}
+
 @media (min-width: 900px) {
   /* On a wide desktop window, a chart stretched to the full page width
      reads as oversized (Adi's feedback, 2026-08-25: "~30% smaller,

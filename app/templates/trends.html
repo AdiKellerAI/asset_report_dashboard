@@ -26,6 +26,20 @@
       </select>
     </label>
 
+    {% if months %}
+    <div class="chart-wrap" dir="ltr">
+      <div class="chart-header-row">
+        <span></span>
+        <button type="button" class="chart-expand-btn" aria-label="Expand chart" onclick="window.openChartFullscreen('trend-chart')">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 3H3v6M15 3h6v6M21 15v6h-6M3 15v6h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </button>
+      </div>
+      <canvas id="trend-chart" role="img" aria-label="Selected parameters over time"></canvas>
+    </div>
+    {% else %}
+    <p class="empty-state-note">{{ "No monthly_statement data yet for this property."|t }}</p>
+    {% endif %}
+
     <fieldset class="series-picker">
       <legend>{{ "Summary"|t }}</legend>
       <div class="checkbox-grid">
@@ -52,20 +66,6 @@
 
     <button type="submit">{{ "Apply"|t }}</button>
   </form>
-
-  {% if months %}
-  <div class="chart-wrap" dir="ltr">
-    <div class="chart-header-row">
-      <span></span>
-      <button type="button" class="chart-expand-btn" aria-label="Expand chart" onclick="window.openChartFullscreen('trend-chart')">
-        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 3H3v6M15 3h6v6M21 15v6h-6M3 15v6h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </button>
-    </div>
-    <canvas id="trend-chart" role="img" aria-label="Selected parameters over time"></canvas>
-  </div>
-  {% else %}
-  <p class="empty-state-note">{{ "No monthly_statement data yet for this property."|t }}</p>
-  {% endif %}
 {% endblock %}
 
 {% block scripts %}

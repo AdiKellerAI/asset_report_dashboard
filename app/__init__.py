@@ -117,11 +117,18 @@ def create_app(config_object=Config):
 
     @app.after_request
     def prevent_caching_of_language_dependent_pages(response):
-        # Every page's HTML depends on the `lang` cookie - without an
-        # explicit no-store, some mobile browsers will serve a cached copy of
-        # "/" from before the cookie changed instead of re-fetching, which
-        # looks exactly like "switching to Hebrew didn't do anything".
-        response.headers["Cache-Control"] = "no-store"
+        # Every page's HTML depends on the `lang`/`currency` cookies -
+        # without this, some mobile browsers will serve a cached copy of "/"
+        # from before a cookie changed instead of re-fetching, which looks
+        # exactly like "switching to Hebrew didn't do anything". `no-cache`
+        # (not `no-store`) is deliberate: it still forces a real round trip
+        # every time (we send no ETag/Last-Modified, so there's nothing to
+        # revalidate against - every request is a full fetch either way),
+        # but unlike `no-store` it doesn't disable the mobile browser's
+        # back/forward cache, which is what made every navigation flicker
+        # (Adi's report, 2026-08-26) - `no-store` is one of the documented
+        # conditions that unconditionally evicts a page from bfcache.
+        response.headers["Cache-Control"] = "no-cache"
         return response
 
     @app.template_filter("money")
