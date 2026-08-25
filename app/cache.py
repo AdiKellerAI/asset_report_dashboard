@@ -20,7 +20,13 @@ deployed).
 import time
 
 _store = {}
-DEFAULT_TTL = 300  # seconds
+# Long, since staleness is handled by invalidate_all() on every /manage or
+# /upload write (event-driven), not by this TTL - it's only a safety net for
+# anything that mutates data outside those two paths. A short TTL just meant
+# re-paying a full Neon round trip (measured ~150-300ms each) for pages Adi
+# had already visited minutes earlier - part of the "still very slow"
+# report, 2026-08-25, alongside the redundant-query fix in dashboard.py.
+DEFAULT_TTL = 3600  # seconds
 
 
 def get_or_set(key, compute, ttl=DEFAULT_TTL):

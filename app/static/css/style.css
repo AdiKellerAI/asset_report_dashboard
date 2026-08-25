@@ -146,11 +146,19 @@ a {
   color: #0d1117;
   background: linear-gradient(135deg, var(--gold), #f0c96b);
   text-decoration: none;
-  transition: filter 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+  transform: scale(1);
+  transition: filter 0.2s ease, transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .currency-btn:hover {
   filter: brightness(1.08);
+}
+
+.currency-btn:active {
+  transform: scale(0.86);
+  filter: brightness(0.95);
+  transition-duration: 0.05s;
 }
 
 .fx-rate-bar {
@@ -490,62 +498,6 @@ a {
   height: 15px;
 }
 
-/* Category picker collapsed by default (13+ options is a lot to scan at
-   once) - a native <details> keeps it elegant with zero extra JS. Same box
-   (border/radius/padding) and same label styling as .series-picker's
-   <legend> so both containers read as one consistent design - the chevron
-   is the only visual difference, since this one is collapsible. */
-.category-picker {
-  width: 100%;
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-md);
-  padding: 0.9rem 1rem 1rem;
-  margin: 0;
-}
-
-.category-picker summary {
-  list-style: none;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--ink-muted);
-  padding: 0 0.3rem;
-}
-
-.category-picker summary::-webkit-details-marker {
-  display: none;
-}
-
-.category-picker summary::before {
-  content: "";
-  width: 0;
-  height: 0;
-  border-left: 4px solid var(--ink-muted);
-  border-top: 4px solid transparent;
-  border-bottom: 4px solid transparent;
-  transition: transform 0.15s ease;
-}
-
-.category-picker[open] summary::before {
-  transform: rotate(90deg);
-}
-
-.category-picker summary:hover {
-  color: var(--ink);
-}
-
-.category-picker .checkbox-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
-  gap: 0.55rem 1rem;
-  margin-top: 0.4rem;
-}
-
 /* ---------- Cards ---------- */
 
 .period-label {
@@ -769,6 +721,18 @@ a {
   padding: 1.25rem;
   max-width: 100%;
   overflow: hidden;
+}
+
+@media (min-width: 900px) {
+  /* On a wide desktop window, a chart stretched to the full page width
+     reads as oversized (Adi's feedback, 2026-08-25: "~30% smaller,
+     centered") - cap it and center it instead. Mobile/narrow viewports
+     are untouched (full-width there is correct, not oversized). */
+  .chart-wrap {
+    max-width: 70%;
+    margin-left: auto;
+    margin-right: auto;
+  }
 }
 
 .chart-wrap canvas {

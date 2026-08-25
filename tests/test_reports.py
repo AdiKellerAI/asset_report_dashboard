@@ -386,8 +386,6 @@ def test_report_breakdown_builds_waterfall_from_income_to_net_cash_flow(db_sessi
     ]  # sorted biggest first
     assert result["noi"] == pytest.approx(-358.01)
     assert result["unpaid_bills"] == pytest.approx(-1314.00)
-    assert result["monthly_mortgage"] == 0.0  # only applies to "all" scope
-    assert result["net_after_mortgage"] == pytest.approx(-358.01)  # no mortgage at this scope
     assert result["net_cash_flow"] == pytest.approx(-358.01 - 1314.00)
 
     waterfall = result["waterfall"]
@@ -395,10 +393,14 @@ def test_report_breakdown_builds_waterfall_from_income_to_net_cash_flow(db_sessi
     assert waterfall[-1]["label"] == "Change in Cash Balance"
     assert waterfall[-1]["kind"] == "total"
     assert waterfall[-1]["end"] == pytest.approx(-358.01 - 1314.00)
-    assert "Net After Mortgage" not in [s["label"] for s in waterfall]  # no mortgage step at this scope
+    assert "Mortgage" not in [s["label"] for s in waterfall]
 
 
-def test_report_breakdown_includes_mortgage_only_for_all_properties_scope(db_session):
+def test_report_breakdown_never_subtracts_mortgage(db_session):
+    """Unlike the Dashboard, the Report page deliberately never shows or
+    subtracts the mortgage (Adi's request, 2026-08-25) - kept internally
+    consistent rather than just hiding the line item, so the final figure
+    still matches the waterfall shown above it."""
     seed(db_session)
     brunswick = _property(db_session, "Brunswick")
     db_session.add(MonthlyStatement(property_id=brunswick.id, month=date(2026, 5, 1), noi=1000))
@@ -408,12 +410,8 @@ def test_report_breakdown_includes_mortgage_only_for_all_properties_scope(db_ses
     total_result = report_breakdown(db_session, date(2026, 5, 1), "all")
     brunswick_result = report_breakdown(db_session, date(2026, 5, 1), "Brunswick")
 
-    assert total_result["monthly_mortgage"] == 500.0
-    assert total_result["net_after_mortgage"] == pytest.approx(500.0)  # 1000 noi - 500 mortgage
-    assert total_result["net_cash_flow"] == pytest.approx(500.0)  # no unpaid bills here
-    assert "Net After Mortgage" in [s["label"] for s in total_result["waterfall"]]
-    assert brunswick_result["monthly_mortgage"] == 0.0
-    assert brunswick_result["net_after_mortgage"] == pytest.approx(1000.0)
+    assert total_result["net_cash_flow"] == pytest.approx(1000.0)  # not 500 - no mortgage deducted
+    assert "Mortgage" not in [s["label"] for s in total_result["waterfall"]]
     assert brunswick_result["net_cash_flow"] == pytest.approx(1000.0)
 
 
@@ -454,3 +452,30 @@ def test_dashboard_breakdown_gives_per_property_and_total_for_same_period(db_ses
     assert by_nickname["Colburn"]["gross_rent"] == pytest.approx(500.0)
     assert result["total"]["gross_rent"] == pytest.approx(1500.0)
     assert result["total"]["period_label"] == "July 2026"
+
+
+def test_dashboard_breakdown_never_subtracts_mortgage_so_total_sums_the_properties(db_session):
+    """Adi's request, 2026-08-25: a portfolio-level mortgage subtracted only
+    from the Total column (the original design) meant Total no longer
+    equaled Brunswick + Colburn, which read as a wrong "Total" on screen
+    regardless of the financial rationale - so the Dashboard never applies
+    it anywhere now, unlike Trends (dashboard_summary/trend_series), which
+    still can."""
+    seed(db_session)
+    brunswick = _property(db_session, "Brunswick")
+    colburn = _property(db_session, "Colburn")
+    db_session.add(MonthlyStatement(property_id=brunswick.id, month=date(2026, 7, 1), noi=800, unpaid_bills=-50))
+    db_session.add(MonthlyStatement(property_id=colburn.id, month=date(2026, 7, 1), noi=400, unpaid_bills=-20))
+    db_session.add(Mortgage(monthly_payment=250))
+    db_session.commit()
+
+    result = dashboard_breakdown(db_session, period="this_month")
+
+    by_nickname = {p["nickname"]: p for p in result["properties"]}
+    assert result["total"]["net_after_mortgage"] == pytest.approx(
+        by_nickname["Brunswick"]["net_after_mortgage"] + by_nickname["Colburn"]["net_after_mortgage"]
+    )
+    assert result["total"]["net_to_adi"] == pytest.approx(
+        by_nickname["Brunswick"]["net_to_adi"] + by_nickname["Colburn"]["net_to_adi"]
+    )
+    assert result["total"]["net_after_mortgage"] == pytest.approx(1200.0)  # 800+400, mortgage not subtracted

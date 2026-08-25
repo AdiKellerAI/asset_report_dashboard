@@ -38,8 +38,8 @@
       </div>
     </fieldset>
 
-    <details class="category-picker" {{ "open" if selected_series|select("in", category_series)|list else "" }}>
-      <summary>{{ "By Category"|t }}</summary>
+    <fieldset class="series-picker">
+      <legend>{{ "By Category"|t }}</legend>
       <div class="checkbox-grid">
         {% for key, label in category_series.items() %}
         <label class="checkbox-label">
@@ -48,7 +48,7 @@
         </label>
         {% endfor %}
       </div>
-    </details>
+    </fieldset>
 
     <button type="submit">{{ "Apply"|t }}</button>
   </form>

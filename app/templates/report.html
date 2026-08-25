@@ -65,16 +65,6 @@
           <th scope="row">{{ "Net Operating Income"|t }}</th>
           <td class="total-col">{{ breakdown.noi|money }}</td>
         </tr>
-        {% if breakdown.monthly_mortgage %}
-        <tr>
-          <th scope="row">{{ "Mortgage"|t }}</th>
-          <td>-{{ breakdown.monthly_mortgage|money }}</td>
-        </tr>
-        <tr>
-          <th scope="row">{{ "Net After Mortgage"|t }}</th>
-          <td class="total-col">{{ breakdown.net_after_mortgage|money }}</td>
-        </tr>
-        {% endif %}
         {% if breakdown.unpaid_bills %}
         <tr>
           <th scope="row">{{ "Unpaid Bills"|t }}</th>

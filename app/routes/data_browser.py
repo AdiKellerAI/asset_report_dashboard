@@ -6,6 +6,7 @@ own script) rather than dumping potentially hundreds of rows at once.
 """
 
 from flask import Blueprint, g, jsonify, render_template, request
+from sqlalchemy.orm import joinedload
 
 from app.cache import get_or_set
 from app.db import SessionLocal
@@ -90,6 +91,7 @@ def _table_configs():
             "label": "Documents",
             "model": Document,
             "order_by": Document.created_at.desc(),
+            "eager": [Document.property],
             "columns": [
                 ("ID", lambda r: r.id),
                 ("Property", lambda r: _property_label(r.property)),
@@ -103,6 +105,7 @@ def _table_configs():
             "label": "Transactions",
             "model": Transaction,
             "order_by": Transaction.date.desc(),
+            "eager": [Transaction.property, Transaction.expense_type],
             "columns": [
                 ("ID", lambda r: r.id),
                 ("Property", lambda r: _property_label(r.property)),
@@ -116,6 +119,7 @@ def _table_configs():
             "label": "Monthly Statements",
             "model": MonthlyStatement,
             "order_by": MonthlyStatement.month.desc(),
+            "eager": [MonthlyStatement.property],
             "columns": [
                 ("ID", lambda r: r.id),
                 ("Property", lambda r: _property_label(r.property)),
@@ -175,11 +179,27 @@ def _table_configs():
 
 
 def _fetch_page(table_name, offset, limit):
+    # Cached as a whole (not just the count) - keyed on currency too, since
+    # the Amount/etc. cells are pre-formatted strings (via _money(), which
+    # bakes in g.currency at fetch time) rather than raw numbers formatted
+    # later by a template filter, unlike the dashboard/trends pages.
+    return get_or_set(("table_page", table_name, offset, limit, g.currency), lambda: _fetch_page_uncached(table_name, offset, limit))
+
+
+def _fetch_page_uncached(table_name, offset, limit):
     config = _table_configs()[table_name]
     session = SessionLocal()
     try:
-        total = get_or_set(("table_count", table_name), lambda: session.query(config["model"]).count())
-        rows = session.query(config["model"]).order_by(config["order_by"]).offset(offset).limit(limit).all()
+        total = session.query(config["model"]).count()
+        query = session.query(config["model"])
+        # Without this, a table whose columns render a relationship (e.g.
+        # Transaction's Property/Category) lazy-loads it ONE ROW AT A TIME -
+        # 40 rows meant 80 extra Neon round trips, invisible until
+        # Transactions became the default table (a real, measured
+        # contributor to "the site is very very slow", 2026-08-25).
+        for relationship in config.get("eager", []):
+            query = query.options(joinedload(relationship))
+        rows = query.order_by(config["order_by"]).offset(offset).limit(limit).all()
         headers = [label for label, _ in config["columns"]]
         cells = [[render(row) for _, render in config["columns"]] for row in rows]
     finally:
@@ -187,13 +207,16 @@ def _fetch_page(table_name, offset, limit):
     return headers, cells, total
 
 
+DEFAULT_TABLE = "transaction"
+
+
 @data_browser_bp.get("/tables")
 def tables_page():
     configs = _table_configs()
     table_names = list(configs.keys())
-    selected = request.args.get("table", table_names[0])
+    selected = request.args.get("table", DEFAULT_TABLE)
     if selected not in configs:
-        selected = table_names[0]
+        selected = DEFAULT_TABLE
 
     headers, cells, total = _fetch_page(selected, 0, PAGE_SIZE)
 

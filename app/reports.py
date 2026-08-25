@@ -342,7 +342,7 @@ YIELD_RANGE_CHOICES = {"3y": 3, "6y": 6, "all": None}
 DEFAULT_YIELD_RANGE = "3y"
 
 
-def annual_yield_series(session, years_limit=None):
+def annual_yield_series(session, years_limit=None, properties=None):
     """Net yield (annual NOI / property value) per property and portfolio
     Total, one point per calendar year that has any monthly_statement data -
     the landing page's "Annual Yield" chart, below the NOI trend chart.
@@ -350,8 +350,13 @@ def annual_yield_series(session, years_limit=None):
     property with no value set yet is left out of its own line and out of
     the Total's denominator, rather than silently treating it as free/zero.
     `years_limit` keeps only the most recent N years (the chart's Range
-    picker - defaults to the last 3 years, with 6-year/all-time options)."""
-    properties = session.query(Property).order_by(Property.nickname).all()
+    picker - defaults to the last 3 years, with 6-year/all-time options).
+    `properties` lets a caller that already fetched it for another call on
+    the same page (dashboard.py loads 3 of these per request) pass it
+    straight in instead of this function re-querying it - defaults to a
+    fresh query so this still works standalone."""
+    if properties is None:
+        properties = session.query(Property).order_by(Property.nickname).all()
     property_ids = [p.id for p in properties]
     statements = (
         session.query(MonthlyStatement)
@@ -412,18 +417,12 @@ def report_breakdown(session, month, property_nickname="all"):
     noi = sum(float(s.noi or 0) for s in statements)
     unpaid_bills = sum(float(s.unpaid_bills or 0) for s in statements)
 
-    monthly_mortgage = 0.0
-    if property_nickname == "all":
-        mortgage = session.query(Mortgage).order_by(Mortgage.id.desc()).first()
-        monthly_mortgage = float(mortgage.monthly_payment or 0) if mortgage else 0.0
-
-    # Two distinct "after mortgage" figures, per Adi's request (2026-08-24) -
-    # he wants both visible: net_after_mortgage is the pure financing-level
-    # result (NOI minus mortgage, nothing else), while net_to_adi also folds
-    # in the unpaid-bills snapshot - it's how much the accumulated balance
-    # actually changed.
-    net_after_mortgage = noi - monthly_mortgage
-    net_cash_flow = net_after_mortgage + unpaid_bills
+    # Deliberately no mortgage step on this page (Adi's request, 2026-08-25 -
+    # unlike the Dashboard, which does subtract it from the Total column).
+    # Kept internally consistent rather than just hiding the line item: the
+    # final figure below is NOI + unpaid bills only, so it still matches the
+    # waterfall shown above it.
+    net_cash_flow = noi + unpaid_bills
 
     next_month = date(month.year + 1, 1, 1) if month.month == 12 else date(month.year, month.month + 1, 1)
     category_rows = (
@@ -447,9 +446,9 @@ def report_breakdown(session, month, property_nickname="all"):
 
     # The waterfall: each step is a (start, end) span a floating bar draws
     # between - "income"/"expense" steps chain off the running total,
-    # "subtotal"/"total" steps are checkpoints anchored back to zero (NOI,
-    # Net After Mortgage, and the final Change in Cash Balance), matching
-    # dev-plan.md sec 5.2's original "literal waterfall chart" concept.
+    # "subtotal"/"total" steps are checkpoints anchored back to zero (NOI
+    # and the final Change in Cash Balance), matching dev-plan.md sec 5.2's
+    # original "literal waterfall chart" concept.
     waterfall = [{"label": "Gross Rent Collected", "start": 0, "end": gross_rent, "kind": "income"}]
     running = gross_rent
     for cat in expense_categories:
@@ -457,12 +456,6 @@ def report_breakdown(session, month, property_nickname="all"):
         running -= cat["amount"]
     waterfall.append({"label": "Net Operating Income", "start": 0, "end": noi, "kind": "subtotal"})
     running = noi
-    if monthly_mortgage:
-        waterfall.append({"label": "Mortgage", "start": running, "end": running - monthly_mortgage, "kind": "expense"})
-        running -= monthly_mortgage
-        waterfall.append(
-            {"label": "Net After Mortgage", "start": 0, "end": net_after_mortgage, "kind": "subtotal"}
-        )
     if unpaid_bills:
         waterfall.append(
             {
@@ -483,8 +476,6 @@ def report_breakdown(session, month, property_nickname="all"):
         "total_expenses": total_expenses,
         "noi": noi,
         "unpaid_bills": unpaid_bills,
-        "monthly_mortgage": monthly_mortgage,
-        "net_after_mortgage": net_after_mortgage,
         "net_cash_flow": net_cash_flow,
         "waterfall": waterfall,
     }
@@ -497,15 +488,20 @@ def available_report_months(session):
     return [r[0] for r in rows]
 
 
-def recent_noi_trend(session, months=5):
+def recent_noi_trend(session, months=5, properties=None):
     """Net Operating Income for the last N months that actually have a
     report, per property plus the portfolio Total - the landing page's
     at-a-glance graph. No property filter on this page (Adi wants both
     assets and the total visible together), so this always returns every
-    property's line. Fetches properties/statements once (a remote Postgres
-    round trip is the real cost here) and reuses them across every
-    property's trend_series call instead of re-querying per property."""
-    properties = session.query(Property).order_by(Property.nickname).all()
+    property's line. Fetches statements once (a remote Postgres round trip
+    is the real cost here) and reuses them across every property's
+    trend_series call instead of re-querying per property. `properties` lets
+    a caller that already fetched it for another call on the same page
+    (dashboard.py loads 3 of these per request) pass it straight in instead
+    of this function re-querying it too - defaults to a fresh query so this
+    still works standalone."""
+    if properties is None:
+        properties = session.query(Property).order_by(Property.nickname).all()
     property_ids = [p.id for p in properties]
     all_statements = (
         session.query(MonthlyStatement)
@@ -525,15 +521,20 @@ def recent_noi_trend(session, months=5):
     return {"months": months_list, "lines": lines}
 
 
-def dashboard_breakdown(session, period="this_month", month=None, year=None, today=None):
+def dashboard_breakdown(session, period="this_month", month=None, year=None, today=None, properties=None):
     """Per-property figures plus the portfolio Total, all for the same
     period - the landing page's comparison table. Adi wants both assets and
     the combined total visible together rather than switching a property
-    filter. Fetches properties/statements/mortgages/accumulated_balance once
-    and passes them into each dashboard_summary call instead of letting it
-    re-query per property - a remote Postgres round trip is the real cost
-    here, not row count (see docs/PROJECT_STATUS.md's dashboard-load-time fix)."""
-    properties = session.query(Property).order_by(Property.nickname).all()
+    filter. Fetches statements/mortgages/accumulated_balance once and passes
+    them into each dashboard_summary call instead of letting it re-query per
+    property - a remote Postgres round trip is the real cost here, not row
+    count (see docs/PROJECT_STATUS.md's dashboard-load-time fix). `properties`
+    lets a caller that already fetched it for another call on the same page
+    (dashboard.py loads 3 of these per request) pass it straight in instead
+    of this function re-querying it too - defaults to a fresh query so this
+    still works standalone."""
+    if properties is None:
+        properties = session.query(Property).order_by(Property.nickname).all()
     property_ids = [p.id for p in properties]
     if today is None:
         today = latest_reported_month(session) or date.today()
@@ -544,11 +545,12 @@ def dashboard_breakdown(session, period="this_month", month=None, year=None, tod
         query = query.filter(MonthlyStatement.month >= start, MonthlyStatement.month <= end)
     all_statements = query.all()
 
-    # One combined mortgage for the whole portfolio (not per property) -
-    # only ever subtracted from the "all properties" Total column below.
-    mortgage = session.query(Mortgage).order_by(Mortgage.id.desc()).first()
-    monthly_mortgage_payment = float(mortgage.monthly_payment or 0) if mortgage else 0.0
-
+    # Deliberately no mortgage on this page at all (Adi's request, 2026-08-25) -
+    # a portfolio-level mortgage subtracted only from the Total column (the
+    # original design) meant Total no longer equaled Brunswick + Colburn,
+    # which reads as a wrong "Total" regardless of the financial rationale.
+    # Kept internally consistent rather than half-applying it: 0.0 for every
+    # column, same as the /report page.
     accumulated_balance = _accumulated_balance(session, properties)
 
     def summary_for(nickname, monthly_mortgage_total):
@@ -566,5 +568,5 @@ def dashboard_breakdown(session, period="this_month", month=None, year=None, tod
         )
 
     per_property = [{"nickname": p.nickname, **summary_for(p.nickname, 0.0)} for p in properties]
-    total = summary_for("all", monthly_mortgage_payment)
+    total = summary_for("all", 0.0)
     return {"properties": per_property, "total": total}

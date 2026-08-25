@@ -215,8 +215,13 @@
     (function () {
       const yieldYears = {{ yield_years|tojson }};
       const yieldLines = {{ yield_lines|tojson }};
+      // Deliberately distinct from the NOI chart's blue/orange just above
+      // it (Adi's request, 2026-08-25) - still drawn from the same
+      // validated dark categorical palette (dataviz skill), just later
+      // slots, so the two charts read as clearly different at a glance
+      // instead of looking like the same chart repeated.
       const LINE_COLORS = { "Total": "#c98500" };
-      const PROPERTY_PALETTE = ["#3987e5", "#d95926", "#199e70", "#d55181"];
+      const PROPERTY_PALETTE = ["#9085e9", "#e66767", "#008300", "#d55181"];
       const TOTAL_LABEL = {{ total_label|tojson }};
 
       Chart.defaults.font.family = "'Manrope', system-ui, sans-serif";

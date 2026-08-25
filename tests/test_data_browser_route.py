@@ -5,7 +5,7 @@ from app.models import ExpenseType, MonthlyStatement, Property, Transaction
 from app.seed import seed
 
 
-def test_tables_page_defaults_to_first_table(db_session):
+def test_tables_page_defaults_to_transactions(db_session):
     seed(db_session)
 
     client = create_app().test_client()
@@ -14,7 +14,7 @@ def test_tables_page_defaults_to_first_table(db_session):
     assert response.status_code == 200
     body = response.get_data(as_text=True)
     assert 'id="table-select"' in body
-    assert "Nickname" in body  # a Property column header - the default table
+    assert '<option value="transaction" selected>' in body
 
 
 def test_tables_page_shows_selected_table_rows(db_session):
@@ -41,14 +41,14 @@ def test_tables_page_shows_selected_table_rows(db_session):
     assert "125.00 $" in body
 
 
-def test_tables_page_falls_back_to_first_table_for_unknown_name(db_session):
+def test_tables_page_falls_back_to_default_table_for_unknown_name(db_session):
     seed(db_session)
 
     client = create_app().test_client()
     response = client.get("/tables?table=not_a_real_table")
 
     assert response.status_code == 200
-    assert "Nickname" in response.get_data(as_text=True)
+    assert '<option value="transaction" selected>' in response.get_data(as_text=True)
 
 
 def test_table_rows_endpoint_paginates(db_session):
