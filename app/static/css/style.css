@@ -155,7 +155,8 @@ a {
   filter: brightness(1.08);
 }
 
-.currency-btn:active {
+.currency-btn:active,
+.currency-btn.is-pressed {
   transform: scale(0.86);
   filter: brightness(0.95);
   transition-duration: 0.05s;
@@ -252,7 +253,8 @@ a {
   color: var(--ink);
 }
 
-.main-nav a:active {
+.main-nav a:active,
+.main-nav a.is-pressed {
   transform: scale(0.86);
   background: var(--accent-soft);
   transition-duration: 0.05s;

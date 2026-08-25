@@ -3,7 +3,16 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#0d0d0d">
   <title>{% block title %}{{ "Asset Report Dashboard"|t }}{% endblock %}</title>
+  <!-- Every navigation is a full page load (no client-side routing), so
+       without this a mobile browser paints its own default background for
+       the instant before style.css arrives - a white flash on every single
+       page change (Adi's report, 2026-08-26). The color-scheme meta above
+       also matters on its own: it's honored before any CSS loads, unlike
+       the (already-present) `color-scheme: dark` in style.css's :root. -->
+  <style>html, body { background: #0d0d0d; }</style>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -57,6 +66,30 @@
   </header>
 
   {% block content %}{% endblock %}
+
+  <script>
+    // Two things needed to make the nav-icon/currency-button press effect
+    // (:active in style.css) actually visible on mobile, since neither
+    // worked reliably before (Adi's report, 2026-08-26):
+    // 1. iOS Safari only evaluates :active on tap at all if SOME touch
+    //    listener is registered somewhere on the page - otherwise it skips
+    //    the state entirely as an optimization. The only listener in this
+    //    app lived on the Tables page (swipe-to-switch), so press feedback
+    //    silently never fired on every other page. A no-op listener here
+    //    fixes it everywhere.
+    // 2. Even with that fixed, :active can lag a frame or two behind the
+    //    finger - and these links immediately navigate away, so a delayed
+    //    :active can lose its only chance to ever be seen. Toggling the
+    //    same visual via a class on touchstart/touchend is synchronous, so
+    //    it's guaranteed to paint before the page unloads.
+    document.addEventListener("touchstart", function () {}, { passive: true });
+
+    document.querySelectorAll(".main-nav a, .currency-btn").forEach(function (el) {
+      el.addEventListener("touchstart", function () { el.classList.add("is-pressed"); }, { passive: true });
+      el.addEventListener("touchend", function () { el.classList.remove("is-pressed"); }, { passive: true });
+      el.addEventListener("touchcancel", function () { el.classList.remove("is-pressed"); }, { passive: true });
+    });
+  </script>
 
   <script>
     // Chart.js tick/tooltip labels are JS-rendered, so they need their own
