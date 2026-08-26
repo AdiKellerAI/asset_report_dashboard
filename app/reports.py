@@ -26,13 +26,15 @@ def properties_summary(session):
 # The trends page's selectable "summary" series (dev-plan.md sec 5.1's trend
 # chart, generalized to every monthly_statement figure, per Adi's request).
 # rent_income is deliberately not duplicated here as a category series - it's
-# the same number as gross_rent.
+# the same number as gross_rent. "Change in Cash Balance" (NOI + unpaid_bills
+# - mortgage) is deliberately not offered here (Adi's request, 2026-08-26) -
+# it's still computed/shown on the Report page's waterfall, just not needed
+# as a Trends line.
 SUMMARY_SERIES = {
     "gross_rent": "Gross Rent Collected",
     "total_expenses": "Total Property Expenses",
     "noi": "Net Operating Income",
     "net_after_mortgage": "Net After Mortgage",
-    "net_to_adi": "Change in Cash Balance",
     "net_owner_funds": "Net Owner Funds",
     "beginning_balance": "Beginning Balance",
     "ending_balance": "Ending Balance",
@@ -40,7 +42,7 @@ SUMMARY_SERIES = {
     "reserve": "Property Reserve",
 }
 
-DEFAULT_TREND_SERIES = ["gross_rent", "noi", "net_to_adi"]
+DEFAULT_TREND_SERIES = ["gross_rent", "noi"]
 
 _DIRECT_STATEMENT_FIELDS = {"net_owner_funds", "beginning_balance", "ending_balance", "reserve", "unpaid_bills"}
 

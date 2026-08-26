@@ -22,7 +22,7 @@
   <div class="page-subheader">
     <span class="fx-rate-bar">1 $ = {{ "%.2f"|format(usd_to_ils_rate) }} ₪</span>
     <h1 class="page-title">
-      {% if active_nav == "dashboard" %}{{ "Dashboard"|t }}
+      {% if active_nav == "dashboard" %}{{ "Home"|t }}
       {% elif active_nav == "trends" %}{{ "Trends"|t }}
       {% elif active_nav == "report" %}{{ "Report"|t }}
       {% elif active_nav == "manage" %}{{ "Manage"|t }}
@@ -44,7 +44,7 @@
     <nav class="main-nav">
       <a href="/" class="{{ 'active' if active_nav == 'dashboard' else '' }}">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 11.5 12 4l8 7.5M6 10v9a1 1 0 0 0 1 1h3v-5h4v5h3a1 1 0 0 0 1-1v-9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        <span class="nav-label">{{ "Dashboard"|t }}</span>
+        <span class="nav-label">{{ "Home"|t }}</span>
       </a>
       <a href="/trends" class="{{ 'active' if active_nav == 'trends' else '' }}">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 16l5-5 3 3 6-7M14 7h4v4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -68,9 +68,11 @@
   {% block content %}{% endblock %}
 
   <script>
-    // Two things needed to make the nav-icon/currency-button press effect
-    // (:active in style.css) actually visible on mobile, since neither
-    // worked reliably before (Adi's report, 2026-08-26):
+    // Two things needed to make the tap press effect (:active in style.css,
+    // now on every page-navigation-ish button: nav icons, currency/language,
+    // period/range pills, table prev/next, chart expand, filter-bar submits)
+    // actually visible on mobile, since neither worked reliably before
+    // (Adi's report, 2026-08-26):
     // 1. iOS Safari only evaluates :active on tap at all if SOME touch
     //    listener is registered somewhere on the page - otherwise it skips
     //    the state entirely as an optimization. The only listener in this
@@ -84,7 +86,9 @@
     //    it's guaranteed to paint before the page unloads.
     document.addEventListener("touchstart", function () {}, { passive: true });
 
-    document.querySelectorAll(".main-nav a, .currency-btn").forEach(function (el) {
+    document.querySelectorAll(
+      ".main-nav a, .currency-btn, .period-pill, .range-pill, .table-nav-btn, .chart-expand-btn, .filter-bar button"
+    ).forEach(function (el) {
       el.addEventListener("touchstart", function () { el.classList.add("is-pressed"); }, { passive: true });
       el.addEventListener("touchend", function () { el.classList.remove("is-pressed"); }, { passive: true });
       el.addEventListener("touchcancel", function () { el.classList.remove("is-pressed"); }, { passive: true });

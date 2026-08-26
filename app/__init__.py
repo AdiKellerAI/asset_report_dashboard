@@ -7,6 +7,11 @@ from app.config import Config
 def create_app(config_object=Config):
     app = Flask(__name__)
     app.config.from_object(config_object)
+    # Let the browser cache style.css etc. for real instead of revalidating
+    # on every navigation (see the Cache-Control comment below) - an hour is
+    # short enough that active CSS work still shows up on the next reload
+    # after a deploy, long enough to skip the round trip for a whole session.
+    app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 3600
 
     from app.routes.auth import auth_bp
     from app.routes.dashboard import dashboard_bp
@@ -128,7 +133,18 @@ def create_app(config_object=Config):
         # back/forward cache, which is what made every navigation flicker
         # (Adi's report, 2026-08-26) - `no-store` is one of the documented
         # conditions that unconditionally evicts a page from bfcache.
-        response.headers["Cache-Control"] = "no-cache"
+        #
+        # Static assets (style.css etc.) don't depend on those cookies at
+        # all, so this blanket rule was also forcing a fresh network round
+        # trip for the stylesheet on every single navigation - real, avoidable
+        # latency that leaves the outgoing page visible for longer while the
+        # incoming one waits on its CSS, which reads as "a blink of the other
+        # page" on a real network (Adi's report, 2026-08-26). Leaving Flask's
+        # own static-file headers (SEND_FILE_MAX_AGE_DEFAULT below, plus its
+        # built-in ETag) alone lets the browser skip that round trip entirely
+        # on repeat visits instead.
+        if not request.path.startswith("/static/"):
+            response.headers["Cache-Control"] = "no-cache"
         return response
 
     @app.template_filter("money")

@@ -173,7 +173,7 @@ def test_landing_page_lang_cookie_translates_text_but_leaves_currency_alone(db_s
     assert '<html lang="he" dir="ltr">' in body
     assert "15,107.93 $" in body  # still USD - currency cookie wasn't touched
     assert 'class="fx-rate-bar"' in body
-    assert "לוח בקרה" in body  # "Dashboard" nav link, translated
+    assert "בית" in body  # "Home" nav link, translated
     assert '<header class="page-header">' in body  # no dir override needed - the whole page stays LTR now
     assert "נטו (NOI)" in body  # "Net (NOI)" row header, translated
 
@@ -193,7 +193,7 @@ def test_landing_page_currency_cookie_converts_money_but_leaves_text_alone(db_se
     assert '<html lang="en" dir="ltr">' in body
     assert "15,107.93 $" not in body  # converted to NIS
     assert "₪" in body
-    assert ">Dashboard<" in body  # nav stays English - only currency switched
+    assert ">Home<" in body  # nav stays English - only currency switched
 
 
 def test_set_language_route_sets_cookie_and_redirects():

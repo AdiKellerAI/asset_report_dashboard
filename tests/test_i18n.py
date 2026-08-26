@@ -2,11 +2,11 @@ from app.i18n import translate, translate_message
 
 
 def test_translate_passes_through_english():
-    assert translate("Dashboard", "en") == "Dashboard"
+    assert translate("Home", "en") == "Home"
 
 
 def test_translate_returns_hebrew_for_a_known_string():
-    assert translate("Dashboard", "he") == "לוח בקרה"
+    assert translate("Home", "he") == "בית"
 
 
 def test_translate_falls_back_to_original_for_unknown_string():

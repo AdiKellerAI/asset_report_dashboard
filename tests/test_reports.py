@@ -261,7 +261,7 @@ def test_trend_series_category_line(db_session):
     assert result["series"]["cat:management_fee"]["values"] == [125.0]
 
 
-def test_trend_series_defaults_to_gross_rent_noi_net_to_adi(db_session):
+def test_trend_series_defaults_to_gross_rent_noi(db_session):
     seed(db_session)
     brunswick = _property(db_session, "Brunswick")
     db_session.add(MonthlyStatement(property_id=brunswick.id, month=date(2026, 4, 1), gross_income=100, noi=50))
@@ -269,7 +269,7 @@ def test_trend_series_defaults_to_gross_rent_noi_net_to_adi(db_session):
 
     result = trend_series(db_session, property_nickname="Brunswick")
 
-    assert set(result["series"].keys()) == {"gross_rent", "noi", "net_to_adi"}
+    assert set(result["series"].keys()) == {"gross_rent", "noi"}
 
 
 def test_trend_series_months_limit_keeps_only_the_most_recent(db_session):

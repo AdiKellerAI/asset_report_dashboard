@@ -12,7 +12,7 @@ deliberately not run through this - only user-facing labels are.
 TRANSLATIONS = {
     # Chrome / nav
     "Asset Report Dashboard": "לוח נכסים",
-    "Dashboard": "לוח בקרה",
+    "Home": "בית",
     "Log out": "התנתקות",
     "Trends": "מגמות",
     "Report": "דוח",
@@ -105,8 +105,8 @@ TRANSLATIONS = {
     "Drop files here, or click to browse": "גרור קבצים לכאן, או לחץ לבחירה",
     "Upload": "העלה",
     "Property Values": "שווי הנכסים",
-    "Used as the denominator for the Annual Yield chart on the Dashboard.": (
-        "משמש כמכנה בגרף התשואה השנתית בלוח הבקרה."
+    "Used as the denominator for the Annual Yield chart on the Home page.": (
+        "משמש כמכנה בגרף התשואה השנתית בעמוד הבית."
     ),
     "Value (USD)": "שווי (דולר)",
     "Mortgage": "משכנתא",

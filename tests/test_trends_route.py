@@ -7,7 +7,7 @@ from app.models import MonthlyStatement, Property
 from app.seed import seed
 
 
-def test_trends_page_defaults_to_gross_rent_noi_net_to_adi(db_session):
+def test_trends_page_defaults_to_gross_rent_noi(db_session):
     seed(db_session)
 
     client = create_app().test_client()
@@ -17,7 +17,6 @@ def test_trends_page_defaults_to_gross_rent_noi_net_to_adi(db_session):
     body = response.get_data(as_text=True)
     assert 'value="gross_rent" checked' in body
     assert 'value="noi" checked' in body
-    assert 'value="net_to_adi" checked' in body
     assert 'value="total_expenses" checked' not in body
 
 

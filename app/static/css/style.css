@@ -339,12 +339,20 @@ a {
   color: #0d1117;
   background: linear-gradient(135deg, var(--accent-strong), var(--accent));
   cursor: pointer;
-  transition: filter 0.2s ease, transform 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+  transition: filter 0.2s ease, transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .filter-bar button:hover {
   filter: brightness(1.08);
   transform: translateY(-1px);
+}
+
+.filter-bar button:active,
+.filter-bar button.is-pressed {
+  filter: brightness(0.95);
+  transform: scale(0.96);
+  transition-duration: 0.05s;
 }
 
 .filter-bar button:focus-visible {
@@ -376,12 +384,22 @@ a {
   padding: 0.5rem 1.05rem;
   border-radius: 999px;
   cursor: pointer;
-  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+  transform: scale(1);
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease, transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .period-pill:hover {
   color: var(--ink);
   border-color: var(--accent);
+}
+
+.period-pill:active,
+.period-pill.is-pressed {
+  transform: scale(0.92);
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  transition-duration: 0.05s;
 }
 
 @media (max-width: 480px) {
@@ -764,12 +782,22 @@ a {
   background: var(--surface);
   color: var(--ink-muted);
   cursor: pointer;
-  transition: color 0.2s ease, border-color 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+  transform: scale(1);
+  transition: color 0.2s ease, border-color 0.2s ease, transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .chart-expand-btn:hover {
   color: var(--ink);
   border-color: var(--accent);
+}
+
+.chart-expand-btn:active,
+.chart-expand-btn.is-pressed {
+  transform: scale(0.85);
+  color: var(--ink);
+  border-color: var(--accent);
+  transition-duration: 0.05s;
 }
 
 .chart-expand-btn svg {
@@ -887,12 +915,22 @@ body.chart-fullscreen-open {
   font-weight: 600;
   padding: 0.3rem 0.65rem;
   border-radius: 999px;
-  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+  transform: scale(1);
+  transition: color 0.2s ease, border-color 0.2s ease, background 0.2s ease, transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .range-pill:hover {
   color: var(--ink);
   border-color: var(--accent);
+}
+
+.range-pill:active,
+.range-pill.is-pressed {
+  transform: scale(0.9);
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  transition-duration: 0.05s;
 }
 
 .range-pill.active {
@@ -1181,7 +1219,17 @@ body.chart-fullscreen-open {
   font-size: 0.8rem;
   font-weight: 600;
   cursor: pointer;
-  transition: color 0.2s ease, border-color 0.2s ease, opacity 0.2s ease;
+  -webkit-tap-highlight-color: transparent;
+  transform: scale(1);
+  transition: color 0.2s ease, border-color 0.2s ease, opacity 0.2s ease, transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.table-nav-btn:active:not(:disabled),
+.table-nav-btn.is-pressed:not(:disabled) {
+  transform: scale(0.92);
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  transition-duration: 0.05s;
 }
 
 .table-nav-btn svg {
