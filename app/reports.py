@@ -26,8 +26,8 @@ def properties_summary(session):
 # The trends page's selectable "summary" series (dev-plan.md sec 5.1's trend
 # chart, generalized to every monthly_statement figure, per Adi's request).
 # rent_income is deliberately not duplicated here as a category series - it's
-# the same number as gross_rent. "Change in Cash Balance" (NOI + unpaid_bills
-# - mortgage) is deliberately not offered here (Adi's request, 2026-08-26) -
+# the same number as gross_rent. "Change in Accumulated Balance" (NOI +
+# unpaid_bills - mortgage) is deliberately not offered here (Adi's request, 2026-08-26) -
 # it's still computed/shown on the Report page's waterfall, just not needed
 # as a Trends line.
 SUMMARY_SERIES = {
@@ -449,7 +449,7 @@ def report_breakdown(session, month, property_nickname="all"):
     # The waterfall: each step is a (start, end) span a floating bar draws
     # between - "income"/"expense" steps chain off the running total,
     # "subtotal"/"total" steps are checkpoints anchored back to zero (NOI
-    # and the final Change in Cash Balance), matching dev-plan.md sec 5.2's
+    # and the final Change in Accumulated Balance), matching dev-plan.md sec 5.2's
     # original "literal waterfall chart" concept.
     waterfall = [{"label": "Gross Rent Collected", "start": 0, "end": gross_rent, "kind": "income"}]
     running = gross_rent
@@ -468,7 +468,7 @@ def report_breakdown(session, month, property_nickname="all"):
             }
         )
         running += unpaid_bills
-    waterfall.append({"label": "Change in Cash Balance", "start": 0, "end": net_cash_flow, "kind": "total"})
+    waterfall.append({"label": "Change in Accumulated Balance", "start": 0, "end": net_cash_flow, "kind": "total"})
 
     return {
         "month": month,

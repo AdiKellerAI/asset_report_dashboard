@@ -57,8 +57,8 @@
           {% endfor %}
           <td class="total-col">{{ total.net_after_mortgage|money }}</td>
         </tr>
-        <tr>
-          <th scope="row">{{ "Change in Cash Balance"|t }}</th>
+        <tr class="row-accent">
+          <th scope="row">{{ "Change in Accumulated Balance"|t }}</th>
           {% for p in properties %}
           <td>{{ p.net_to_adi|money }}</td>
           {% endfor %}
@@ -66,6 +66,7 @@
         </tr>
       </tbody>
     </table>
+    <p class="table-note">{{ "This period's estimated change to the Accumulated Balance below (NOI plus outstanding bills) — not a balance itself."|t }}</p>
   </div>
 
   <section class="card card-accent card-accumulated">

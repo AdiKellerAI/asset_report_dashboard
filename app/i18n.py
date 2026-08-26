@@ -62,10 +62,13 @@ TRANSLATIONS = {
     "Net (NOI)": "נטו (NOI)",
     "Net After Mortgage": "נטו לאחר משכנתא",
     "Net": "נטו",
-    "Change in Cash Balance": "שינוי ביתרת המזומנים",
+    "Change in Accumulated Balance": "שינוי ביתרה שנצברה",
     "Accumulated Balance": "יתרה שנצברה",
     "Still with Overland, not yet transferred — portfolio-wide, as of now": (
         "עדיין אצל אוברלנד, טרם הועבר — עבור כלל התיק, נכון לעכשיו"
+    ),
+    "This period's estimated change to the Accumulated Balance below (NOI plus outstanding bills) — not a balance itself.": (
+        "השינוי המוערך ליתרה שנצברה שמופיעה למטה בתקופה זו (רווח תפעולי נקי בתוספת חשבונות פתוחים) — לא יתרה בפני עצמה."
     ),
     "Net Operating Income — Last {n} Months": "רווח תפעולי נקי — {n} חודשים אחרונים",
     "Annual Yield": "תשואה שנתית",

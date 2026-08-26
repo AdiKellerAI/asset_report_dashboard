@@ -82,6 +82,18 @@ a {
   position: sticky;
   top: 0;
   z-index: 40;
+  /* GPU-layer promotion - iOS Safari's dynamic URL-bar show/hide animation
+     on navigation is a separate, well-known trigger (beyond the
+     backdrop-filter issue below) for a sticky element's position
+     recalculating visibly mid-transition instead of settling immediately;
+     promoting it to its own compositing layer is the standard mitigation.
+     Splitting the backdrop-filter fix (below) alone didn't fully resolve
+     Adi's report on his phone, 2026-08-26 - this is the next targeted
+     attempt, still not verifiable from this environment (no real iOS
+     device) - please confirm on-device again after this deploys. */
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  will-change: transform;
 }
 
 /* The opaque-ish blurred background lives on its own layer behind the
@@ -705,6 +717,33 @@ a {
 .compare-table .total-col {
   color: var(--accent-strong);
   font-weight: 700;
+}
+
+/* "Change in Accumulated Balance" is a derived estimate tied to the gold
+   Accumulated Balance card below it, not a raw on-statement figure like the
+   3 rows above it (Rent/Expenses/NOI) - Adi found it confusing without a
+   visual cue that it's a different kind of number (2026-08-26). Reuses
+   `--gold`, this app's one card-accent color, specifically because it's
+   reserved for the Accumulated Balance concept - the tint is the link. */
+.compare-table .row-accent {
+  background: rgba(201, 133, 0, 0.07);
+}
+
+.compare-table .row-accent th[scope="row"],
+.compare-table .row-accent td {
+  border-top: 1px solid rgba(201, 133, 0, 0.25);
+  color: var(--gold);
+}
+
+.compare-table .row-accent .total-col {
+  color: var(--gold);
+}
+
+.table-note {
+  font-size: 0.72rem;
+  color: var(--ink-muted);
+  margin: 0.6rem 0.75rem 0.25rem;
+  white-space: normal;
 }
 
 @media (max-width: 640px) {
