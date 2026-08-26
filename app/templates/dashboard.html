@@ -66,7 +66,6 @@
         </tr>
       </tbody>
     </table>
-    <p class="table-note">{{ "This period's estimated change to the Accumulated Balance below (NOI plus outstanding bills) — not a balance itself."|t }}</p>
   </div>
 
   <section class="card card-accent card-accumulated">
@@ -133,18 +132,36 @@
     customType.addEventListener("change", syncCustomInputs);
     syncCustomInputs();
 
-    // Auto-applies the moment a month/year is actually picked - no separate
-    // Go button to click (Adi's request, 2026-08-26). `change` (not
-    // `input`) on purpose: a month picker's `change` only fires once a full
-    // value is chosen, and a number input's `change` only fires on
-    // blur/Enter, not per keystroke while typing a year digit by digit -
-    // submitting on every keystroke would fire premature requests for
-    // half-typed years.
+    // Auto-applies once a month/year is picked - no separate Go button to
+    // click (Adi's request, 2026-08-26). Submits on `blur`, not `change`:
+    // on mobile, the native month picker's wheel UI fires `change` on
+    // every scroll tick as the wheels spin past each value, well before
+    // the user taps the picker's own checkmark to confirm - submitting
+    // there closed the picker out from under them mid-scroll (Adi's
+    // report, 2026-08-26, iOS screenshot). `change` still runs first and
+    // just records that a real value was picked; `blur` (the picker
+    // actually closing, via the checkmark or tapping away) is what
+    // triggers the actual submit, and only if something changed - a plain
+    // tap-away-without-picking-anything shouldn't re-submit the same value.
+    var monthChanged = false;
+    var yearChanged = false;
     monthInput.addEventListener("change", function () {
-      if (monthInput.value) customForm.submit();
+      monthChanged = true;
+    });
+    monthInput.addEventListener("blur", function () {
+      if (monthChanged && monthInput.value) {
+        monthChanged = false;
+        customForm.submit();
+      }
     });
     yearInput.addEventListener("change", function () {
-      if (yearInput.value) customForm.submit();
+      yearChanged = true;
+    });
+    yearInput.addEventListener("blur", function () {
+      if (yearChanged && yearInput.value) {
+        yearChanged = false;
+        customForm.submit();
+      }
     });
   </script>
 

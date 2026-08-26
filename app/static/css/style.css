@@ -784,13 +784,6 @@ a {
   color: var(--gold);
 }
 
-.table-note {
-  font-size: 0.72rem;
-  color: var(--ink-muted);
-  margin: 0.6rem 0.75rem 0.25rem;
-  white-space: normal;
-}
-
 @media (max-width: 640px) {
   .compare-table th,
   .compare-table td {
