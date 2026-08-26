@@ -114,24 +114,19 @@
     };
 
     // Shared chart aspect ratio, used by every Chart.js instance on every
-    // page (Adi's report, 2026-08-26: charts "very high, look square" on
-    // both desktop and mobile landscape). Chart.js's own default (a flat
-    // aspectRatio of 2, same on every viewport) measures out fine as a W:H
-    // *ratio* - the real problem only shows up against a SHORT viewport:
-    // in mobile landscape the whole chart card measured taller than the
-    // entire visible screen (450px card vs. a 390px-tall viewport),
-    // because a fixed ratio keyed only on width doesn't know the viewport
-    // is short. Keyed on both dimensions instead: narrow portrait phones
-    // get a taller ratio (need enough absolute height for the legend to
-    // stay readable), short viewports (mobile landscape, or just a
-    // shallow desktop window) get a much wider ratio so the card actually
-    // fits the available vertical space, everything else gets a slightly
-    // wider default than Chart.js's own (per Adi's separate desktop
-    // "too tall" note).
+    // page. Went through two rounds (Adi's reports, 2026-08-26): first
+    // "very high, look square" on desktop and mobile landscape (fixed by
+    // keying this off viewport height too, not just width - mobile
+    // landscape's whole chart card was measuring taller than the entire
+    // visible screen). Then, on mobile PORTRAIT specifically, the ratio
+    // this used (1.2, picked to leave enough absolute height for the
+    // legend) was itself close enough to square that it no longer read as
+    // "rectangle" either - widened to 1.7, still leaves reasonable room
+    // for a short 1-2 line legend without looking square.
     window.responsiveChartAspectRatio = function () {
       var w = window.innerWidth;
       var h = window.innerHeight;
-      if (w <= 640) return 1.2;
+      if (w <= 640) return 1.7;
       if (h <= 500) return 3.2;
       return 2.3;
     };

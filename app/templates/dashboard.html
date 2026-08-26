@@ -17,9 +17,8 @@
       </nav>
 
       <form method="get" action="/" id="custom-period-form" class="custom-period-form">
-        <input type="hidden" name="period" id="custom-period-type" value="custom_month">
+        <input type="hidden" name="period" value="custom_month">
         <input type="month" name="month" id="custom-month-input" value="{{ selected_month }}" class="{{ 'is-active-period' if selected_period == 'custom_month' }}" aria-label="{{ 'Month'|t }}">
-        <input type="number" name="year" id="custom-year-input" min="2020" max="2100" value="{{ selected_year }}" placeholder="{{ 'Year'|t }}" class="{{ 'is-active-period' if selected_period == 'custom_year' }}" aria-label="{{ 'Year'|t }}">
         <noscript><button type="submit">{{ "Go"|t }}</button></noscript>
       </form>
     </div>
@@ -114,19 +113,16 @@
 
 {% block scripts %}
   <script>
-    // Month/year inputs sit inline next to the This Month/This Year/All
-    // Time icons, always visible - no separate "Custom" toggle button to
-    // reveal them first (Adi's request, 2026-08-26). Each one carries its
-    // own period type into the shared hidden `period` field right before
-    // it submits, so picking a month doesn't accidentally submit as
-    // `custom_year` (whichever field the user touches last is the one
-    // that determines the period type).
+    // A single month picker sits inline next to the This Month/This
+    // Year/All Time icons, always visible - no separate "Custom" toggle
+    // button, and no separate year field either (Adi's request,
+    // 2026-08-26: the month picker's own native UI already lets you pick
+    // any month AND year together, a standalone year field was redundant -
+    // "This Year" above already covers viewing the current year).
     var customForm = document.getElementById("custom-period-form");
-    var periodTypeInput = document.getElementById("custom-period-type");
     var monthInput = document.getElementById("custom-month-input");
-    var yearInput = document.getElementById("custom-year-input");
 
-    // Auto-applies once a month/year is picked - no separate Go button to
+    // Auto-applies once a month is picked - no separate Go button to
     // click. Submits on `blur`, not `change`: on mobile, the native month
     // picker's wheel UI fires `change` on every scroll tick as the wheels
     // spin past each value, well before the user taps the picker's own
@@ -138,24 +134,12 @@
     // something changed - a plain tap-away-without-picking-anything
     // shouldn't re-submit the same value.
     var monthChanged = false;
-    var yearChanged = false;
     monthInput.addEventListener("change", function () {
       monthChanged = true;
     });
     monthInput.addEventListener("blur", function () {
       if (monthChanged && monthInput.value) {
         monthChanged = false;
-        periodTypeInput.value = "custom_month";
-        customForm.submit();
-      }
-    });
-    yearInput.addEventListener("change", function () {
-      yearChanged = true;
-    });
-    yearInput.addEventListener("blur", function () {
-      if (yearChanged && yearInput.value) {
-        yearChanged = false;
-        periodTypeInput.value = "custom_year";
         customForm.submit();
       }
     });

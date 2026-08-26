@@ -523,7 +523,6 @@ a {
   flex-shrink: 0;
 }
 
-.custom-period-form select,
 .custom-period-form input {
   appearance: none;
   -webkit-appearance: none;
@@ -535,24 +534,26 @@ a {
   font: inherit;
   font-size: 0.82rem;
   min-height: 34px;
+  /* A native month input's own intrinsic width can collapse to almost
+     nothing on mobile when its value is empty (Adi's screenshot,
+     2026-08-26 - showed as a bare sliver, no visible placeholder) -
+     pinned to a width wide enough to always show its own "Month YYYY"
+     content/placeholder in full instead of leaving it to the browser's
+     own (unreliable) intrinsic sizing. */
+  width: 11rem;
+  max-width: 100%;
 }
 
-.custom-period-form input[type="number"] {
-  width: 4.5rem;
-}
-
-.custom-period-form select:focus,
 .custom-period-form input:focus {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-ring);
 }
 
-/* Marks whichever of month/year is the currently active period - the
+/* Marks the month field when it's the currently active period - the
    segmented icons above already show their own active state the same
-   way (an accent border here mirrors that for these two fields, since
-   they don't have a background-fill "active" treatment of their own to
-   share with icon buttons). */
+   way (an accent border here mirrors that, since a single input doesn't
+   have a background-fill "active" treatment to share with icon buttons). */
 .custom-period-form input.is-active-period {
   border-color: var(--accent);
 }
