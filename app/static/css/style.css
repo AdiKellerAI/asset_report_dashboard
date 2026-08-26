@@ -432,26 +432,34 @@ a {
   box-shadow: 0 0 0 3px var(--accent-ring);
 }
 
-/* ---------- Period selector (one segmented control, not separate pills) ----------
-   Redesigned (Adi's request, 2026-08-26: "change completely the design of
-   this area") - was a row of individually-bordered, individually-spaced
-   pills floating directly on the page background; now one grouped,
-   rounded-full segmented control (matching .main-nav's own established
-   pattern elsewhere in the app - background surface, one shared border,
-   internal padding, segments butted together with no gaps) so the 4
-   options read as one control with 4 states, not 4 separate buttons. */
+/* ---------- Period selector (icon segmented control + always-visible month/year, one line) ----------
+   Redesigned twice now (Adi's requests, 2026-08-26): first from separate
+   bordered pills into one grouped segmented control (matching .main-nav's
+   own pattern - shared background/border, segments butted together); then
+   from text labels to icons with the custom month/year fields moved out
+   of a hidden-until-toggled popover into always-visible fields on the
+   SAME row, to the icons' right - no "Custom" button to reveal them
+   first, no separate line for them to drop to. */
 .period-selector {
   margin-bottom: 1.5rem;
 }
 
+.period-row {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
 .period-pills {
   display: flex;
+  flex-shrink: 0;
   background: var(--surface);
   border: 1px solid var(--border-soft);
   border-radius: 999px;
   padding: 0.25rem;
-  width: fit-content;
-  max-width: 100%;
 }
 
 .period-pill {
@@ -472,6 +480,23 @@ a {
   transition: color 0.2s ease, background 0.2s ease, transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+/* Icon-only segments (This Month/This Year/All Time) - no text label, so
+   padding is even on both axes and the icon itself carries the meaning
+   (aria-label/title still name each one for screen readers and desktop
+   hover). */
+.period-pills-icon .period-pill {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.55rem;
+}
+
+.period-pills-icon .period-pill svg {
+  width: 19px;
+  height: 19px;
+  flex-shrink: 0;
+}
+
 .period-pill:hover {
   color: var(--ink);
 }
@@ -483,44 +508,19 @@ a {
   transition-duration: 0.05s;
 }
 
-@media (max-width: 480px) {
-  /* One line, never wrapped - scrolls horizontally if it doesn't all fit. */
-  .period-pills {
-    max-width: 100%;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-  }
-
-  .period-pill {
-    flex-shrink: 0;
-  }
-}
-
 .period-pill.active {
   color: var(--ink);
   background: var(--accent-soft);
 }
 
-/* A small elevated popover anchored under the segmented control, not a
-   bare inline row - matches the card language used everywhere else in the
-   app (gradient surface, border, shadow) instead of looking like stray
-   form controls floating on the page. */
+/* Plain inline fields, not a card - always visible next to the icons now
+   rather than a revealed popover, so they read as part of the same
+   control instead of a separate panel. */
 .custom-period-form {
   display: flex;
-  flex-wrap: wrap;
   align-items: center;
-  gap: 0.6rem;
-  width: fit-content;
-  margin-top: 0.6rem;
-  padding: 0.6rem 0.75rem;
-  background: linear-gradient(160deg, var(--surface-raised), var(--surface));
-  border: 1px solid var(--border-soft);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-card);
-}
-
-.custom-period-form[hidden] {
-  display: none;
+  gap: 0.5rem;
+  flex-shrink: 0;
 }
 
 .custom-period-form select,
@@ -537,11 +537,24 @@ a {
   min-height: 34px;
 }
 
+.custom-period-form input[type="number"] {
+  width: 4.5rem;
+}
+
 .custom-period-form select:focus,
 .custom-period-form input:focus {
   outline: none;
   border-color: var(--accent);
   box-shadow: 0 0 0 3px var(--accent-ring);
+}
+
+/* Marks whichever of month/year is the currently active period - the
+   segmented icons above already show their own active state the same
+   way (an accent border here mirrors that for these two fields, since
+   they don't have a background-fill "active" treatment of their own to
+   share with icon buttons). */
+.custom-period-form input.is-active-period {
+  border-color: var(--accent);
 }
 
 .custom-period-form button {

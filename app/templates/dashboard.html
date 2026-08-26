@@ -2,24 +2,27 @@
 {% set active_nav = "dashboard" %}
 
 {% block content %}
-  {% set is_custom = selected_period in ("custom_month", "custom_year") %}
   <div class="period-selector">
-    <nav class="period-pills">
-      <a href="/?period=this_month" class="period-pill {{ 'active' if selected_period == 'this_month' }}">{{ "This Month"|t }}</a>
-      <a href="/?period=this_year" class="period-pill {{ 'active' if selected_period == 'this_year' }}">{{ "This Year"|t }}</a>
-      <a href="/?period=all_time" class="period-pill {{ 'active' if selected_period == 'all_time' }}">{{ "All Time"|t }}</a>
-      <button type="button" id="custom-period-toggle" class="period-pill period-pill-custom {{ 'active' if is_custom }}">{{ "Custom"|t }} ▾</button>
-    </nav>
+    <div class="period-row">
+      <nav class="period-pills period-pills-icon">
+        <a href="/?period=this_month" class="period-pill {{ 'active' if selected_period == 'this_month' }}" aria-label="{{ 'This Month'|t }}" title="{{ 'This Month'|t }}">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M3 9h18M8 2v4M16 2v4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="12" cy="14.5" r="1.6" fill="currentColor"/></svg>
+        </a>
+        <a href="/?period=this_year" class="period-pill {{ 'active' if selected_period == 'this_year' }}" aria-label="{{ 'This Year'|t }}" title="{{ 'This Year'|t }}">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M3 9h18M8 2v4M16 2v4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M7 13h2M11 13h2M15 13h2M7 17h2M11 17h2M15 17h2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        </a>
+        <a href="/?period=all_time" class="period-pill {{ 'active' if selected_period == 'all_time' }}" aria-label="{{ 'All Time'|t }}" title="{{ 'All Time'|t }}">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 8v5l3 2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 12a8 8 0 1 1-2.34-5.66" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M20 4v4h-4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </a>
+      </nav>
 
-    <form method="get" action="/" id="custom-period-form" class="custom-period-form" {{ "" if is_custom else "hidden" }}>
-      <select name="period" id="custom-period-type">
-        <option value="custom_month" {{ "selected" if selected_period == "custom_month" }}>{{ "Month"|t }}</option>
-        <option value="custom_year" {{ "selected" if selected_period == "custom_year" }}>{{ "Year"|t }}</option>
-      </select>
-      <input type="month" name="month" id="custom-month-input" value="{{ selected_month }}" {{ "" if selected_period == "custom_month" else "hidden" }}>
-      <input type="number" name="year" id="custom-year-input" min="2020" max="2100" value="{{ selected_year }}" {{ "" if selected_period == "custom_year" else "hidden" }}>
-      <noscript><button type="submit">{{ "Go"|t }}</button></noscript>
-    </form>
+      <form method="get" action="/" id="custom-period-form" class="custom-period-form">
+        <input type="hidden" name="period" id="custom-period-type" value="custom_month">
+        <input type="month" name="month" id="custom-month-input" value="{{ selected_month }}" class="{{ 'is-active-period' if selected_period == 'custom_month' }}" aria-label="{{ 'Month'|t }}">
+        <input type="number" name="year" id="custom-year-input" min="2020" max="2100" value="{{ selected_year }}" placeholder="{{ 'Year'|t }}" class="{{ 'is-active-period' if selected_period == 'custom_year' }}" aria-label="{{ 'Year'|t }}">
+        <noscript><button type="submit">{{ "Go"|t }}</button></noscript>
+      </form>
+    </div>
   </div>
 
   <p class="period-label">{{ total.period_label }}{% if not total.has_data %} <span class="period-label-caveat">— {{ "no statement data for this period yet"|t }}</span>{% endif %}</p>
@@ -111,38 +114,29 @@
 
 {% block scripts %}
   <script>
-    // The "Custom" pill reveals a small inline form (Month or Year + a Go
-    // button) instead of the previous boxed dropdown-and-Apply-button card.
-    var customToggle = document.getElementById("custom-period-toggle");
+    // Month/year inputs sit inline next to the This Month/This Year/All
+    // Time icons, always visible - no separate "Custom" toggle button to
+    // reveal them first (Adi's request, 2026-08-26). Each one carries its
+    // own period type into the shared hidden `period` field right before
+    // it submits, so picking a month doesn't accidentally submit as
+    // `custom_year` (whichever field the user touches last is the one
+    // that determines the period type).
     var customForm = document.getElementById("custom-period-form");
-    var customType = document.getElementById("custom-period-type");
+    var periodTypeInput = document.getElementById("custom-period-type");
     var monthInput = document.getElementById("custom-month-input");
     var yearInput = document.getElementById("custom-year-input");
 
-    function syncCustomInputs() {
-      var isMonth = customType.value === "custom_month";
-      monthInput.hidden = !isMonth;
-      yearInput.hidden = isMonth;
-    }
-
-    customToggle.addEventListener("click", function () {
-      customForm.hidden = !customForm.hidden;
-      if (!customForm.hidden) monthInput.focus();
-    });
-    customType.addEventListener("change", syncCustomInputs);
-    syncCustomInputs();
-
     // Auto-applies once a month/year is picked - no separate Go button to
-    // click (Adi's request, 2026-08-26). Submits on `blur`, not `change`:
-    // on mobile, the native month picker's wheel UI fires `change` on
-    // every scroll tick as the wheels spin past each value, well before
-    // the user taps the picker's own checkmark to confirm - submitting
-    // there closed the picker out from under them mid-scroll (Adi's
-    // report, 2026-08-26, iOS screenshot). `change` still runs first and
-    // just records that a real value was picked; `blur` (the picker
-    // actually closing, via the checkmark or tapping away) is what
-    // triggers the actual submit, and only if something changed - a plain
-    // tap-away-without-picking-anything shouldn't re-submit the same value.
+    // click. Submits on `blur`, not `change`: on mobile, the native month
+    // picker's wheel UI fires `change` on every scroll tick as the wheels
+    // spin past each value, well before the user taps the picker's own
+    // checkmark to confirm - submitting there closed the picker out from
+    // under them mid-scroll (Adi's report, 2026-08-26, iOS screenshot).
+    // `change` still runs first and just records that a real value was
+    // picked; `blur` (the picker actually closing, via the checkmark or
+    // tapping away) is what triggers the actual submit, and only if
+    // something changed - a plain tap-away-without-picking-anything
+    // shouldn't re-submit the same value.
     var monthChanged = false;
     var yearChanged = false;
     monthInput.addEventListener("change", function () {
@@ -151,6 +145,7 @@
     monthInput.addEventListener("blur", function () {
       if (monthChanged && monthInput.value) {
         monthChanged = false;
+        periodTypeInput.value = "custom_month";
         customForm.submit();
       }
     });
@@ -160,6 +155,7 @@
     yearInput.addEventListener("blur", function () {
       if (yearChanged && yearInput.value) {
         yearChanged = false;
+        periodTypeInput.value = "custom_year";
         customForm.submit();
       }
     });

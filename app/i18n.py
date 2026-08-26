@@ -26,7 +26,6 @@ TRANSLATIONS = {
     "This Year": "השנה",
     "Custom Month": "חודש מותאם",
     "Custom Year": "שנה מותאמת",
-    "Custom": "מותאם",
     "Go": "עבור",
     "All Time": "כל הזמן",
     "Last 6 Months": "6 חודשים אחרונים",
