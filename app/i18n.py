@@ -62,7 +62,7 @@ TRANSLATIONS = {
     "Net (NOI)": "נטו (NOI)",
     "Net After Mortgage": "נטו לאחר משכנתא",
     "Net": "נטו",
-    "Change in Accumulated Balance": "שינוי ביתרה שנצברה",
+    "Balance": "יתרה",
     "Accumulated Balance": "יתרה שנצברה",
     "Still with Overland, not yet transferred — portfolio-wide, as of now": (
         "עדיין אצל אוברלנד, טרם הועבר — עבור כלל התיק, נכון לעכשיו"

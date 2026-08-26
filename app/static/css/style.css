@@ -719,8 +719,8 @@ a {
   font-weight: 700;
 }
 
-/* "Change in Accumulated Balance" is a derived estimate tied to the gold
-   Accumulated Balance card below it, not a raw on-statement figure like the
+/* "Balance" is a derived estimate tied to the gold Accumulated Balance
+   card below it, not a raw on-statement figure like the
    3 rows above it (Rent/Expenses/NOI) - Adi found it confusing without a
    visual cue that it's a different kind of number (2026-08-26). Reuses
    `--gold`, this app's one card-accent color, specifically because it's

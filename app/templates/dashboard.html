@@ -58,7 +58,7 @@
           <td class="total-col">{{ total.net_after_mortgage|money }}</td>
         </tr>
         <tr class="row-accent">
-          <th scope="row">{{ "Change in Accumulated Balance"|t }}</th>
+          <th scope="row">{{ "Balance"|t }}</th>
           {% for p in properties %}
           <td>{{ p.net_to_adi|money }}</td>
           {% endfor %}
