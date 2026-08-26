@@ -78,11 +78,25 @@ a {
   /* Pinned at the top of the viewport on scroll (Adi's request, 2026-08-26:
      the page nav icons shouldn't disappear while scrolling, on any page,
      especially mobile) - every page shares this via base.html, so this one
-     rule covers all of them. Needs its own opaque-ish background since page
-     content now scrolls underneath it instead of past it. */
+     rule covers all of them. */
   position: sticky;
   top: 0;
   z-index: 40;
+}
+
+/* The opaque-ish blurred background lives on its own layer behind the
+   sticky element, not on .page-header itself - iOS Safari has a documented
+   bug where `backdrop-filter` directly on a `position: sticky` element
+   makes its own position recalculation visibly glitch during navigation
+   (the nav briefly jumps to its stuck position, then drops back - Adi's
+   report, 2026-08-26). Splitting the blur onto a plain absolutely-
+   positioned `::before` keeps the sticky element itself free of the
+   compositing quirk that causes it. */
+.page-header::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
   background: rgba(13, 13, 13, 0.92);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
