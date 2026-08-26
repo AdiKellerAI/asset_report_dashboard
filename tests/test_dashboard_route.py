@@ -13,7 +13,7 @@ def test_landing_page_renders_default_filters(db_session):
 
     assert response.status_code == 200
     body = response.get_data(as_text=True)
-    assert "Gross Rent Collected" in body
+    assert "Rental Income" in body
     assert '<th scope="row">Balance</th>' in body
     assert "Accumulated Balance" in body
 

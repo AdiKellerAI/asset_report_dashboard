@@ -32,7 +32,7 @@ def properties_summary(session):
 # it's still computed/shown on the Report page's waterfall, just not needed
 # as a Trends line.
 SUMMARY_SERIES = {
-    "gross_rent": "Gross Rent Collected",
+    "gross_rent": "Rental Income",
     "total_expenses": "Total Property Expenses",
     "noi": "Net Operating Income",
     "net_after_mortgage": "Net After Mortgage",
@@ -452,7 +452,7 @@ def report_breakdown(session, month, property_nickname="all"):
     # "subtotal"/"total" steps are checkpoints anchored back to zero (NOI
     # and the final "Balance" row), matching dev-plan.md sec 5.2's
     # original "literal waterfall chart" concept.
-    waterfall = [{"label": "Gross Rent Collected", "start": 0, "end": gross_rent, "kind": "income"}]
+    waterfall = [{"label": "Rental Income", "start": 0, "end": gross_rent, "kind": "income"}]
     running = gross_rent
     for cat in expense_categories:
         waterfall.append({"label": cat["label"], "start": running, "end": running - cat["amount"], "kind": "expense"})

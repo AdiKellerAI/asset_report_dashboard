@@ -67,44 +67,42 @@ a {
 
 /* ---------- Header / nav ---------- */
 
-.page-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 1rem;
-  margin-bottom: 1.75rem;
-  padding: 0.75rem 0 1.25rem;
-  border-bottom: 1px solid var(--border-soft);
-  /* Pinned at the top of the viewport on scroll (Adi's request, 2026-08-26:
-     the page nav icons shouldn't disappear while scrolling, on any page,
-     especially mobile) - every page shares this via base.html, so this one
-     rule covers all of them. */
-  position: sticky;
+/* Exchange-rate/title/currency row + nav icon row, pinned together as one
+   fixed unit at the top of the viewport (Adi's request, 2026-08-26: the
+   page nav icons shouldn't disappear while scrolling, on any page,
+   especially mobile) - every page shares this via base.html, so this one
+   rule covers all of them.
+   `position: fixed`, not `sticky` - sticky went through two rounds of
+   targeted iOS Safari fixes (GPU-layer promotion, decoupling
+   backdrop-filter) and the nav still visibly jumped to its stuck position
+   and back during navigation on Adi's phone. Root cause: sticky has to
+   switch between two different layout modes as scroll crosses its
+   threshold, and iOS's dynamic URL-bar show/hide animation on navigation
+   kept catching it mid-switch. `fixed` has no such mode to switch - it's
+   unconditionally pinned from the first frame, so there's nothing left to
+   glitch. Both rows have to move together as one fixed block, not just the
+   nav - a `fixed` element paints above any normal-flow sibling regardless
+   of DOM order, so fixing only the nav while leaving the exchange-rate/
+   title row in normal flow made the two overlap (both want the same
+   top-of-viewport spot). Needs its own horizontal padding (fixed ignores
+   the normal document flow/body padding entirely) and a spacer element
+   right after it in base.html (sized via JS to match its real combined
+   height) since taking it out of flow would otherwise leave every page's
+   content flush against the very top, hidden behind the fixed bar. */
+.app-header-fixed {
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
   z-index: 40;
-  /* GPU-layer promotion - iOS Safari's dynamic URL-bar show/hide animation
-     on navigation is a separate, well-known trigger (beyond the
-     backdrop-filter issue below) for a sticky element's position
-     recalculating visibly mid-transition instead of settling immediately;
-     promoting it to its own compositing layer is the standard mitigation.
-     Splitting the backdrop-filter fix (below) alone didn't fully resolve
-     Adi's report on his phone, 2026-08-26 - this is the next targeted
-     attempt, still not verifiable from this environment (no real iOS
-     device) - please confirm on-device again after this deploys. */
-  transform: translateZ(0);
-  -webkit-transform: translateZ(0);
-  will-change: transform;
+  padding: 0 1.5rem;
 }
 
 /* The opaque-ish blurred background lives on its own layer behind the
-   sticky element, not on .page-header itself - iOS Safari has a documented
-   bug where `backdrop-filter` directly on a `position: sticky` element
-   makes its own position recalculation visibly glitch during navigation
-   (the nav briefly jumps to its stuck position, then drops back - Adi's
-   report, 2026-08-26). Splitting the blur onto a plain absolutely-
-   positioned `::before` keeps the sticky element itself free of the
-   compositing quirk that causes it. */
-.page-header::before {
+   fixed bar rather than directly on it - a leftover, still-harmless
+   precaution from an earlier `position: sticky` + `backdrop-filter`
+   interaction bug (now moot under `fixed`, but no reason to re-merge it). */
+.app-header-fixed::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -112,6 +110,25 @@ a {
   background: rgba(13, 13, 13, 0.92);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
+}
+
+/* Reserves .app-header-fixed's place in the flow now that it's
+   `position: fixed` (base.html's inline script sets the real height via JS
+   immediately on load/resize) - this static fallback only covers the
+   brief window before that script runs, so content is never flush against
+   the fixed bar even for a frame. */
+.page-header-spacer {
+  height: 130px;
+  margin-bottom: 1.75rem;
+}
+
+.page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 0 1.25rem;
+  border-bottom: 1px solid var(--border-soft);
 }
 
 /* Page title centered regardless of how wide the left/right columns are - a

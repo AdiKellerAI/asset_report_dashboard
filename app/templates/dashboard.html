@@ -37,18 +37,18 @@
       </thead>
       <tbody>
         <tr>
-          <th scope="row"><span class="metric-full">{{ "Gross Rent Collected"|t }}</span><span class="metric-short">{{ "Rent"|t }}</span></th>
+          <th scope="row"><span class="metric-full">{{ "Rental Income"|t }}</span><span class="metric-short">{{ "Rent"|t }}</span></th>
           {% for p in properties %}
           <td>{{ p.gross_rent|money }}</td>
           {% endfor %}
           <td class="total-col">{{ total.gross_rent|money }}</td>
         </tr>
         <tr>
-          <th scope="row"><span class="metric-full">{{ "Total Property Expenses"|t }}</span><span class="metric-short">{{ "Expenses"|t }}</span></th>
+          <th scope="row"><span class="metric-full">{{ "Property Expenses"|t }}</span><span class="metric-short">{{ "Expenses"|t }}</span></th>
           {% for p in properties %}
           <td>{{ p.total_expenses|money }}</td>
           {% endfor %}
-          <td class="total-col">{{ total.total_expenses|money }}</td>
+          <td class="total-col">{{ (total.total_expenses * -1)|money }}</td>
         </tr>
         <tr>
           <th scope="row">{{ "Net (NOI)"|t }}</th>

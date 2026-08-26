@@ -389,7 +389,7 @@ def test_report_breakdown_builds_waterfall_from_income_to_net_cash_flow(db_sessi
     assert result["net_cash_flow"] == pytest.approx(-358.01 - 1314.00)
 
     waterfall = result["waterfall"]
-    assert waterfall[0] == {"label": "Gross Rent Collected", "start": 0, "end": 1460.0, "kind": "income"}
+    assert waterfall[0] == {"label": "Rental Income", "start": 0, "end": 1460.0, "kind": "income"}
     assert waterfall[-1]["label"] == "Balance"
     assert waterfall[-1]["kind"] == "total"
     assert waterfall[-1]["end"] == pytest.approx(-358.01 - 1314.00)
