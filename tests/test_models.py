@@ -65,22 +65,13 @@ def test_monthly_statement_unique_per_property_and_month(db_session):
 
 
 def test_mortgage_payment_round_trip_and_unique_per_month(db_session):
-    db_session.add(
-        MortgagePayment(
-            month=date(2026, 9, 1),
-            principal_amount=613.50,
-            interest_amount=1092.78,
-            total_payment=1706.28,
-            remaining_balance=217420.01,
-        )
-    )
+    db_session.add(MortgagePayment(month=date(2026, 9, 1), amount=1706.28))
     db_session.commit()
 
     stored = db_session.query(MortgagePayment).one()
-    assert float(stored.total_payment) == 1706.28
-    assert float(stored.remaining_balance) == 217420.01
+    assert float(stored.amount) == 1706.28
 
-    db_session.add(MortgagePayment(month=date(2026, 9, 1), principal_amount=0, interest_amount=0, total_payment=0))
+    db_session.add(MortgagePayment(month=date(2026, 9, 1), amount=0))
     with pytest.raises(Exception):
         db_session.commit()
 

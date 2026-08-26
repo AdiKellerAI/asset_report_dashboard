@@ -138,24 +138,21 @@ class MortgagePayment(Base):
     schedule across every loan tranche Discount Bank has ever issued for
     this mortgage (tranches get refinanced/replaced over the years - e.g. one
     tranche closed and was replaced by a new one on 2024-12-29) - portfolio-
-    level like `mortgage` itself, not per-property. Sourced from Discount
+    level like `mortgage` itself, not per-property (the mortgage covers both
+    assets together, so there's nothing to split). Sourced from Discount
     Bank's own loan-history and forward-amortization statements (manually
     transcribed, like `mortgage` - not run through the automated ingestion
-    pipeline), unique on `month` since the combined total is what's tracked,
-    not each underlying tranche separately. `remaining_balance` is only
-    known where the source statement states it explicitly (the forward
-    schedule, from 2026-09 on) - null for earlier months rather than
-    back-computed, so absence means "not stated," not zero.
+    pipeline), unique on `month` since the combined total across every
+    tranche is what's tracked. Just the one combined `amount` per month -
+    Adi deliberately doesn't want the principal/interest/remaining-balance
+    breakdown carried here (2026-08-26), only the flat monthly total.
     """
 
     __tablename__ = "mortgage_payment"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     month: Mapped[date] = mapped_column(Date, nullable=False, unique=True)
-    principal_amount: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False)
-    interest_amount: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False)
-    total_payment: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False)
-    remaining_balance: Mapped[float | None] = mapped_column(Numeric(12, 2))
+    amount: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
 

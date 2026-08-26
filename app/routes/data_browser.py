@@ -136,19 +136,16 @@ def _table_configs():
             # Every month of the actual combined amortization schedule
             # (Adi's request, 2026-08-26: "show all months from 2021 till
             # the end") - not the single current-snapshot `mortgage` row,
-            # which is edited separately via /manage.
+            # which is edited separately via /manage. Just the one combined
+            # monthly amount, no principal/interest/balance breakdown (Adi's
+            # request, 2026-08-26 - see MortgagePayment's docstring).
             "label": "Mortgage",
             "model": MortgagePayment,
             "order_by": MortgagePayment.month,
             "columns": [
-                ("Month", lambda r: r.month.strftime("%B %Y") if r.month else "—"),
-                ("Principal", lambda r: _money(r.principal_amount)),
-                ("Interest", lambda r: _money(r.interest_amount)),
-                ("Total Payment", lambda r: _money(r.total_payment)),
-                (
-                    "Remaining Balance",
-                    lambda r: _money(r.remaining_balance) if r.remaining_balance is not None else "—",
-                ),
+                ("ID", lambda r: r.id),
+                ("Date", lambda r: r.month.strftime("%Y-%m") if r.month else "—"),
+                ("Amount", lambda r: _money(r.amount)),
             ],
         },
         "tax_report": {

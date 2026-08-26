@@ -73,14 +73,8 @@ def test_table_rows_endpoint_paginates(db_session):
 def test_mortgage_table_shows_full_schedule_oldest_first(db_session):
     db_session.add_all(
         [
-            MortgagePayment(month=date(2021, 9, 1), principal_amount=0, interest_amount=709.76, total_payment=709.76),
-            MortgagePayment(
-                month=date(2026, 9, 1),
-                principal_amount=613.50,
-                interest_amount=1092.78,
-                total_payment=1706.28,
-                remaining_balance=217420.01,
-            ),
+            MortgagePayment(month=date(2021, 9, 1), amount=709.76),
+            MortgagePayment(month=date(2026, 9, 1), amount=1706.28),
         ]
     )
     db_session.commit()
@@ -89,10 +83,10 @@ def test_mortgage_table_shows_full_schedule_oldest_first(db_session):
     page = client.get("/tables/mortgage/rows?offset=0&limit=40").get_json()
 
     assert page["total"] == 2
-    assert page["rows"][0][0] == "September 2021"  # oldest first, per Adi's request to see "all months from 2021 till the end"
-    assert page["rows"][1][0] == "September 2026"
-    assert page["rows"][0][4] == "—"  # no remaining_balance known for the historical row
-    assert page["rows"][1][4] == "217,420.01 $"
+    assert page["headers"] == ["ID", "Date", "Amount"]
+    assert page["rows"][0][1] == "2021-09"  # oldest first, per Adi's request to see "all months from 2021 till the end"
+    assert page["rows"][1][1] == "2026-09"
+    assert page["rows"][1][2] == "1,706.28 $"
 
 
 def test_table_rows_endpoint_rejects_unknown_table(db_session):
