@@ -113,6 +113,42 @@
       return Number(usdValue).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " $";
     };
 
+    // Shared chart aspect ratio, used by every Chart.js instance on every
+    // page (Adi's report, 2026-08-26: charts "very high, look square" on
+    // both desktop and mobile landscape). Chart.js's own default (a flat
+    // aspectRatio of 2, same on every viewport) measures out fine as a W:H
+    // *ratio* - the real problem only shows up against a SHORT viewport:
+    // in mobile landscape the whole chart card measured taller than the
+    // entire visible screen (450px card vs. a 390px-tall viewport),
+    // because a fixed ratio keyed only on width doesn't know the viewport
+    // is short. Keyed on both dimensions instead: narrow portrait phones
+    // get a taller ratio (need enough absolute height for the legend to
+    // stay readable), short viewports (mobile landscape, or just a
+    // shallow desktop window) get a much wider ratio so the card actually
+    // fits the available vertical space, everything else gets a slightly
+    // wider default than Chart.js's own (per Adi's separate desktop
+    // "too tall" note).
+    window.responsiveChartAspectRatio = function () {
+      var w = window.innerWidth;
+      var h = window.innerHeight;
+      if (w <= 640) return 1.2;
+      if (h <= 500) return 3.2;
+      return 2.3;
+    };
+
+    // Chart.js reads `aspectRatio` once at creation time and won't re-pick
+    // a new value on its own - without this, rotating the phone after the
+    // page has already loaded (no full reload on a physical rotation)
+    // would keep using whichever ratio matched the ORIGINAL orientation.
+    window.makeChartResponsiveToOrientation = function (chart) {
+      function sync() {
+        chart.options.aspectRatio = window.responsiveChartAspectRatio();
+        chart.resize();
+      }
+      window.addEventListener("resize", sync);
+      window.addEventListener("orientationchange", sync);
+    };
+
     // Shared "expand chart" behavior for every Chart.js canvas on every page
     // (Adi's request, 2026-08-24). Deliberately does NOT move the canvas to
     // a new element - Chart.js wraps the canvas in its own auto-generated

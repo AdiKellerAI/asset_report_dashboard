@@ -93,18 +93,17 @@
 
     Chart.defaults.font.family = "'Manrope', system-ui, sans-serif";
 
-    // Chart.js's default aspectRatio (2) gives a narrow phone screen a very
-    // short total chart height - fine on desktop where the width is large,
-    // but on mobile it leaves barely any room for the plot itself once the
-    // legend (which wraps to 2-3 lines at that width) and the rotated x-axis
-    // date labels take their share (Adi's report, 2026-08-26: chart squished
-    // to a sliver). A taller ratio on narrow viewports fixes this without
-    // touching the desktop layout.
+    // isNarrow still governs legend sizing below (a narrow phone screen
+    // needs a smaller/tighter legend so it doesn't wrap to 2-3 lines and
+    // squeeze the plot - Adi's report, 2026-08-26) - the aspect ratio
+    // itself now comes from the shared window.responsiveChartAspectRatio()
+    // in base.html, which also accounts for viewport HEIGHT (mobile
+    // landscape), not just width.
     const isNarrow = window.matchMedia("(max-width: 640px)").matches;
 
     const ctx = document.getElementById("trend-chart");
     if (ctx) {
-      new Chart(ctx, {
+      const trendChart = new Chart(ctx, {
         type: "line",
         data: {
           labels: months,
@@ -126,7 +125,7 @@
         },
         options: {
           responsive: true,
-          aspectRatio: isNarrow ? 1.15 : 2,
+          aspectRatio: window.responsiveChartAspectRatio(),
           interaction: { mode: "index", intersect: false },
           plugins: {
             legend: {
@@ -170,6 +169,7 @@
           },
         },
       });
+      window.makeChartResponsiveToOrientation(trendChart);
     }
   </script>
 {% endblock %}

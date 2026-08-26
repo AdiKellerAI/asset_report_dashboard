@@ -18,7 +18,7 @@
       </select>
       <input type="month" name="month" id="custom-month-input" value="{{ selected_month }}" {{ "" if selected_period == "custom_month" else "hidden" }}>
       <input type="number" name="year" id="custom-year-input" min="2020" max="2100" value="{{ selected_year }}" {{ "" if selected_period == "custom_year" else "hidden" }}>
-      <button type="submit">{{ "Go"|t }}</button>
+      <noscript><button type="submit">{{ "Go"|t }}</button></noscript>
     </form>
   </div>
 
@@ -132,6 +132,20 @@
     });
     customType.addEventListener("change", syncCustomInputs);
     syncCustomInputs();
+
+    // Auto-applies the moment a month/year is actually picked - no separate
+    // Go button to click (Adi's request, 2026-08-26). `change` (not
+    // `input`) on purpose: a month picker's `change` only fires once a full
+    // value is chosen, and a number input's `change` only fires on
+    // blur/Enter, not per keystroke while typing a year digit by digit -
+    // submitting on every keystroke would fire premature requests for
+    // half-typed years.
+    monthInput.addEventListener("change", function () {
+      if (monthInput.value) customForm.submit();
+    });
+    yearInput.addEventListener("change", function () {
+      if (yearInput.value) customForm.submit();
+    });
   </script>
 
   {% if noi_months %}
@@ -178,6 +192,7 @@
       data: { labels: noiMonths, datasets },
       options: {
         responsive: true,
+        aspectRatio: window.responsiveChartAspectRatio(),
         interaction: { mode: "index", intersect: false },
         plugins: {
           legend: {
@@ -207,6 +222,7 @@
         },
       },
     });
+    window.makeChartResponsiveToOrientation(noiChart);
   </script>
   {% endif %}
 
@@ -238,11 +254,12 @@
         };
       });
 
-      new Chart(document.getElementById("yield-chart"), {
+      const yieldChart = new Chart(document.getElementById("yield-chart"), {
         type: "bar",
         data: { labels: yieldYears, datasets },
         options: {
           responsive: true,
+          aspectRatio: window.responsiveChartAspectRatio(),
           plugins: {
             legend: {
               labels: { color: "#c3c2b7", usePointStyle: true, boxWidth: 8, boxHeight: 8, padding: 16 },
@@ -271,6 +288,7 @@
           },
         },
       });
+      window.makeChartResponsiveToOrientation(yieldChart);
     })();
   </script>
   {% endif %}

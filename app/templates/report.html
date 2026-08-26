@@ -108,7 +108,7 @@
       // chart in the app - the amount is available via tooltip, also same
       // as every other chart here, so nothing extra needs to be drawn on
       // the bars themselves.
-      new Chart(document.getElementById("waterfall-chart"), {
+      const waterfallChart = new Chart(document.getElementById("waterfall-chart"), {
         type: "bar",
         data: {
           labels: steps.map((s) => s.label),
@@ -122,6 +122,7 @@
         },
         options: {
           responsive: true,
+          aspectRatio: window.responsiveChartAspectRatio(),
           plugins: {
             legend: { display: false },
             tooltip: {
@@ -152,6 +153,7 @@
           },
         },
       });
+      window.makeChartResponsiveToOrientation(waterfallChart);
     })();
   </script>
   {% endif %}
