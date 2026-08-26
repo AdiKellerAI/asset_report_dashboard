@@ -35,12 +35,20 @@
   box-sizing: border-box;
 }
 
-html, body {
+html {
   max-width: 100%;
   overflow-x: hidden;
 }
 
+/* max-width alone (no `overflow-x`) is deliberate: `overflow-x` on `body`
+   specifically - even just the x-axis - is a documented CSS trap that makes
+   it an independent scroll container instead of the real viewport, which
+   silently breaks `position: sticky` for every descendant, including
+   .page-header below (found while making the nav sticky, Adi's request
+   2026-08-26). `html`'s own overflow-x: hidden above already prevents
+   page-level horizontal scroll. */
 body {
+  max-width: 100%;
   margin: 0;
   padding: 1.5rem 1.5rem 3rem;
   font-family: "Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -65,8 +73,19 @@ a {
   align-items: center;
   gap: 1rem;
   margin-bottom: 1.75rem;
-  padding-bottom: 1.25rem;
+  padding: 0.75rem 0 1.25rem;
   border-bottom: 1px solid var(--border-soft);
+  /* Pinned at the top of the viewport on scroll (Adi's request, 2026-08-26:
+     the page nav icons shouldn't disappear while scrolling, on any page,
+     especially mobile) - every page shares this via base.html, so this one
+     rule covers all of them. Needs its own opaque-ish background since page
+     content now scrolls underneath it instead of past it. */
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: rgba(13, 13, 13, 0.92);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
 }
 
 /* Page title centered regardless of how wide the left/right columns are - a
