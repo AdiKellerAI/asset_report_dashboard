@@ -7,5 +7,7 @@ instance/
 *.egg-info/
 .pytest_cache/
 .DS_Store
-.claude/settings.local.json
-.vercel
+.claude/
+tests/
+docs/
+node_modules/
