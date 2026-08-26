@@ -28,6 +28,7 @@ TRANSLATIONS = {
     "Custom Year": "שנה מותאמת",
     "Go": "עבור",
     "All Time": "כל הזמן",
+    "Pick a Month": "בחר חודש",
     "Last 6 Months": "6 חודשים אחרונים",
     "Last 1 Year": "שנה אחרונה",
     "Last 2 Years": "שנתיים אחרונות",

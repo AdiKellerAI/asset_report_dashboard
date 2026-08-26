@@ -14,11 +14,18 @@
         <a href="/?period=all_time" class="period-pill {{ 'active' if selected_period == 'all_time' }}" aria-label="{{ 'All Time'|t }}" title="{{ 'All Time'|t }}">
           <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 8v5l3 2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M20 12a8 8 0 1 1-2.34-5.66" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M20 4v4h-4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </a>
+        <button type="button" id="custom-month-trigger" class="period-pill {{ 'active' if selected_period == 'custom_month' }}" aria-label="{{ 'Pick a Month'|t }}" title="{{ 'Pick a Month'|t }}">
+          <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M3 9h18M8 2v4M16 2v4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 13v4M10 15h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        </button>
       </nav>
 
       <form method="get" action="/" id="custom-period-form" class="custom-period-form">
         <input type="hidden" name="period" value="custom_month">
-        <input type="month" name="month" id="custom-month-input" value="{{ selected_month }}" class="{{ 'is-active-period' if selected_period == 'custom_month' }}" aria-label="{{ 'Month'|t }}">
+        <!-- Visually hidden, not display:none - stays focusable/pickable so
+             the "Pick a Month" button above can trigger its native picker
+             (Adi's request, 2026-08-26: an always-visible empty date field
+             read as broken/blank UI, especially with no month picked yet). -->
+        <input type="month" name="month" id="custom-month-input" value="{{ selected_month }}" class="visually-hidden-input" aria-label="{{ 'Month'|t }}">
         <noscript><button type="submit">{{ "Go"|t }}</button></noscript>
       </form>
     </div>
@@ -113,14 +120,34 @@
 
 {% block scripts %}
   <script>
-    // A single month picker sits inline next to the This Month/This
-    // Year/All Time icons, always visible - no separate "Custom" toggle
-    // button, and no separate year field either (Adi's request,
-    // 2026-08-26: the month picker's own native UI already lets you pick
-    // any month AND year together, a standalone year field was redundant -
-    // "This Year" above already covers viewing the current year).
+    // The month input itself stays visually hidden (see its comment in the
+    // template) - a 4th icon button in the same segmented control triggers
+    // its native picker instead (Adi's request, 2026-08-26: an
+    // always-visible empty "-----  --" field read as broken/blank UI,
+    // especially before any month had been picked). showPicker() is the
+    // real modern way to open a native input's picker programmatically;
+    // focus()+click() is the fallback for anything that predates it.
     var customForm = document.getElementById("custom-period-form");
     var monthInput = document.getElementById("custom-month-input");
+    var monthTrigger = document.getElementById("custom-month-trigger");
+
+    monthTrigger.addEventListener("click", function () {
+      try {
+        if (monthInput.showPicker) {
+          monthInput.showPicker();
+        } else {
+          monthInput.focus();
+          monthInput.click();
+        }
+      } catch (err) {
+        // showPicker() can throw in a handful of browser-specific edge
+        // cases (not always from a "trusted" enough gesture, etc.) - a
+        // plain focus/click still opens most native month pickers even
+        // then, so fall back rather than leaving the tap doing nothing.
+        monthInput.focus();
+        monthInput.click();
+      }
+    });
 
     // Auto-applies once a month is picked - no separate Go button to
     // click. Submits on `blur`, not `change`: on mobile, the native month

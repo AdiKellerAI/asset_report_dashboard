@@ -513,49 +513,28 @@ a {
   background: var(--accent-soft);
 }
 
-/* Plain inline fields, not a card - always visible next to the icons now
-   rather than a revealed popover, so they read as part of the same
-   control instead of a separate panel. */
 .custom-period-form {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  flex-shrink: 0;
+  display: contents;
 }
 
-.custom-period-form input {
-  appearance: none;
-  -webkit-appearance: none;
-  background: rgba(255, 255, 255, 0.03);
-  color: var(--ink);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 0.4rem 0.6rem;
-  font: inherit;
-  font-size: 0.82rem;
-  min-height: 34px;
-  /* A native month input's own intrinsic width can collapse to almost
-     nothing on mobile when its value is empty (Adi's screenshot,
-     2026-08-26 - showed as a bare sliver, no visible placeholder) -
-     pinned to a width wide enough to always show its own "Month YYYY"
-     content/placeholder in full instead of leaving it to the browser's
-     own (unreliable) intrinsic sizing. */
-  width: 11rem;
-  max-width: 100%;
-}
-
-.custom-period-form input:focus {
-  outline: none;
-  border-color: var(--accent);
-  box-shadow: 0 0 0 3px var(--accent-ring);
-}
-
-/* Marks the month field when it's the currently active period - the
-   segmented icons above already show their own active state the same
-   way (an accent border here mirrors that, since a single input doesn't
-   have a background-fill "active" treatment to share with icon buttons). */
-.custom-period-form input.is-active-period {
-  border-color: var(--accent);
+/* The month input itself is never shown - a "Pick a Month" icon button
+   (a 4th segment in .period-pills, styled identically to This Month/This
+   Year/All Time) triggers its native picker via showPicker() instead
+   (Adi's request, 2026-08-26: an always-visible empty date field, before
+   any month was picked, read as broken/blank UI). Still a real,
+   focusable, screen-reader-accessible input - just not painted on
+   screen - the standard "visually hidden" pattern (as opposed to
+   `display:none`, which would break both focus and showPicker()). */
+.visually-hidden-input {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
 }
 
 .custom-period-form button {
