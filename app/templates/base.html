@@ -103,26 +103,6 @@
     if (document.fonts && document.fonts.ready) {
       document.fonts.ready.then(syncHeaderSpacer);
     }
-
-    // `position: fixed` alone didn't stop the jump either (Adi's report,
-    // 2026-08-26 - it happens on the currency/language buttons too, not
-    // just scrolling, which rules out sticky-vs-fixed scroll mechanics as
-    // the cause - fixed has nothing to switch modes on regardless of
-    // scroll position, and these buttons don't scroll at all). Remaining
-    // suspect: iOS Safari's URL-bar show/hide animation runs on every
-    // fresh navigation independent of how the header is positioned, and
-    // that animation itself commonly takes a few hundred ms to settle -
-    // not something page CSS can prevent. Rather than trying to outrun it,
-    // this hides the header for 220ms (comfortably past that settling
-    // window) then fades it in over 150ms. Whatever was jumping now
-    // happens off-screen; what's actually visible is one deliberate,
-    // smooth reveal instead of a glitch.
-    var appHeader = document.querySelector(".app-header-fixed");
-    if (appHeader) {
-      window.setTimeout(function () {
-        appHeader.classList.add("is-ready");
-      }, 220);
-    }
   </script>
 
   {% block content %}{% endblock %}
