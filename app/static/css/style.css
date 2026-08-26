@@ -96,6 +96,20 @@ a {
   right: 0;
   z-index: 40;
   padding: 0 1.5rem;
+  /* Hidden until base.html's script marks it ready (two animation frames
+     after load, past whatever iOS Safari is still settling right after a
+     fresh navigation) - `fixed` alone didn't stop the jump either (Adi's
+     report, 2026-08-26), and it happens even on the currency/language
+     buttons, not just scrolling, ruling out sticky-vs-fixed scroll
+     mechanics as the cause. Fading in after a beat means whatever's
+     shifting happens off-screen; what's actually visible is a deliberate
+     reveal instead of a glitch. */
+  opacity: 0;
+}
+
+.app-header-fixed.is-ready {
+  opacity: 1;
+  transition: opacity 0.15s ease;
 }
 
 /* The opaque-ish blurred background lives on its own layer behind the
