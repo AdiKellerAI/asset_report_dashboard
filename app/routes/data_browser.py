@@ -15,8 +15,8 @@ from app.i18n import translate
 from app.models import (
     Document,
     ExpenseType,
-    Mortgage,
     MonthlyStatement,
+    MortgagePayment,
     Property,
     TaxReport,
     Transaction,
@@ -133,21 +133,22 @@ def _table_configs():
             ],
         },
         "mortgage": {
+            # Every month of the actual combined amortization schedule
+            # (Adi's request, 2026-08-26: "show all months from 2021 till
+            # the end") - not the single current-snapshot `mortgage` row,
+            # which is edited separately via /manage.
             "label": "Mortgage",
-            "model": Mortgage,
-            "order_by": Mortgage.id,
+            "model": MortgagePayment,
+            "order_by": MortgagePayment.month,
             "columns": [
-                ("ID", lambda r: r.id),
-                ("Lender", lambda r: r.lender or "—"),
+                ("Month", lambda r: r.month.strftime("%B %Y") if r.month else "—"),
+                ("Principal", lambda r: _money(r.principal_amount)),
+                ("Interest", lambda r: _money(r.interest_amount)),
+                ("Total Payment", lambda r: _money(r.total_payment)),
                 (
-                    "Monthly Payment",
-                    lambda r: _money(r.monthly_payment) if r.monthly_payment is not None else "—",
+                    "Remaining Balance",
+                    lambda r: _money(r.remaining_balance) if r.remaining_balance is not None else "—",
                 ),
-                (
-                    "Principal Balance",
-                    lambda r: _money(r.principal_balance) if r.principal_balance is not None else "—",
-                ),
-                ("Start Date", lambda r: _date(r.start_date)),
             ],
         },
         "tax_report": {

@@ -1,7 +1,7 @@
 from datetime import date
 
 from app import create_app
-from app.models import ExpenseType, MonthlyStatement, Property, Transaction
+from app.models import ExpenseType, MonthlyStatement, MortgagePayment, Property, Transaction
 from app.seed import seed
 
 
@@ -68,6 +68,31 @@ def test_table_rows_endpoint_paginates(db_session):
     assert "Gross Income" in first_page["headers"]  # switching tables client-side needs the new headers too
     assert len(second_page["rows"]) == 2
     assert second_page["has_more"] is True
+
+
+def test_mortgage_table_shows_full_schedule_oldest_first(db_session):
+    db_session.add_all(
+        [
+            MortgagePayment(month=date(2021, 9, 1), principal_amount=0, interest_amount=709.76, total_payment=709.76),
+            MortgagePayment(
+                month=date(2026, 9, 1),
+                principal_amount=613.50,
+                interest_amount=1092.78,
+                total_payment=1706.28,
+                remaining_balance=217420.01,
+            ),
+        ]
+    )
+    db_session.commit()
+
+    client = create_app().test_client()
+    page = client.get("/tables/mortgage/rows?offset=0&limit=40").get_json()
+
+    assert page["total"] == 2
+    assert page["rows"][0][0] == "September 2021"  # oldest first, per Adi's request to see "all months from 2021 till the end"
+    assert page["rows"][1][0] == "September 2026"
+    assert page["rows"][0][4] == "—"  # no remaining_balance known for the historical row
+    assert page["rows"][1][4] == "217,420.01 $"
 
 
 def test_table_rows_endpoint_rejects_unknown_table(db_session):
