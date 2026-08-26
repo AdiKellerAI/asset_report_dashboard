@@ -5,21 +5,27 @@
    UI chrome. */
 
 /* Cross-document view transitions (Adi's mobile "nav jumps on every
-   navigation" report, 2026-08-26 - four rounds of CSS positioning fixes
-   sticky, fixed, GPU-layer promotion, a fade-in mask - none of it worked,
-   because none of it was the actual cause. This app is a traditional
-   multi-page app (every navigation is a real full page load, no client
-   routing) - a diagnostic screenshot description confirmed what that
-   implies: the browser was simply swapping the old page's content for the
-   new page's INSTANTLY, with no transition at all, which reads as a
-   flash/jump - most noticeable right at the persistent header, since
-   everything else changes anyway but the header looks like it should stay
-   put and visibly didn't. This CSS-only opt-in (supported by both Chrome
-   and Safari) makes the browser automatically cross-fade between the old
-   and new document on every same-origin navigation instead of an instant
-   swap - see `.app-header-fixed`'s `view-transition-name` below for how
-   the header specifically stays visually stable rather than fading with
-   the rest of the page. */
+   navigation" report, 2026-08-26). This app is a traditional multi-page
+   app (every navigation is a real full page load, no client routing) -
+   without this, the browser just swaps the old page's content for the new
+   page's INSTANTLY, which reads as a flash/jump, most noticeable at the
+   persistent nav since it looks like it should stay put. This CSS-only
+   opt-in makes the browser cross-fade between the old and new document on
+   every same-origin navigation instead - see .page-header's
+   `view-transition-name` below for how the nav specifically stays stable
+   rather than fading with the rest of the page.
+   Turned out NOT to be the whole story on Adi's phone, though: the jump
+   persisted through this and every positioning variant tried (sticky,
+   fixed, GPU-layer promotion, a fade-in mask) - eventually isolated to
+   Chrome for iOS specifically (confirmed absent in Safari on the same
+   phone). Chrome on iOS must use Apple's WebKit engine like every iOS
+   browser, but wraps it in Chrome's own separate browser-chrome (its own
+   address bar/tab UI, page-load progress indicator) - a long-documented
+   source of exactly this kind of glitch with pinned elements during
+   navigation, and not something any page's own CSS/JS can reach. This
+   rule stays because it's still a real, correct improvement for Safari
+   and any other browser that respects it - just not a fix for the
+   Chrome-iOS-specific case. */
 @view-transition {
   navigation: auto;
 }
@@ -87,48 +93,45 @@ a {
 
 /* ---------- Header / nav ---------- */
 
-/* Exchange-rate/title/currency row + nav icon row, pinned together as one
-   fixed unit at the top of the viewport (Adi's request, 2026-08-26: the
-   page nav icons shouldn't disappear while scrolling, on any page,
-   especially mobile) - every page shares this via base.html, so this one
-   rule covers all of them.
-   `position: fixed`, not `sticky`, purely for this scroll-pinning purpose -
-   `sticky` only stays pinned once you've scrolled past it, `fixed` is
-   simpler and always pinned. (The separate "nav jumps on navigation"
-   glitch this went through several rounds chasing via sticky/fixed/GPU-
-   layer changes turned out to be unrelated to which of these two is used
-   at all - see the `@view-transition` comment near the top of this file
-   for the actual cause and fix.) Both rows have to move together as one
-   fixed block, not just the nav - a `fixed` element paints above any
-   normal-flow sibling regardless of DOM order, so fixing only the nav
-   while leaving the exchange-rate/title row in normal flow made the two
-   overlap (both want the same top-of-viewport spot). Needs its own
-   horizontal padding (fixed ignores the normal document flow/body padding
-   entirely) and a spacer element right after it in base.html (sized via
-   JS to match its real combined height) since taking it out of flow would
-   otherwise leave every page's content flush against the very top, hidden
-   behind the fixed bar. */
-.app-header-fixed {
-  position: fixed;
+/* Only the nav icon row stays pinned on scroll (Adi's request, 2026-08-26 -
+   split back apart from an earlier attempt that pinned the exchange-rate/
+   title row too; Adi wants just the icons). `position: sticky`, not
+   `fixed` - sticky stays in normal document flow until scrolling would
+   push it off-screen, so it naturally sits right below .page-subheader at
+   rest with no overlap; `fixed` would need the whole "take it out of flow,
+   add a spacer, fight for the same top-of-viewport spot as the subheader"
+   dance an earlier round went through for no benefit here, since only one
+   row needs pinning this time. (The separate "nav jumps on navigation"
+   glitch chased across several rounds via sticky/fixed/GPU-layer changes
+   turned out to be Chrome-for-iOS's own browser-chrome rendering during
+   navigation, confirmed absent in Safari - not something either sticky or
+   fixed positioning controls - see the `@view-transition` comment near the
+   top of this file for the corroborating fix on the Safari/standards
+   side.) */
+.page-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.75rem;
+  padding: 0.75rem 0 1.25rem;
+  border-bottom: 1px solid var(--border-soft);
+  position: sticky;
   top: 0;
-  left: 0;
-  right: 0;
   z-index: 40;
-  padding: 0 1.5rem;
-  /* A stable identity across the cross-document view transition below -
+  /* A stable identity across the cross-document view transition above -
      the browser treats an element with the same view-transition-name on
-     the outgoing and incoming page as the SAME element to morph in place,
-     rather than cross-fading it out and a new one in. Since this bar is
-     visually near-identical between pages, that reads as it never
-     moving/flashing at all during navigation. */
+     the outgoing and incoming page as the SAME element to morph in place
+     rather than cross-fading it out and a new one in. */
   view-transition-name: app-header;
 }
 
-/* The opaque-ish blurred background lives on its own layer behind the
-   fixed bar rather than directly on it - a leftover, still-harmless
-   precaution from an earlier `position: sticky` + `backdrop-filter`
-   interaction bug (now moot under `fixed`, but no reason to re-merge it). */
-.app-header-fixed::before {
+/* The opaque-ish blurred background lives on its own layer behind
+   .page-header rather than directly on it - `backdrop-filter` directly on
+   a `position: sticky` element is a documented iOS Safari bug (its own
+   position recalculation glitches during scroll/navigation) found the
+   first time this was sticky. */
+.page-header::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -136,25 +139,6 @@ a {
   background: rgba(13, 13, 13, 0.92);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
-}
-
-/* Reserves .app-header-fixed's place in the flow now that it's
-   `position: fixed` (base.html's inline script sets the real height via JS
-   immediately on load/resize) - this static fallback only covers the
-   brief window before that script runs, so content is never flush against
-   the fixed bar even for a frame. */
-.page-header-spacer {
-  height: 130px;
-  margin-bottom: 1.75rem;
-}
-
-.page-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 1rem;
-  padding: 0.75rem 0 1.25rem;
-  border-bottom: 1px solid var(--border-soft);
 }
 
 /* Page title centered regardless of how wide the left/right columns are - a

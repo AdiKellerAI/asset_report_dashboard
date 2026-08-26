@@ -19,91 +19,51 @@
   <link rel="stylesheet" href="/static/css/style.css">
 </head>
 <body>
-  <div class="app-header-fixed">
-    <div class="page-subheader">
-      <span class="fx-rate-bar">1 $ = {{ "%.2f"|format(usd_to_ils_rate) }} ₪</span>
-      <h1 class="page-title">
-        {% if active_nav == "dashboard" %}{{ "Home"|t }}
-        {% elif active_nav == "trends" %}{{ "Trends"|t }}
-        {% elif active_nav == "report" %}{{ "Report"|t }}
-        {% elif active_nav == "manage" %}{{ "Manage"|t }}
-        {% elif active_nav == "tables" %}{{ "Tables"|t }}
+  <div class="page-subheader">
+    <span class="fx-rate-bar">1 $ = {{ "%.2f"|format(usd_to_ils_rate) }} ₪</span>
+    <h1 class="page-title">
+      {% if active_nav == "dashboard" %}{{ "Home"|t }}
+      {% elif active_nav == "trends" %}{{ "Trends"|t }}
+      {% elif active_nav == "report" %}{{ "Report"|t }}
+      {% elif active_nav == "manage" %}{{ "Manage"|t }}
+      {% elif active_nav == "tables" %}{{ "Tables"|t }}
+      {% endif %}
+    </h1>
+    <div class="page-subheader-right">
+      <div class="currency-widget">
+        <a href="/set-language/{{ 'he' if lang == 'en' else 'en' }}" class="currency-btn" aria-label="Switch language">{{ "EN" if lang == "en" else "HE" }}</a>
+        <a href="/set-currency/{{ 'nis' if currency == 'usd' else 'usd' }}" class="currency-btn" aria-label="Switch currency">{{ "$" if currency == "usd" else "₪" }}</a>
+        {% if auth_enabled %}
+        <a href="/logout" class="logout-link">{{ "Log out"|t }}</a>
         {% endif %}
-      </h1>
-      <div class="page-subheader-right">
-        <div class="currency-widget">
-          <a href="/set-language/{{ 'he' if lang == 'en' else 'en' }}" class="currency-btn" aria-label="Switch language">{{ "EN" if lang == "en" else "HE" }}</a>
-          <a href="/set-currency/{{ 'nis' if currency == 'usd' else 'usd' }}" class="currency-btn" aria-label="Switch currency">{{ "$" if currency == "usd" else "₪" }}</a>
-          {% if auth_enabled %}
-          <a href="/logout" class="logout-link">{{ "Log out"|t }}</a>
-          {% endif %}
-        </div>
       </div>
     </div>
-
-    <header class="page-header">
-      <nav class="main-nav">
-        <a href="/" class="{{ 'active' if active_nav == 'dashboard' else '' }}">
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 11.5 12 4l8 7.5M6 10v9a1 1 0 0 0 1 1h3v-5h4v5h3a1 1 0 0 0 1-1v-9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <span class="nav-label">{{ "Home"|t }}</span>
-        </a>
-        <a href="/trends" class="{{ 'active' if active_nav == 'trends' else '' }}">
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 16l5-5 3 3 6-7M14 7h4v4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          <span class="nav-label">{{ "Trends"|t }}</span>
-        </a>
-        <a href="/report" class="{{ 'active' if active_nav == 'report' else '' }}">
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="6" y="3" width="12" height="18" rx="1.5" stroke="currentColor" stroke-width="1.7"/><path d="M9 8h6M9 12h6M9 16h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
-          <span class="nav-label">{{ "Report"|t }}</span>
-        </a>
-        <a href="/manage" class="{{ 'active' if active_nav == 'manage' else '' }}">
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h13M21 18h-2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="16" cy="6" r="2" stroke="currentColor" stroke-width="1.7"/><circle cx="9" cy="12" r="2" stroke="currentColor" stroke-width="1.7"/><circle cx="17" cy="18" r="2" stroke="currentColor" stroke-width="1.7"/></svg>
-          <span class="nav-label">{{ "Manage"|t }}</span>
-        </a>
-        <a href="/tables" class="{{ 'active' if active_nav == 'tables' else '' }}">
-          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.7"/><rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.7"/><rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.7"/><rect x="14" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.7"/></svg>
-          <span class="nav-label">{{ "Tables"|t }}</span>
-        </a>
-      </nav>
-    </header>
   </div>
-  <div class="page-header-spacer" aria-hidden="true"></div>
-  <script>
-    // .app-header-fixed (exchange-rate/title/currency row + nav icon row,
-    // together) is `position: fixed` (see style.css) - taken clean out of
-    // flow, so this spacer reserves its place instead, sized to match its
-    // real combined rendered height via JS rather than a guessed/hardcoded
-    // value (this app's own font-loading and mobile/desktop layouts do
-    // shift that height slightly). Runs synchronously here, before the
-    // page's own content below even parses, specifically so there's no
-    // frame where content renders un-spaced underneath the fixed bar
-    // before this corrects it.
-    //
-    // `position: fixed` (on the whole bar, not just the nav) replaces an
-    // earlier `position: sticky` attempt at "nav stays visible on scroll"
-    // (Adi's request, 2026-08-26) - sticky kept glitching on iOS Safari
-    // during navigation (the nav visibly jumping to its stuck position
-    // then dropping back) even after two targeted mitigations, because
-    // sticky has to switch between two layout modes mid-scroll and iOS's
-    // dynamic URL-bar animation kept catching it between them. `fixed` has
-    // no such mode switch - it's unconditionally pinned to the viewport
-    // from the first frame, so there's nothing left to glitch. Fixing only
-    // the nav row (leaving the exchange-rate/title row in normal flow
-    // above it) doesn't work: both would then try to occupy the same
-    // top-of-viewport spot and overlap, since a `fixed` element paints
-    // above any normal-flow sibling regardless of DOM order - the two
-    // rows have to move together as one fixed unit.
-    function syncHeaderSpacer() {
-      var header = document.querySelector(".app-header-fixed");
-      var spacer = document.querySelector(".page-header-spacer");
-      if (header && spacer) spacer.style.height = header.offsetHeight + "px";
-    }
-    syncHeaderSpacer();
-    window.addEventListener("resize", syncHeaderSpacer);
-    window.addEventListener("orientationchange", syncHeaderSpacer);
-    if (document.fonts && document.fonts.ready) {
-      document.fonts.ready.then(syncHeaderSpacer);
-    }
-  </script>
+
+  <header class="page-header">
+    <nav class="main-nav">
+      <a href="/" class="{{ 'active' if active_nav == 'dashboard' else '' }}">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 11.5 12 4l8 7.5M6 10v9a1 1 0 0 0 1 1h3v-5h4v5h3a1 1 0 0 0 1-1v-9" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="nav-label">{{ "Home"|t }}</span>
+      </a>
+      <a href="/trends" class="{{ 'active' if active_nav == 'trends' else '' }}">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 16l5-5 3 3 6-7M14 7h4v4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        <span class="nav-label">{{ "Trends"|t }}</span>
+      </a>
+      <a href="/report" class="{{ 'active' if active_nav == 'report' else '' }}">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="6" y="3" width="12" height="18" rx="1.5" stroke="currentColor" stroke-width="1.7"/><path d="M9 8h6M9 12h6M9 16h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+        <span class="nav-label">{{ "Report"|t }}</span>
+      </a>
+      <a href="/manage" class="{{ 'active' if active_nav == 'manage' else '' }}">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h13M21 18h-2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="16" cy="6" r="2" stroke="currentColor" stroke-width="1.7"/><circle cx="9" cy="12" r="2" stroke="currentColor" stroke-width="1.7"/><circle cx="17" cy="18" r="2" stroke="currentColor" stroke-width="1.7"/></svg>
+        <span class="nav-label">{{ "Manage"|t }}</span>
+      </a>
+      <a href="/tables" class="{{ 'active' if active_nav == 'tables' else '' }}">
+        <svg class="nav-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.7"/><rect x="14" y="3" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.7"/><rect x="3" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.7"/><rect x="14" y="14" width="7" height="7" rx="1" stroke="currentColor" stroke-width="1.7"/></svg>
+        <span class="nav-label">{{ "Tables"|t }}</span>
+      </a>
+    </nav>
+  </header>
 
   {% block content %}{% endblock %}
 
