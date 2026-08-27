@@ -468,6 +468,15 @@ a {
 .period-pills {
   display: flex;
   flex-shrink: 0;
+  /* Without this, a flex container defaults to filling its parent's full
+     width like any other block box - fine when it's a flex ITEM inside
+     something like .period-header-row (sized to content there either
+     way), but on its own (Report page's property pills, not wrapped in
+     that row) it stretched the whole rounded segmented-control background
+     across the page with the actual pills bunched at the left and a long
+     empty tail - Adi's request, 2026-08-27: "minimize to the left". */
+  width: fit-content;
+  max-width: 100%;
   background: var(--surface);
   border: 1px solid var(--border-soft);
   border-radius: 999px;

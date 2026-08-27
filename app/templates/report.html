@@ -4,9 +4,8 @@
 
 {% block content %}
   <p class="period-label">{{ "Understand This Report"|t }}</p>
-  <p class="empty-state-note">{{ "Select a month to see the full breakdown from income down to the change in cash balance."|t }}</p>
 
-  <div class="period-selector">
+  <div class="period-header-row">
     <nav class="period-pills">
       <a href="/report?property=all&month={{ selected_month.strftime('%Y-%m') }}" class="period-pill {{ 'active' if selected_property == 'all' }}">{{ "All Properties"|t }}</a>
       {% for p in properties %}
@@ -14,15 +13,16 @@
       {% endfor %}
     </nav>
 
-    <form method="get" action="/report" class="custom-period-form">
-      <input type="hidden" name="property" value="{{ selected_property }}">
-      <select name="month">
-        {% for m in months %}
-        <option value="{{ m.strftime('%Y-%m') }}" {{ "selected" if m == selected_month }}>{{ m.strftime('%B %Y') }}</option>
-        {% endfor %}
-      </select>
-      <button type="submit">{{ "Go"|t }}</button>
-    </form>
+    <div class="period-pill-date-wrapper">
+      <span class="period-pill period-pill-date-visual" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M3 9h18M8 2v4M16 2v4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M12 13v4M10 15h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+      </span>
+      <form method="get" action="/report" id="report-month-form" class="custom-period-form">
+        <input type="hidden" name="property" value="{{ selected_property }}">
+        <input type="month" name="month" id="report-month-input" value="{{ selected_month.strftime('%Y-%m') }}" class="period-pill-date-input" aria-label="{{ 'Pick a Month'|t }}">
+        <noscript><button type="submit">{{ "Go"|t }}</button></noscript>
+      </form>
+    </div>
   </div>
 
   {% if not breakdown.has_data %}
@@ -82,6 +82,13 @@
 {% endblock %}
 
 {% block scripts %}
+  <script>
+    window.wireMonthAutoSubmit(
+      document.getElementById("report-month-input"),
+      document.getElementById("report-month-form")
+    );
+  </script>
+
   {% if breakdown.has_data %}
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
   <script>

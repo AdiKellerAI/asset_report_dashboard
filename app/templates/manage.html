@@ -26,31 +26,7 @@
   </section>
 
   <section class="manage-card">
-    <h2 class="manage-card-title">{{ "Mortgage"|t }}</h2>
-    <p class="manage-card-hint">{{ "One combined mortgage for the whole portfolio."|t }}</p>
-    <form method="post" action="/manage/mortgage" class="manage-form">
-      <label>
-        {{ "Lender"|t }}
-        <input type="text" name="lender" value="{{ mortgage.lender if mortgage else '' }}">
-      </label>
-      <label>
-        {{ "Monthly Payment (USD)"|t }}
-        <input type="number" step="0.01" name="monthly_payment" value="{{ mortgage.monthly_payment if mortgage else '' }}">
-      </label>
-      <label>
-        {{ "Principal Balance (USD)"|t }}
-        <input type="number" step="0.01" name="principal_balance" value="{{ mortgage.principal_balance if mortgage else '' }}">
-      </label>
-      <label>
-        {{ "Start Date"|t }}
-        <input type="date" name="start_date" value="{{ mortgage.start_date.isoformat() if mortgage and mortgage.start_date else '' }}">
-      </label>
-      <button type="submit">{{ "Save"|t }}</button>
-    </form>
-  </section>
-
-  <section class="manage-card">
-    <h2 class="manage-card-title">{{ "Property Values"|t }}</h2>
+    <h2 class="manage-card-title">{{ "Property Values Today"|t }}</h2>
     <p class="manage-card-hint">{{ "Used as the denominator for the Annual Yield chart on the Home page."|t }}</p>
     <form method="post" action="/manage/property-values" class="manage-form">
       {% for p in properties %}

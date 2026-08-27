@@ -38,17 +38,6 @@ def _redirect_with_message(template, level="success", **kwargs):
     return redirect(url_for("manage.manage", msg=msg, level=level))
 
 
-def _mortgage_dict(mortgage):
-    if mortgage is None:
-        return None
-    return {
-        "lender": mortgage.lender,
-        "monthly_payment": mortgage.monthly_payment,
-        "principal_balance": mortgage.principal_balance,
-        "start_date": mortgage.start_date,
-    }
-
-
 def _tax_report_dict(t):
     return {
         "year": t.year,
@@ -74,10 +63,6 @@ def manage():
     session = SessionLocal()
     try:
         properties = get_or_set(("properties_summary",), lambda: properties_summary(session))
-        mortgage = get_or_set(
-            ("mortgage_summary",),
-            lambda: _mortgage_dict(session.query(Mortgage).order_by(Mortgage.id.desc()).first()),
-        )
         tax_reports = get_or_set(
             ("tax_reports_summary",),
             lambda: [_tax_report_dict(t) for t in session.query(TaxReport).order_by(TaxReport.year.desc()).all()],
@@ -94,7 +79,6 @@ def manage():
     return render_template(
         "manage.html",
         properties=properties,
-        mortgage=mortgage,
         tax_reports=tax_reports,
         transfers=transfers,
         message=request.args.get("msg"),

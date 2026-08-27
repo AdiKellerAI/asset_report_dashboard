@@ -49,9 +49,6 @@ TRANSLATIONS = {
     "Checkpoint": "נקודת ביניים",
     "Final result": "תוצאה סופית",
     "Understand This Report": "הבנת הדוח",
-    "Select a month to see the full breakdown from income down to the change in cash balance.": (
-        "בחר חודש כדי לראות את הפירוט המלא מההכנסה ועד לשינוי ביתרת המזומנים."
-    ),
     "No report data for this month yet.": "אין עדיין נתוני דוח לחודש זה.",
     "How we got there": "איך הגענו לתוצאה",
     "Rental Income": "הכנסה משכירות",
@@ -105,17 +102,11 @@ TRANSLATIONS = {
     ),
     "Drop files here, or click to browse": "גרור קבצים לכאן, או לחץ לבחירה",
     "Upload": "העלה",
-    "Property Values": "שווי הנכסים",
+    "Property Values Today": "שווי הנכסים היום",
     "Used as the denominator for the Annual Yield chart on the Home page.": (
         "משמש כמכנה בגרף התשואה השנתית בעמוד הבית."
     ),
     "Value (USD)": "שווי (דולר)",
-    "Mortgage": "משכנתא",
-    "One combined mortgage for the whole portfolio.": "משכנתא אחת משותפת לכל התיק.",
-    "Lender": "גורם מלווה",
-    "Monthly Payment (USD)": "תשלום חודשי (דולר)",
-    "Principal Balance (USD)": "יתרת קרן (דולר)",
-    "Start Date": "תאריך התחלה",
     "Save": "שמור",
     "Yearly Tax Payment": "תשלום מס שנתי",
     "Provider": "ספק",

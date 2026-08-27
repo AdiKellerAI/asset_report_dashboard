@@ -140,31 +140,13 @@
     // tapping the input, so mobile browsers open their native picker via
     // their own normal tap-to-focus behavior, no showPicker() JS call
     // needed (Adi's report, 2026-08-26: the previous showPicker()-button
-    // approach didn't work on his phone).
-    var customForm = document.getElementById("custom-period-form");
-    var monthInput = document.getElementById("custom-month-input");
-
-    // Auto-applies once a month is picked - no separate Go button to
-    // click. Submits on `blur`, not `change`: on mobile, the native month
-    // picker's wheel UI fires `change` on every scroll tick as the wheels
-    // spin past each value, well before the user taps the picker's own
-    // checkmark to confirm - submitting there closed the picker out from
-    // under them mid-scroll (Adi's report, 2026-08-26, iOS screenshot).
-    // `change` still runs first and just records that a real value was
-    // picked; `blur` (the picker actually closing, via the checkmark or
-    // tapping away) is what triggers the actual submit, and only if
-    // something changed - a plain tap-away-without-picking-anything
-    // shouldn't re-submit the same value.
-    var monthChanged = false;
-    monthInput.addEventListener("change", function () {
-      monthChanged = true;
-    });
-    monthInput.addEventListener("blur", function () {
-      if (monthChanged && monthInput.value) {
-        monthChanged = false;
-        customForm.submit();
-      }
-    });
+    // approach didn't work on his phone). Auto-submit behavior itself is
+    // shared with the Report page's own month picker - see
+    // window.wireMonthAutoSubmit in base.html.
+    window.wireMonthAutoSubmit(
+      document.getElementById("custom-month-input"),
+      document.getElementById("custom-period-form")
+    );
   </script>
 
   {% if noi_months %}

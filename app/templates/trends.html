@@ -3,7 +3,7 @@
 {% block title %}{{ "Trends"|t }} - {{ "Asset Report Dashboard"|t }}{% endblock %}
 
 {% block content %}
-  <form class="filter-bar filter-bar-wrap" method="get" action="/trends">
+  <form class="filter-bar filter-bar-wrap" method="get" action="/trends" id="trends-filter-form">
     <label>
       {{ "Property"|t }}
       <select name="property">
@@ -64,11 +64,25 @@
       </div>
     </fieldset>
 
-    <button type="submit">{{ "Apply"|t }}</button>
+    <noscript><button type="submit">{{ "Apply"|t }}</button></noscript>
   </form>
 {% endblock %}
 
 {% block scripts %}
+  <script>
+    // Auto-applies the moment any filter changes - property, range, or any
+    // Summary/By Category checkbox - no separate Apply button to click
+    // (Adi's request, 2026-08-26). A single `change` listener on the form
+    // covers every control inside it via event bubbling, native selects
+    // and checkboxes both fire a clean one-shot `change` per real
+    // selection (unlike the month-picker wheel UI elsewhere in the app,
+    // there's no scroll-tick noise to filter out here, so `change` alone
+    // is enough - no need for the blur-gated pattern used for that).
+    document.getElementById("trends-filter-form").addEventListener("change", function () {
+      this.submit();
+    });
+  </script>
+
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
   <script>
     const months = {{ months|tojson }};

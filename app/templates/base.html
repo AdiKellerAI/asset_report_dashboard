@@ -144,6 +144,31 @@
       window.addEventListener("orientationchange", sync);
     };
 
+    // Shared by every page's "icon-styled native month input" (Home,
+    // Report) - auto-applies once a month is picked, no separate Go
+    // button. Submits on `blur`, not `change`: on mobile, the native month
+    // picker's wheel UI fires `change` on every scroll tick as the wheels
+    // spin past each value, well before the user taps the picker's own
+    // checkmark to confirm - submitting there closed the picker out from
+    // under them mid-scroll (Adi's report, 2026-08-26, iOS screenshot).
+    // `change` still runs first and just records that a real value was
+    // picked; `blur` (the picker actually closing, via the checkmark or
+    // tapping away) is what triggers the actual submit, and only if
+    // something changed - a plain tap-away-without-picking-anything
+    // shouldn't re-submit the same value.
+    window.wireMonthAutoSubmit = function (input, form) {
+      var changed = false;
+      input.addEventListener("change", function () {
+        changed = true;
+      });
+      input.addEventListener("blur", function () {
+        if (changed && input.value) {
+          changed = false;
+          form.submit();
+        }
+      });
+    };
+
     // Shared "expand chart" behavior for every Chart.js canvas on every page
     // (Adi's request, 2026-08-24). Deliberately does NOT move the canvas to
     // a new element - Chart.js wraps the canvas in its own auto-generated

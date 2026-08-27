@@ -14,8 +14,7 @@ def test_manage_page_renders(db_session):
     assert response.status_code == 200
     body = response.get_data(as_text=True)
     assert "Upload New Reports" in body
-    assert "Mortgage" in body
-    assert "Property Values" in body
+    assert "Property Values Today" in body
     assert "Yearly Tax Payment" in body
     assert "Transfer to Israel" in body
 

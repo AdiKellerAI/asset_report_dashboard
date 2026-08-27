@@ -4,7 +4,7 @@ from flask import Blueprint, render_template, request
 
 from app.cache import get_or_set
 from app.db import SessionLocal
-from app.reports import available_report_months, latest_reported_month, properties_summary, report_breakdown
+from app.reports import latest_reported_month, properties_summary, report_breakdown
 
 report_bp = Blueprint("report", __name__)
 
@@ -19,7 +19,6 @@ def report():
         if property_filter != "all" and property_filter not in [p["nickname"] for p in properties]:
             property_filter = "all"
 
-        months = get_or_set(("available_report_months",), lambda: available_report_months(session))
         month_param = request.args.get("month")
         if month_param:
             year_part, month_part = month_param.split("-")
@@ -40,7 +39,6 @@ def report():
         "report.html",
         properties=properties,
         selected_property=property_filter,
-        months=months,
         selected_month=selected_month,
         breakdown=breakdown,
     )
