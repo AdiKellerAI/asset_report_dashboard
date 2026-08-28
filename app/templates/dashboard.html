@@ -147,7 +147,13 @@
       <tbody>
         {% for p in property_values %}
         <tr>
-          <th scope="row">{{ p.nickname }}</th>
+          <th scope="row">
+            {% if p.zillow_url %}
+            <a href="{{ p.zillow_url }}" target="_blank" rel="noopener" class="property-name-link">{{ p.nickname }} ↗</a>
+            {% else %}
+            {{ p.nickname }}
+            {% endif %}
+          </th>
           <td>{{ p.value|money if p.value is not none else "—" }}</td>
           <td>{{ p.current_value|money if p.current_value is not none else "—" }}</td>
           <td class="total-col{{ ' value-change-positive' if p.change_pct is not none and p.change_pct >= 0 else ' value-change-negative' if p.change_pct is not none else '' }}">
@@ -158,14 +164,6 @@
       </tbody>
     </table>
   </div>
-
-  <p class="zillow-links">
-    {% for p in property_values %}
-    {% if p.zillow_url %}
-    <a href="{{ p.zillow_url }}" target="_blank" rel="noopener">{{ p.nickname }} {{ "on Zillow"|t }} ↗</a>
-    {% endif %}
-    {% endfor %}
-  </p>
   {% endif %}
 
   {% if property_history %}
@@ -179,8 +177,6 @@
     <canvas id="value-history-chart" role="img" aria-label="Sale, estimate and tax assessment value points per property, by year"></canvas>
     <p class="chart-note">{{ "Only real, known data points - sale events, RentCast estimates going forward, county tax assessments (right axis, which runs well below market value in Ohio). No interpolation for years without data."|t }}</p>
   </section>
-  {% elif property_values %}
-  <p class="empty-state-note">{{ "No price history yet - it's fetched automatically on your next Manage visit."|t }}</p>
   {% endif %}
 {% endblock %}
 

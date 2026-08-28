@@ -74,7 +74,6 @@ TRANSLATIONS = {
     "Purchase Price": "מחיר רכישה",
     "RentCast Estimate": "הערכת RentCast",
     "Change": "שינוי",
-    "on Zillow": "בזילו",
     "No property values set yet - add them in Manage to see this chart.": (
         "עדיין לא הוגדר שווי לנכסים - הוסף אותו בעמוד הניהול כדי לראות גרף זה."
     ),
@@ -85,9 +84,6 @@ TRANSLATIONS = {
     "Only real, known data points - sale events, RentCast estimates going forward, county tax assessments (right axis, which runs well below market value in Ohio). No interpolation for years without data.": (
         "רק נקודות נתונים אמיתיות וידועות - אירועי מכירה, הערכות RentCast מכאן ואילך, "
         "ושומות מס רכוש (ציר ימין, הנמוך משמעותית משווי השוק באוהיו). אין אינטרפולציה לשנים ללא נתונים."
-    ),
-    "No price history yet - it's fetched automatically on your next Manage visit.": (
-        "עדיין אין היסטוריית מחירים - היא תיטען אוטומטית בביקור הבא בעמוד הניהול."
     ),
     # Trends summary series
     "Net Owner Funds": "כספי בעלים נטו",

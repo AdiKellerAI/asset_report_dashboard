@@ -1060,24 +1060,15 @@ body.chart-fullscreen-open {
 }
 
 .property-values-title {
-  margin-top: 2.75rem;
+  margin-top: 4.5rem;
 }
 
-.zillow-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem 1.25rem;
-  margin: 0.75rem 0.25rem 0;
-}
-
-.zillow-links a {
-  font-size: 0.82rem;
-  font-weight: 600;
-  color: var(--ink-secondary);
+.property-name-link {
+  color: inherit;
   text-decoration: none;
 }
 
-.zillow-links a:hover {
+.property-name-link:hover {
   color: var(--accent);
 }
 
