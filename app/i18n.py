@@ -103,10 +103,13 @@ TRANSLATIONS = {
     "Drop files here, or click to browse": "גרור קבצים לכאן, או לחץ לבחירה",
     "Upload": "העלה",
     "Property Values Today": "שווי הנכסים היום",
-    "Used as the denominator for the Annual Yield chart on the Home page.": (
-        "משמש כמכנה בגרף התשואה השנתית בעמוד הבית."
+    "Purchase price feeds the Annual Yield chart on the Home page. Today's value is an automated estimate, refreshed automatically about once a day.": (
+        "מחיר הרכישה מזין את גרף התשואה השנתית בעמוד הבית. השווי היום הוא הערכה אוטומטית, "
+        "מתעדכנת אוטומטית בערך פעם ביום."
     ),
-    "Value (USD)": "שווי (דולר)",
+    "Purchase Price (USD)": "מחיר רכישה (דולר)",
+    "Not available yet": "עדיין לא זמין",
+    "Updated": "עודכן",
     "Save": "שמור",
     "Yearly Tax Payment": "תשלום מס שנתי",
     "Provider": "ספק",

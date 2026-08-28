@@ -7,9 +7,16 @@ from app.db import SessionLocal
 from app.i18n import translate_message
 from app.ingestion import process_upload
 from app.models import Document, Mortgage, Property, TaxReport, Transfer
-from app.reports import properties_summary
+from app.valuation import refresh_current_value
 
 manage_bp = Blueprint("manage", __name__)
+
+
+def _refreshed_properties(session):
+    properties = session.query(Property).order_by(Property.nickname).all()
+    for prop in properties:
+        refresh_current_value(prop, session)
+    return properties
 
 
 def _parse_float(value):
@@ -62,7 +69,22 @@ def manage():
     # a /manage write (which already calls invalidate_all()).
     session = SessionLocal()
     try:
-        properties = get_or_set(("properties_summary",), lambda: properties_summary(session))
+        # Not the shared, cached properties_summary() other pages use -
+        # this needs live ORM rows (to write current_value back after a
+        # refresh) and the two new value-estimate fields, neither of which
+        # any other page needs. Cheap either way (2 rows), and correctness
+        # (never show a stale current_value right after fetching a fresh
+        # one) matters more here than shaving one small query.
+        properties = [
+            {
+                "id": p.id,
+                "nickname": p.nickname,
+                "value": float(p.value) if p.value is not None else None,
+                "current_value": float(p.current_value) if p.current_value is not None else None,
+                "current_value_updated_at": p.current_value_updated_at,
+            }
+            for p in _refreshed_properties(session)
+        ]
         tax_reports = get_or_set(
             ("tax_reports_summary",),
             lambda: [_tax_report_dict(t) for t in session.query(TaxReport).order_by(TaxReport.year.desc()).all()],

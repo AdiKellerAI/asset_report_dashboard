@@ -26,10 +26,21 @@ class Property(Base):
     address: Mapped[str | None] = mapped_column(String(255))
     unit_details: Mapped[str | None] = mapped_column(Text)
     purchase_info: Mapped[str | None] = mapped_column(Text)
-    # Current/purchase value in USD - the denominator for the Annual Yield
-    # chart (annual NOI / value). Manually entered via /manage, not parsed
-    # from any document.
+    # Purchase price in USD - the denominator for the Annual Yield chart
+    # (annual NOI / value). Manually entered via /manage, not parsed from
+    # any document. Column kept as `value` (not renamed to purchase_price)
+    # to avoid churning every existing reference to it - "Purchase Price"
+    # is a UI label, not a schema concern.
     value: Mapped[float | None] = mapped_column(Numeric(12, 2))
+    # Auto-fetched current market value estimate (RentCast's AVM API, by
+    # address) - Adi's request, 2026-08-27: show today's value next to the
+    # purchase price on /manage. Refreshed lazily (on a /manage visit, not
+    # a background job - this app has no scheduler) when stale; see
+    # app/valuation.py. Purely informational - doesn't feed the Annual
+    # Yield chart or any other calculation, only `value` (purchase price)
+    # does, unchanged.
+    current_value: Mapped[float | None] = mapped_column(Numeric(12, 2))
+    current_value_updated_at: Mapped[datetime | None] = mapped_column(DateTime)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
 

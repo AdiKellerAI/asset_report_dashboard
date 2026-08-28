@@ -1269,6 +1269,41 @@ body.chart-fullscreen-open {
   margin-bottom: 0;
 }
 
+.current-value-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-top: 1.1rem;
+  padding-top: 1.1rem;
+  border-top: 1px solid var(--border-soft);
+}
+
+.current-value-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.5rem;
+}
+
+.current-value-nickname {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--ink-secondary);
+  min-width: 6rem;
+}
+
+.current-value-amount {
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.current-value-updated {
+  font-size: 0.72rem;
+  color: var(--ink-muted);
+}
+
 /* ---------- Upload dropzone ---------- */
 
 .dropzone {

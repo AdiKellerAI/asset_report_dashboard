@@ -27,16 +27,30 @@
 
   <section class="manage-card">
     <h2 class="manage-card-title">{{ "Property Values Today"|t }}</h2>
-    <p class="manage-card-hint">{{ "Used as the denominator for the Annual Yield chart on the Home page."|t }}</p>
+    <p class="manage-card-hint">{{ "Purchase price feeds the Annual Yield chart on the Home page. Today's value is an automated estimate, refreshed automatically about once a day."|t }}</p>
     <form method="post" action="/manage/property-values" class="manage-form">
       {% for p in properties %}
       <label>
-        {{ p.nickname }} - {{ "Value (USD)"|t }}
+        {{ p.nickname }} - {{ "Purchase Price (USD)"|t }}
         <input type="number" step="0.01" name="value_{{ p.id }}" value="{{ p.value if p.value is not none else '' }}">
       </label>
       {% endfor %}
       <button type="submit">{{ "Save"|t }}</button>
     </form>
+
+    <div class="current-value-list">
+      {% for p in properties %}
+      <div class="current-value-row">
+        <span class="current-value-nickname">{{ p.nickname }}</span>
+        <span class="current-value-amount">
+          {% if p.current_value is not none %}{{ p.current_value|money }}{% else %}{{ "Not available yet"|t }}{% endif %}
+        </span>
+        {% if p.current_value_updated_at %}
+        <span class="current-value-updated">{{ "Updated"|t }} {{ p.current_value_updated_at.strftime("%Y-%m-%d %H:%M") }}</span>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
   </section>
 
   <section class="manage-card">
