@@ -34,10 +34,18 @@ import urllib.request
 from datetime import date, datetime, timedelta
 
 from app.config import Config
-from app.models import RentcastUsage
+from app.models import PropertyValueHistory, RentcastUsage
 
 RENTCAST_VALUE_URL = "https://api.rentcast.io/v1/avm/value"
+RENTCAST_RECORDS_URL = "https://api.rentcast.io/v1/properties"
 REFRESH_INTERVAL = timedelta(hours=48)
+# Sale history and tax assessments (see refresh_value_history() below)
+# barely ever change - a county reassesses property values at most once a
+# year, a sale is a rare event - so this is refreshed far less often than
+# the AVM value above, deliberately keeping its share of the monthly quota
+# small (Adi's request, 2026-08-28: ~30 requests/month total across
+# everything this app calls RentCast for).
+HISTORY_REFRESH_INTERVAL = timedelta(days=30)
 MONTHLY_REQUEST_CAP = 50  # RentCast's free-tier limit
 
 
@@ -97,4 +105,86 @@ def refresh_current_value(prop, session):
 
     prop.current_value = float(price)
     prop.current_value_updated_at = datetime.utcnow()
+    _upsert_history_point(session, prop.id, date.today(), float(price), "estimate")
+    session.commit()
+
+
+def _upsert_history_point(session, property_id, event_date, amount, kind):
+    existing = (
+        session.query(PropertyValueHistory)
+        .filter_by(property_id=property_id, event_date=event_date, kind=kind)
+        .first()
+    )
+    if existing:
+        existing.amount = amount
+    else:
+        session.add(PropertyValueHistory(property_id=property_id, event_date=event_date, amount=amount, kind=kind))
+
+
+def refresh_value_history(prop, session):
+    """Pulls real sale events + county tax assessments from RentCast's
+    property-records endpoint into PropertyValueHistory - silently does
+    nothing on any failure (missing key/address, stale check, monthly cap,
+    network/parse error), same graceful-degradation shape as
+    refresh_current_value(). Independent staleness check
+    (value_history_synced_at / HISTORY_REFRESH_INTERVAL) and its own
+    monthly-cap check, since this shares the same RentcastUsage counter as
+    the AVM calls but on its own, much slower cadence."""
+    if not Config.RENTCAST_API_KEY or not prop.address:
+        return
+    if prop.value_history_synced_at and datetime.utcnow() - prop.value_history_synced_at < HISTORY_REFRESH_INTERVAL:
+        return
+    if requests_used_this_month(session) >= MONTHLY_REQUEST_CAP:
+        return
+
+    _record_request(session)
+
+    try:
+        url = f"{RENTCAST_RECORDS_URL}?{urllib.parse.urlencode({'address': prop.address})}"
+        request = urllib.request.Request(url, headers={"X-Api-Key": Config.RENTCAST_API_KEY})
+        with urllib.request.urlopen(request, timeout=5) as response:
+            records = json.loads(response.read())
+        record = records[0] if records else None
+    except Exception:  # noqa: BLE001 - network/parse/quota failure - leave existing history rows in place
+        return
+
+    if record:
+        # `history` keys are event dates ("2021-09-17"), values carry their
+        # own ISO datetime + price - only "Sale" events are a real dated
+        # dollar amount comparable (loosely) to the AVM estimate; other
+        # event types RentCast might add later are deliberately skipped
+        # rather than guessed at.
+        sale_dates_seen = set()
+        for event in (record.get("history") or {}).values():
+            if event.get("event") != "Sale" or event.get("price") is None or not event.get("date"):
+                continue
+            event_date = datetime.fromisoformat(event["date"].replace("Z", "+00:00")).date()
+            sale_dates_seen.add(event_date)
+            _upsert_history_point(session, prop.id, event_date, float(event["price"]), "sale")
+
+        # Confirmed against the real API (2026-08-28): for some properties
+        # (e.g. Brunswick) `history` comes back null entirely, but the most
+        # recent sale is still available as top-level `lastSaleDate` /
+        # `lastSalePrice` fields - without this fallback, those properties'
+        # only real historical data point would be silently dropped.
+        last_sale_date = record.get("lastSaleDate")
+        last_sale_price = record.get("lastSalePrice")
+        if last_sale_date and last_sale_price is not None:
+            event_date = datetime.fromisoformat(last_sale_date.replace("Z", "+00:00")).date()
+            if event_date not in sale_dates_seen:
+                _upsert_history_point(session, prop.id, event_date, float(last_sale_price), "sale")
+
+        # `taxAssessments` keys are year strings ("2022") - stored as
+        # Jan 1 of that year, the same "precision is just a year" pattern
+        # already used elsewhere in this schema (e.g. tax_report.year).
+        for year_str, assessment in (record.get("taxAssessments") or {}).items():
+            if assessment.get("value") is None:
+                continue
+            try:
+                year = int(year_str)
+            except ValueError:
+                continue
+            _upsert_history_point(session, prop.id, date(year, 1, 1), float(assessment["value"]), "tax_assessment")
+
+    prop.value_history_synced_at = datetime.utcnow()
     session.commit()

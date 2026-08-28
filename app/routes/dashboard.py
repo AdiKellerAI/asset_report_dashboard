@@ -5,7 +5,7 @@ from flask import Blueprint, g, render_template, request
 from app.cache import get_or_set
 from app.db import SessionLocal
 from app.i18n import translate
-from app.models import Property
+from app.models import Property, PropertyValueHistory
 from app.reports import (
     DEFAULT_YIELD_RANGE,
     PERIOD_CHOICES,
@@ -44,6 +44,63 @@ def _property_value_dict(p):
         "change_pct": change_pct,
         "zillow_url": _zillow_search_url(p.address),
     }
+
+
+def _property_value_history_series(session, properties):
+    """A "price per year" graph from the real, sparse data in
+    PropertyValueHistory (sale events, county tax assessments, and this
+    app's own RentCast AVM estimates over time) - Adi's request,
+    2026-08-28: "the whole price history of these 2 assets ... show graph
+    with the assets price per year", built with what's actually known
+    rather than a smoothed/interpolated guess (Adi confirmed this
+    approach via AskUserQuestion after seeing how sparse and asymmetric
+    the two properties' real RentCast data is - Brunswick has exactly one
+    data point, its 2021 sale).
+
+    Returns None when there's no history yet at all (e.g. right after this
+    feature first deploys, before any /manage visit has triggered a
+    refresh_value_history() sync) so the template can hide the chart
+    section entirely rather than render an empty one.
+    """
+    rows = (
+        session.query(PropertyValueHistory)
+        .filter(PropertyValueHistory.property_id.in_([p.id for p in properties]))
+        .order_by(PropertyValueHistory.event_date)
+        .all()
+    )
+    if not rows:
+        return None
+
+    nickname_by_id = {p.id: p.nickname for p in properties}
+    # (nickname, kind) -> {year: amount} - multiple rows for the same
+    # property/kind/year (e.g. two AVM estimates fetched months apart in
+    # the same year) collapse to the latest one chronologically, since
+    # `rows` is already ordered by event_date and a later dict assignment
+    # for the same key just overwrites the earlier one.
+    points = {}
+    years = set()
+    for row in rows:
+        nickname = nickname_by_id.get(row.property_id)
+        if nickname is None:
+            continue
+        year = row.event_date.year
+        years.add(year)
+        points.setdefault((nickname, row.kind), {})[year] = float(row.amount)
+
+    years = sorted(years)
+    series = [
+        {"property": nickname, "kind": kind, "values": [values.get(year) for year in years]}
+        for (nickname, kind), values in points.items()
+    ]
+    # Stable order (grouped by property, then a fixed kind order) so the
+    # legend and the template's per-property color assignment stay
+    # deterministic across requests, rather than depending on dict
+    # iteration order.
+    kind_order = {"sale": 0, "estimate": 1, "tax_assessment": 2}
+    nickname_order = {p.nickname: i for i, p in enumerate(properties)}
+    series.sort(key=lambda s: (nickname_order.get(s["property"], 0), kind_order.get(s["kind"], 99)))
+
+    return {"years": years, "series": series}
 
 
 @dashboard_bp.get("/")
@@ -97,6 +154,10 @@ def landing():
         # app/routes/manage.py), so visiting Home never triggers a call or
         # counts against the monthly cap.
         property_values = [_property_value_dict(p) for p in get_properties()]
+        property_history = get_or_set(
+            ("property_value_history",),
+            lambda: _property_value_history_series(session, get_properties()),
+        )
     finally:
         session.close()
 
@@ -113,5 +174,6 @@ def landing():
         yield_years=yield_series["years"],
         yield_lines=yield_series["lines"],
         property_values=property_values,
+        property_history=property_history,
         total_label=translate("Total", g.lang),
     )

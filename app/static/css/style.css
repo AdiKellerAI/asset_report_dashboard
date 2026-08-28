@@ -943,6 +943,12 @@ a {
   display: block;
 }
 
+.chart-note {
+  color: var(--ink-muted);
+  font-size: 0.8rem;
+  margin: 1rem 0 0;
+}
+
 /* Scoped to .chart-header-row (not just .chart-expand-btn alone) - the
    Trends chart lives inside <form class="filter-bar">, so the button was
    also matching `.filter-bar button` (class+element = higher specificity

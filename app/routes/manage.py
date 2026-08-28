@@ -7,7 +7,12 @@ from app.db import SessionLocal
 from app.i18n import translate_message
 from app.ingestion import process_upload
 from app.models import Document, Mortgage, Property, TaxReport, Transfer
-from app.valuation import MONTHLY_REQUEST_CAP, refresh_current_value, requests_used_this_month
+from app.valuation import (
+    MONTHLY_REQUEST_CAP,
+    refresh_current_value,
+    refresh_value_history,
+    requests_used_this_month,
+)
 
 manage_bp = Blueprint("manage", __name__)
 
@@ -16,6 +21,7 @@ def _refreshed_properties(session):
     properties = session.query(Property).order_by(Property.nickname).all()
     for prop in properties:
         refresh_current_value(prop, session)
+        refresh_value_history(prop, session)
     return properties
 
 

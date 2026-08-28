@@ -72,11 +72,22 @@ TRANSLATIONS = {
     "All": "הכל",
     "Property Values": "שווי הנכסים",
     "Purchase Price": "מחיר רכישה",
-    "Value Today": "שווי היום",
+    "RentCast Estimate": "הערכת RentCast",
     "Change": "שינוי",
     "on Zillow": "בזילו",
     "No property values set yet - add them in Manage to see this chart.": (
         "עדיין לא הוגדר שווי לנכסים - הוסף אותו בעמוד הניהול כדי לראות גרף זה."
+    ),
+    "Value History": "היסטוריית שווי",
+    "Sale": "מכירה",
+    "Estimate": "הערכה",
+    "Tax Assessment": "שומת מס",
+    "Only real, known data points - sale events, RentCast estimates going forward, county tax assessments (right axis, which runs well below market value in Ohio). No interpolation for years without data.": (
+        "רק נקודות נתונים אמיתיות וידועות - אירועי מכירה, הערכות RentCast מכאן ואילך, "
+        "ושומות מס רכוש (ציר ימין, הנמוך משמעותית משווי השוק באוהיו). אין אינטרפולציה לשנים ללא נתונים."
+    ),
+    "No price history yet - it's fetched automatically on your next Manage visit.": (
+        "עדיין אין היסטוריית מחירים - היא תיטען אוטומטית בביקור הבא בעמוד הניהול."
     ),
     # Trends summary series
     "Net Owner Funds": "כספי בעלים נטו",
@@ -108,9 +119,9 @@ TRANSLATIONS = {
     "Drop files here, or click to browse": "גרור קבצים לכאן, או לחץ לבחירה",
     "Upload": "העלה",
     "Property Values Today": "שווי הנכסים היום",
-    "Purchase price feeds the Annual Yield chart on the Home page. Today's value is an automated estimate, refreshed automatically about once a day.": (
-        "מחיר הרכישה מזין את גרף התשואה השנתית בעמוד הבית. השווי היום הוא הערכה אוטומטית, "
-        "מתעדכנת אוטומטית בערך פעם ביום."
+    "Purchase price feeds the Annual Yield chart on the Home page. The RentCast estimate is automated - one AVM's opinion, not an authoritative value - refreshed automatically about once a day.": (
+        "מחיר הרכישה מזין את גרף התשואה השנתית בעמוד הבית. הערכת RentCast היא אוטומטית - "
+        "דעתו של כלי הערכה אחד, לא ערך רשמי - מתעדכנת אוטומטית בערך פעם ביום."
     ),
     "Purchase Price (USD)": "מחיר רכישה (דולר)",
     "Not available yet": "עדיין לא זמין",

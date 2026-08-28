@@ -41,6 +41,12 @@ class Property(Base):
     # does, unchanged.
     current_value: Mapped[float | None] = mapped_column(Numeric(12, 2))
     current_value_updated_at: Mapped[datetime | None] = mapped_column(DateTime)
+    # Separate, much-slower cadence than current_value_updated_at above -
+    # sale history and tax assessments (PropertyValueHistory) barely ever
+    # change, so re-fetching RentCast's property-records endpoint anywhere
+    # near as often as the AVM value would just burn quota for no new
+    # data. See refresh_value_history() in app/valuation.py.
+    value_history_synced_at: Mapped[datetime | None] = mapped_column(DateTime)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
 
@@ -220,3 +226,38 @@ class RentcastUsage(Base):
     year_month: Mapped[str] = mapped_column(String(7), nullable=False, unique=True)
     request_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+
+class PropertyValueHistory(Base):
+    """One row per real, dated value data point for a property (Adi's
+    request, 2026-08-28: a value-per-year graph) - sourced from RentCast's
+    property-records endpoint (real sale events + county tax assessments)
+    plus this app's own running record of RentCast's AVM estimate each
+    time it's refreshed. Deliberately NOT a smoothed/interpolated
+    continuous series - both source properties have real gaps (Brunswick
+    has exactly one data point, its 2021 sale; Colburn has tax assessments
+    only from 2022 on) and this table only ever stores what's actually
+    known, never a guessed value for a missing year.
+
+    `kind` distinguishes fundamentally different, non-comparable
+    quantities on the same scale: `sale` (an actual transaction price),
+    `tax_assessment` (the county's assessed value for tax purposes, which
+    in Ohio runs well below real market value - a known quirk, not a data
+    error), and `estimate` (RentCast's AVM value on the date it was
+    fetched - one row per refresh, so this specific series builds real
+    trend history going forward even though no historical AVM data exists
+    to backfill it). Unique on (property_id, event_date, kind) so
+    re-syncing the same sale/assessment data doesn't duplicate rows.
+    """
+
+    __tablename__ = "property_value_history"
+    __table_args__ = (UniqueConstraint("property_id", "event_date", "kind", name="uq_property_value_history_event"),)
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    property_id: Mapped[int] = mapped_column(ForeignKey("property.id"), nullable=False)
+    event_date: Mapped[date] = mapped_column(Date, nullable=False)
+    amount: Mapped[float] = mapped_column(Numeric(12, 2), nullable=False)
+    kind: Mapped[str] = mapped_column(String(20), nullable=False)  # "sale" | "tax_assessment" | "estimate"
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+    property: Mapped["Property"] = relationship()
