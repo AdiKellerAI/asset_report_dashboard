@@ -58,6 +58,22 @@ def landing():
                 session, years_limit=YIELD_RANGE_CHOICES[yield_range], properties=get_properties()
             ),
         )
+        # Purchase price + auto-fetched current value, below the Annual
+        # Yield chart (Adi's request, 2026-08-28) - reuses get_properties()
+        # (already fetched/memoized for the 3 calls above, live ORM rows,
+        # not the cached properties_summary() which doesn't carry these
+        # two fields) rather than an extra query. Display-only here - the
+        # actual RentCast refresh only happens on a /manage visit (see
+        # app/routes/manage.py), so visiting Home never triggers a call or
+        # counts against the monthly cap.
+        property_values = [
+            {
+                "nickname": p.nickname,
+                "value": float(p.value) if p.value is not None else None,
+                "current_value": float(p.current_value) if p.current_value is not None else None,
+            }
+            for p in get_properties()
+        ]
     finally:
         session.close()
 
@@ -73,5 +89,6 @@ def landing():
         selected_yield_range=yield_range,
         yield_years=yield_series["years"],
         yield_lines=yield_series["lines"],
+        property_values=property_values,
         total_label=translate("Total", g.lang),
     )

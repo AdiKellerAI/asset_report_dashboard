@@ -1039,6 +1039,10 @@ body.chart-fullscreen-open {
   margin-top: 1.1rem;
 }
 
+.property-values-title {
+  margin-top: 1.5rem;
+}
+
 .chart-title {
   font-size: 0.72rem;
   font-weight: 700;

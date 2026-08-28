@@ -70,6 +70,9 @@ TRANSLATIONS = {
     "3Y": "3 שנים",
     "6Y": "6 שנים",
     "All": "הכל",
+    "Property Values": "שווי הנכסים",
+    "Purchase Price": "מחיר רכישה",
+    "Value Today": "שווי היום",
     "No property values set yet - add them in Manage to see this chart.": (
         "עדיין לא הוגדר שווי לנכסים - הוסף אותו בעמוד הניהול כדי לראות גרף זה."
     ),
