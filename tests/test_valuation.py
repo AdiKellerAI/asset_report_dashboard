@@ -61,7 +61,7 @@ def test_refresh_current_value_skips_when_recently_updated(db_session):
 def test_refresh_current_value_fetches_when_stale(db_session):
     prop = _property(db_session)
     prop.current_value = 100000
-    prop.current_value_updated_at = datetime.utcnow() - timedelta(hours=40)
+    prop.current_value_updated_at = datetime.utcnow() - timedelta(hours=50)
     db_session.commit()
 
     with patch("app.valuation.Config") as mock_config:
@@ -89,7 +89,7 @@ def test_refresh_current_value_fetches_when_never_fetched_before(db_session):
 def test_refresh_current_value_leaves_last_known_value_on_failure(db_session):
     prop = _property(db_session)
     prop.current_value = 100000
-    prop.current_value_updated_at = datetime.utcnow() - timedelta(hours=40)
+    prop.current_value_updated_at = datetime.utcnow() - timedelta(hours=50)
     db_session.commit()
 
     with patch("app.valuation.Config") as mock_config:

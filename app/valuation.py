@@ -7,11 +7,12 @@ in memory like app/fx.py's exchange rate - this app runs on Vercel's
 serverless platform, where an in-memory cache resets on every cold start,
 which would blow through RentCast's free-tier 50-requests/month cap fast
 for no reason. Refreshed lazily on a /manage visit once the stored value
-is stale enough - 36h, not 24h, to keep 2 properties' roughly-daily
-refreshes comfortably under that cap over a full month (2 properties x 1
-refresh/36h is ~40 requests/month, vs. ~60/month at a strict 24h). There's
-no background scheduler in this app, so "once a day" is approximated as
-"whenever someone next opens Manage after 36h have passed" - the same
+is stale enough - 48h (not 24h, and tightened again from an initial 36h
+attempt), to hold 2 properties' refreshes to ~30 requests/month rather
+than ~40-60 (Adi's request, 2026-08-28 - deliberate headroom under
+RentCast's 50 cap, not just "whatever survives it"). There's no
+background scheduler in this app, so "about once a day" is approximated
+as "whenever someone next opens Manage after 48h have passed" - the same
 lazy-refresh-on-visit shape as get_usd_to_ils_rate(), just DB-backed
 instead of in-memory since the interval is much longer than one process's
 lifetime on serverless.
@@ -36,7 +37,7 @@ from app.config import Config
 from app.models import RentcastUsage
 
 RENTCAST_VALUE_URL = "https://api.rentcast.io/v1/avm/value"
-REFRESH_INTERVAL = timedelta(hours=36)
+REFRESH_INTERVAL = timedelta(hours=48)
 MONTHLY_REQUEST_CAP = 50  # RentCast's free-tier limit
 
 

@@ -203,7 +203,7 @@ class Transfer(Base):
 
 class RentcastUsage(Base):
     """A hard, enforced cap on RentCast API calls (Adi's request, 2026-08-28):
-    the 36h refresh interval in app/valuation.py is only a soft heuristic
+    the 48h refresh interval in app/valuation.py is only a soft heuristic
     tuned to average out under the free tier's 50-requests/month limit - it
     doesn't actually stop a call once that limit is hit (e.g. if more
     properties get added later, or the interval math is ever wrong). One
