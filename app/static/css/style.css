@@ -814,6 +814,20 @@ a {
   font-weight: 700;
 }
 
+/* Property Values' Change column (Adi's request, 2026-08-28) - reuses the
+   same green/expense-red already validated for the Report waterfall
+   chart's income/expense bars, since this is the same kind of meaning
+   (a gain vs. a loss), not a new categorical color. `td.` for specificity
+   over the plain `.total-col` blue above, which these also carry so the
+   column still lines up visually with the other numeric columns. */
+.compare-table td.value-change-positive {
+  color: #2f9e58;
+}
+
+.compare-table td.value-change-negative {
+  color: #d24545;
+}
+
 /* "Balance" is a derived estimate tied to the gold Accumulated Balance
    card below it, not a raw on-statement figure like the
    3 rows above it (Rent/Expenses/NOI) - Adi found it confusing without a
@@ -1040,7 +1054,25 @@ body.chart-fullscreen-open {
 }
 
 .property-values-title {
-  margin-top: 1.5rem;
+  margin-top: 2.75rem;
+}
+
+.zillow-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1.25rem;
+  margin: 0.75rem 0.25rem 0;
+}
+
+.zillow-links a {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ink-secondary);
+  text-decoration: none;
+}
+
+.zillow-links a:hover {
+  color: var(--accent);
 }
 
 .chart-title {

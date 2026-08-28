@@ -141,6 +141,7 @@
           <th scope="col" class="metric-col">{{ "Property"|t }}</th>
           <th scope="col">{{ "Purchase Price"|t }}</th>
           <th scope="col">{{ "Value Today"|t }}</th>
+          <th scope="col" class="total-col">{{ "Change"|t }}</th>
         </tr>
       </thead>
       <tbody>
@@ -149,11 +150,22 @@
           <th scope="row">{{ p.nickname }}</th>
           <td>{{ p.value|money if p.value is not none else "—" }}</td>
           <td>{{ p.current_value|money if p.current_value is not none else "—" }}</td>
+          <td class="total-col{{ ' value-change-positive' if p.change_pct is not none and p.change_pct >= 0 else ' value-change-negative' if p.change_pct is not none else '' }}">
+            {% if p.change_pct is not none %}{{ "%+.1f%%"|format(p.change_pct) }}{% else %}—{% endif %}
+          </td>
         </tr>
         {% endfor %}
       </tbody>
     </table>
   </div>
+
+  <p class="zillow-links">
+    {% for p in property_values %}
+    {% if p.zillow_url %}
+    <a href="{{ p.zillow_url }}" target="_blank" rel="noopener">{{ p.nickname }} {{ "on Zillow"|t }} ↗</a>
+    {% endif %}
+    {% endfor %}
+  </p>
   {% endif %}
 {% endblock %}
 

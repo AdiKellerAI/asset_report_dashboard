@@ -1,3 +1,5 @@
+import re
+
 from flask import Blueprint, g, render_template, request
 
 from app.cache import get_or_set
@@ -14,6 +16,34 @@ from app.reports import (
 )
 
 dashboard_bp = Blueprint("dashboard", __name__)
+
+
+def _zillow_search_url(address):
+    """Zillow's own documented "search by address" URL pattern - not an
+    API, just a plain link a human clicks (Adi's request, 2026-08-28: a
+    link below the Property Values table to cross-check the RentCast
+    estimate). Couldn't verify this resolves correctly via an automated
+    fetch - Zillow blocks non-browser requests (a 403 even on a plain
+    WebFetch) - but works fine for an actual browser click; worth a
+    one-time manual check that it lands on the right property."""
+    if not address:
+        return None
+    slug = re.sub(r"[^A-Za-z0-9\s-]", "", address)
+    slug = re.sub(r"\s+", "-", slug.strip())
+    return f"https://www.zillow.com/homes/{slug}_rb/"
+
+
+def _property_value_dict(p):
+    value = float(p.value) if p.value is not None else None
+    current_value = float(p.current_value) if p.current_value is not None else None
+    change_pct = (current_value - value) / value * 100 if value and current_value is not None else None
+    return {
+        "nickname": p.nickname,
+        "value": value,
+        "current_value": current_value,
+        "change_pct": change_pct,
+        "zillow_url": _zillow_search_url(p.address),
+    }
 
 
 @dashboard_bp.get("/")
@@ -66,14 +96,7 @@ def landing():
         # actual RentCast refresh only happens on a /manage visit (see
         # app/routes/manage.py), so visiting Home never triggers a call or
         # counts against the monthly cap.
-        property_values = [
-            {
-                "nickname": p.nickname,
-                "value": float(p.value) if p.value is not None else None,
-                "current_value": float(p.current_value) if p.current_value is not None else None,
-            }
-            for p in get_properties()
-        ]
+        property_values = [_property_value_dict(p) for p in get_properties()]
     finally:
         session.close()
 

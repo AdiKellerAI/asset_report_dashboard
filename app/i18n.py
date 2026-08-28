@@ -73,6 +73,8 @@ TRANSLATIONS = {
     "Property Values": "שווי הנכסים",
     "Purchase Price": "מחיר רכישה",
     "Value Today": "שווי היום",
+    "Change": "שינוי",
+    "on Zillow": "בזילו",
     "No property values set yet - add them in Manage to see this chart.": (
         "עדיין לא הוגדר שווי לנכסים - הוסף אותו בעמוד הניהול כדי לראות גרף זה."
     ),
