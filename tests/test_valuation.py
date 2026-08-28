@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from unittest.mock import MagicMock, patch
 
 from app import valuation
-from app.models import Property
+from app.models import Property, RentcastUsage
 
 
 def _property(db_session, address="123 Main St, Anytown, OH 12345"):
@@ -98,3 +98,46 @@ def test_refresh_current_value_leaves_last_known_value_on_failure(db_session):
             valuation.refresh_current_value(prop, db_session)
 
     assert float(prop.current_value) == 100000
+
+
+def test_refresh_current_value_records_a_request_even_on_failure(db_session):
+    """Conservative on purpose - a call that reached RentCast's server but
+    errored may still count against their quota, so it counts against ours
+    too rather than risk silently overshooting the real cap."""
+    prop = _property(db_session)
+
+    with patch("app.valuation.Config") as mock_config:
+        mock_config.RENTCAST_API_KEY = "fake-key"
+        with patch("app.valuation.urllib.request.urlopen", side_effect=OSError("no network")):
+            valuation.refresh_current_value(prop, db_session)
+
+    assert valuation.requests_used_this_month(db_session) == 1
+
+
+def test_refresh_current_value_refuses_once_the_monthly_cap_is_reached(db_session):
+    prop = _property(db_session)
+    db_session.add(RentcastUsage(year_month=valuation._current_month_key(), request_count=valuation.MONTHLY_REQUEST_CAP))
+    db_session.commit()
+
+    with patch("app.valuation.Config") as mock_config:
+        mock_config.RENTCAST_API_KEY = "fake-key"
+        with patch("app.valuation.urllib.request.urlopen") as mock_urlopen:
+            valuation.refresh_current_value(prop, db_session)
+
+    mock_urlopen.assert_not_called()
+    assert prop.current_value is None
+
+
+def test_requests_used_this_month_counts_across_multiple_properties(db_session):
+    brunswick = _property(db_session, address="1 Brunswick Ave, Anytown, OH 12345")
+    colburn = Property(nickname="Colburn2", address="2 Colburn Ave, Anytown, OH 12345")
+    db_session.add(colburn)
+    db_session.commit()
+
+    with patch("app.valuation.Config") as mock_config:
+        mock_config.RENTCAST_API_KEY = "fake-key"
+        with patch("app.valuation.urllib.request.urlopen", return_value=_fake_response({"price": 100000})):
+            valuation.refresh_current_value(brunswick, db_session)
+            valuation.refresh_current_value(colburn, db_session)
+
+    assert valuation.requests_used_this_month(db_session) == 2

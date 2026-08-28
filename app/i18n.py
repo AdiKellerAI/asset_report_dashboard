@@ -110,6 +110,7 @@ TRANSLATIONS = {
     "Purchase Price (USD)": "מחיר רכישה (דולר)",
     "Not available yet": "עדיין לא זמין",
     "Updated": "עודכן",
+    "RentCast lookups this month:": "בדיקות RentCast החודש:",
     "Save": "שמור",
     "Yearly Tax Payment": "תשלום מס שנתי",
     "Provider": "ספק",

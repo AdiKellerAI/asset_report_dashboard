@@ -1304,6 +1304,13 @@ body.chart-fullscreen-open {
   color: var(--ink-muted);
 }
 
+.rentcast-usage-note {
+  font-size: 0.72rem;
+  color: var(--ink-muted);
+  font-variant-numeric: tabular-nums;
+  margin: 0.75rem 0 0;
+}
+
 /* ---------- Upload dropzone ---------- */
 
 .dropzone {

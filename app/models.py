@@ -199,3 +199,24 @@ class Transfer(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     source_document: Mapped["Document | None"] = relationship()
+
+
+class RentcastUsage(Base):
+    """A hard, enforced cap on RentCast API calls (Adi's request, 2026-08-28):
+    the 36h refresh interval in app/valuation.py is only a soft heuristic
+    tuned to average out under the free tier's 50-requests/month limit - it
+    doesn't actually stop a call once that limit is hit (e.g. if more
+    properties get added later, or the interval math is ever wrong). One
+    row per calendar month (`year_month`, "YYYY-MM"), incremented on every
+    attempted RentCast call (whether it succeeds or not - conservative,
+    since it's not certain a failed call doesn't still count against
+    RentCast's own quota); refresh_current_value() refuses to call at all
+    once request_count reaches the cap for the current month.
+    """
+
+    __tablename__ = "rentcast_usage"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    year_month: Mapped[str] = mapped_column(String(7), nullable=False, unique=True)
+    request_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())

@@ -7,7 +7,7 @@ from app.db import SessionLocal
 from app.i18n import translate_message
 from app.ingestion import process_upload
 from app.models import Document, Mortgage, Property, TaxReport, Transfer
-from app.valuation import refresh_current_value
+from app.valuation import MONTHLY_REQUEST_CAP, refresh_current_value, requests_used_this_month
 
 manage_bp = Blueprint("manage", __name__)
 
@@ -85,6 +85,7 @@ def manage():
             }
             for p in _refreshed_properties(session)
         ]
+        rentcast_requests_used = requests_used_this_month(session)
         tax_reports = get_or_set(
             ("tax_reports_summary",),
             lambda: [_tax_report_dict(t) for t in session.query(TaxReport).order_by(TaxReport.year.desc()).all()],
@@ -101,6 +102,8 @@ def manage():
     return render_template(
         "manage.html",
         properties=properties,
+        rentcast_requests_used=rentcast_requests_used,
+        rentcast_monthly_cap=MONTHLY_REQUEST_CAP,
         tax_reports=tax_reports,
         transfers=transfers,
         message=request.args.get("msg"),

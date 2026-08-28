@@ -51,6 +51,11 @@
       </div>
       {% endfor %}
     </div>
+
+    <p class="rentcast-usage-note">
+      {{ "RentCast lookups this month:"|t }}
+      {{ rentcast_requests_used }} / {{ rentcast_monthly_cap }}
+    </p>
   </section>
 
   <section class="manage-card">
