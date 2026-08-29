@@ -1064,7 +1064,7 @@ body.chart-fullscreen-open {
    specificity - the compound selector here outranks it regardless of
    source order. */
 .chart-title.property-values-title {
-  margin-top: 8rem;
+  margin-top: 2rem;
 }
 
 .property-name-link {
