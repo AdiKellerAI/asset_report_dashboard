@@ -67,7 +67,12 @@ def create_app(config_object=Config):
         # for uptime checks.
         if not current_app.config["APP_PASSWORD"]:
             return None
-        if request.path.startswith("/static/") or request.path in ("/login", "/health"):
+        if request.path.startswith("/static/") or request.path in (
+            "/login",
+            "/health",
+            "/webauthn/login/begin",
+            "/webauthn/login/finish",
+        ):
             return None
         if not session.get("authed"):
             return redirect(f"/login?next={request.path}")

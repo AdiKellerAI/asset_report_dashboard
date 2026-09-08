@@ -261,3 +261,25 @@ class PropertyValueHistory(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
 
     property: Mapped["Property"] = relationship()
+
+
+class WebauthnCredential(Base):
+    """A passkey enrolled for the site's single shared login (Adi's request,
+    2026-09-08: Face ID/fingerprint instead of typing APP_PASSWORD every
+    time). No `user` table anywhere in this schema - the whole app is
+    single-user, so a credential row stands alone rather than pointing at
+    one. `credential_id`/`public_key` are stored base64url-encoded (how the
+    browser and the `webauthn` library already exchange them) rather than
+    as raw bytes, to avoid bytea encoding concerns. `sign_count` is the
+    clone-detection counter the WebAuthn spec requires be tracked and
+    rejected if it ever goes backwards."""
+
+    __tablename__ = "webauthn_credential"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    credential_id: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    public_key: Mapped[str] = mapped_column(Text, nullable=False)
+    sign_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    device_label: Mapped[str | None] = mapped_column(String(100))
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+    last_used_at: Mapped[datetime | None] = mapped_column(DateTime)

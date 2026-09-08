@@ -1301,6 +1301,24 @@ body.chart-fullscreen-open {
   transform: translateY(-1px);
 }
 
+.table-action-button {
+  appearance: none;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0.3rem 0.7rem;
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink-muted);
+  background: var(--surface);
+  cursor: pointer;
+}
+
+.table-action-button:hover {
+  border-color: #e5484d;
+  color: #e5484d;
+}
+
 .manage-table-wrap {
   margin-top: 1.25rem;
   margin-bottom: 0;

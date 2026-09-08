@@ -9,3 +9,4 @@ pytesseract==0.3.13
 Pillow==11.3.0
 pytest==8.4.2
 vercel_blob==0.4.2
+webauthn==3.0.0

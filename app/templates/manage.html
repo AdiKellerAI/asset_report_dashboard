@@ -163,6 +163,46 @@
     <p class="empty-state-note">{{ "No transfers recorded yet."|t }}</p>
     {% endif %}
   </section>
+
+  <section class="manage-card" id="passkeys-card">
+    <h2 class="manage-card-title">{{ "Passkeys"|t }}</h2>
+    <p class="manage-card-hint">{{ "Sign in with Face ID, Touch ID, or your device's fingerprint sensor instead of typing the password. Add one passkey per device."|t }}</p>
+
+    {% if webauthn_credentials %}
+    <div class="table-wrap manage-table-wrap">
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th scope="col" class="metric-col">{{ "Device"|t }}</th>
+            <th scope="col">{{ "Added"|t }}</th>
+            <th scope="col">{{ "Last Used"|t }}</th>
+            <th scope="col"></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for c in webauthn_credentials %}
+          <tr>
+            <th scope="row">{{ c.device_label or "Unnamed passkey"|t }}</th>
+            <td>{{ c.created_at.strftime("%Y-%m-%d") }}</td>
+            <td>{{ c.last_used_at.strftime("%Y-%m-%d %H:%M") if c.last_used_at else "—" }}</td>
+            <td>
+              <form method="post" action="/manage/webauthn/{{ c.id }}/delete" onsubmit="return confirm('{{ "Remove this passkey?"|t }}');">
+                <button type="submit" class="table-action-button">{{ "Remove"|t }}</button>
+              </form>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="empty-state-note">{{ "No passkeys registered yet."|t }}</p>
+    {% endif %}
+
+    <button type="button" class="dropzone-submit" id="add-passkey-btn" style="margin-top: 14px;">{{ "Add a Passkey on This Device"|t }}</button>
+    <p class="flash-message flash-error" id="passkey-add-error" style="display:none; margin-top: 10px;"></p>
+    <p class="empty-state-note" id="passkey-unsupported-note" style="display:none;">{{ "This browser doesn't support passkeys."|t }}</p>
+  </section>
 {% endblock %}
 
 {% block scripts %}
@@ -196,6 +236,48 @@
         if (e.dataTransfer && e.dataTransfer.files.length) {
           input.files = e.dataTransfer.files;
           showNames(input.files);
+        }
+      });
+    })();
+
+    (function () {
+      const addBtn = document.getElementById("add-passkey-btn");
+      const errorEl = document.getElementById("passkey-add-error");
+      const unsupportedNote = document.getElementById("passkey-unsupported-note");
+      if (!addBtn) return;
+
+      if (!window.PublicKeyCredential || !PublicKeyCredential.parseCreationOptionsFromJSON) {
+        addBtn.style.display = "none";
+        unsupportedNote.style.display = "block";
+        return;
+      }
+
+      addBtn.addEventListener("click", async function () {
+        errorEl.style.display = "none";
+        const label = prompt("Name this device (e.g. \"Adi's iPhone\"):");
+        if (label === null) return;
+
+        try {
+          const beginResp = await fetch("/webauthn/register/begin", { method: "POST" });
+          if (!beginResp.ok) throw new Error("begin failed");
+          const optionsJson = await beginResp.json();
+          const creationOptions = PublicKeyCredential.parseCreationOptionsFromJSON(optionsJson);
+          const credential = await navigator.credentials.create({ publicKey: creationOptions });
+
+          const finishBody = credential.toJSON();
+          finishBody.label = label;
+          const finishResp = await fetch("/webauthn/register/finish", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(finishBody),
+          });
+          if (!finishResp.ok) throw new Error("finish failed");
+          window.location.reload();
+        } catch (err) {
+          if (err.name !== "NotAllowedError") {
+            errorEl.textContent = "Couldn't add this passkey. Try again.";
+            errorEl.style.display = "block";
+          }
         }
       });
     })();

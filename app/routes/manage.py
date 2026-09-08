@@ -6,7 +6,7 @@ from app.cache import get_or_set, invalidate_all
 from app.db import SessionLocal
 from app.i18n import translate_message
 from app.ingestion import process_upload
-from app.models import Document, Mortgage, Property, TaxReport, Transfer
+from app.models import Document, Mortgage, Property, TaxReport, Transfer, WebauthnCredential
 from app.valuation import (
     MONTHLY_REQUEST_CAP,
     refresh_current_value,
@@ -102,6 +102,11 @@ def manage():
                 _transfer_dict(tr) for tr in session.query(Transfer).order_by(Transfer.transfer_date.desc()).all()
             ],
         )
+        # Not cached like the lists above - a passkey is added via its own
+        # WebAuthn ceremony (app/routes/auth.py), which doesn't call
+        # invalidate_all(), so a cached copy here would go stale. The table
+        # is at most a handful of rows; the query is negligible either way.
+        webauthn_credentials = session.query(WebauthnCredential).order_by(WebauthnCredential.created_at).all()
     finally:
         session.close()
 
@@ -112,6 +117,7 @@ def manage():
         rentcast_monthly_cap=MONTHLY_REQUEST_CAP,
         tax_reports=tax_reports,
         transfers=transfers,
+        webauthn_credentials=webauthn_credentials,
         message=request.args.get("msg"),
         message_level=request.args.get("level", "success"),
     )
@@ -249,3 +255,15 @@ def add_transfer():
     invalidate_all()
 
     return _redirect_with_message("Transfer for {when} recorded.", when=transfer_date.strftime("%B %Y"))
+
+
+@manage_bp.post("/manage/webauthn/<int:credential_id>/delete")
+def delete_webauthn_credential(credential_id):
+    session = SessionLocal()
+    try:
+        session.query(WebauthnCredential).filter_by(id=credential_id).delete()
+        session.commit()
+    finally:
+        session.close()
+
+    return _redirect_with_message("Passkey removed.")
