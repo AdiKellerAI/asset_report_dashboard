@@ -484,6 +484,48 @@ def report_breakdown(session, month, property_nickname="all"):
     }
 
 
+def report_breakdown_comparison(session, month, properties):
+    """Per-property income/expense breakdown plus the portfolio Total, for
+    one month - the Report page's table (Adi's request, 2026-09-12: always
+    show both assets and the Total side by side, the same layout as the
+    Dashboard, rather than a single column that switches with the property-
+    filter pills above it - those pills still drive the waterfall chart).
+    Reuses report_breakdown() once per property plus once for "all" rather
+    than a new bespoke query, since that function already owns exactly the
+    figures/expense-category logic each column needs. Expense category rows
+    are the union across every property, taken in the Total breakdown's own
+    descending-amount order, so a category only one property has still gets
+    its own row (0 for the property that lacks it) instead of disappearing."""
+    total = report_breakdown(session, month, "all")
+    per_property = {p["nickname"]: report_breakdown(session, month, p["nickname"]) for p in properties}
+
+    expense_category_rows = []
+    for cat in total["expense_categories"]:
+        row = {"label": cat["label"], "total": cat["amount"]}
+        for p in properties:
+            match = next(
+                (c for c in per_property[p["nickname"]]["expense_categories"] if c["label"] == cat["label"]), None
+            )
+            row[p["nickname"]] = match["amount"] if match else 0.0
+        expense_category_rows.append(row)
+
+    def row_for(key):
+        row = {"total": total[key]}
+        for p in properties:
+            row[p["nickname"]] = per_property[p["nickname"]][key]
+        return row
+
+    return {
+        "has_data": total["has_data"],
+        "gross_rent": row_for("gross_rent"),
+        "expense_category_rows": expense_category_rows,
+        "total_expenses": row_for("total_expenses"),
+        "noi": row_for("noi"),
+        "unpaid_bills": row_for("unpaid_bills"),
+        "net_cash_flow": row_for("net_cash_flow"),
+    }
+
+
 def available_report_months(session):
     """Every month that has at least one monthly_statement - the report
     page's month picker options, newest first."""

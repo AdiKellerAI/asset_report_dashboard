@@ -63,9 +63,9 @@
         <tr>
           <th scope="row"><span class="metric-full">{{ "Rental Income"|t }}</span><span class="metric-short">{{ "Rent"|t }}</span></th>
           {% for p in properties %}
-          <td>{{ p.gross_rent|money }}</td>
+          <td class="{{ 'rent-low' if (p.gross_rent * usd_to_ils_rate) < 1400 }}">{{ p.gross_rent|money }}</td>
           {% endfor %}
-          <td class="total-col">{{ total.gross_rent|money }}</td>
+          <td class="total-col {{ 'rent-low' if (total.gross_rent * usd_to_ils_rate) < 1400 }}">{{ total.gross_rent|money }}</td>
         </tr>
         <tr>
           <th scope="row"><span class="metric-full">{{ "Property Expenses"|t }}</span><span class="metric-short">{{ "Expenses"|t }}</span></th>
