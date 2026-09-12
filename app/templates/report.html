@@ -25,9 +25,10 @@
     </div>
   </div>
 
-  {% if not breakdown.has_data %}
+  {% if not comparison.has_data %}
   <p class="empty-state-note">{{ "No report data for this month yet."|t }}</p>
   {% else %}
+  {% if breakdown.has_data %}
   <section class="chart-wrap income-chart" dir="ltr">
     <div class="chart-header-row">
       <h2 class="chart-title">{{ "How we got there"|t }}</h2>
@@ -43,37 +44,65 @@
     </div>
     <canvas id="waterfall-chart" role="img" aria-label="Income and expenses breakdown, {{ selected_month.strftime('%B %Y') }}"></canvas>
   </section>
+  {% endif %}
 
   <div class="table-wrap manage-table-wrap">
     <table class="compare-table">
+      <thead>
+        <tr>
+          <th scope="col" class="metric-col">{{ "Metric"|t }}</th>
+          {% for p in properties %}
+          <th scope="col">{{ p.nickname }}</th>
+          {% endfor %}
+          <th scope="col" class="total-col">{{ "Total"|t }}</th>
+        </tr>
+      </thead>
       <tbody>
         <tr>
           <th scope="row">{{ "Rental Income"|t }}</th>
-          <td class="total-col">{{ breakdown.gross_rent|money }}</td>
+          {% for p in properties %}
+          <td class="{{ 'rent-low' if (comparison.gross_rent[p.nickname] * usd_to_ils_rate) < 1400 }}">{{ comparison.gross_rent[p.nickname]|money }}</td>
+          {% endfor %}
+          <td class="total-col {{ 'rent-low' if (comparison.gross_rent['total'] * usd_to_ils_rate) < 1400 }}">{{ comparison.gross_rent['total']|money }}</td>
         </tr>
-        {% for cat in breakdown.expense_categories %}
+        {% for cat in comparison.expense_category_rows %}
         <tr>
           <th scope="row">{{ cat.label }}</th>
-          <td>-{{ cat.amount|money }}</td>
+          {% for p in properties %}
+          <td>-{{ cat[p.nickname]|money }}</td>
+          {% endfor %}
+          <td class="total-col">-{{ cat['total']|money }}</td>
         </tr>
         {% endfor %}
         <tr>
           <th scope="row">{{ "Total Property Expenses"|t }}</th>
-          <td>-{{ breakdown.total_expenses|money }}</td>
+          {% for p in properties %}
+          <td>-{{ comparison.total_expenses[p.nickname]|money }}</td>
+          {% endfor %}
+          <td class="total-col">-{{ comparison.total_expenses['total']|money }}</td>
         </tr>
         <tr>
           <th scope="row">{{ "Net Operating Income"|t }}</th>
-          <td class="total-col">{{ breakdown.noi|money }}</td>
+          {% for p in properties %}
+          <td>{{ comparison.noi[p.nickname]|money }}</td>
+          {% endfor %}
+          <td class="total-col">{{ comparison.noi['total']|money }}</td>
         </tr>
-        {% if breakdown.unpaid_bills %}
+        {% if comparison.unpaid_bills['total'] %}
         <tr>
           <th scope="row">{{ "Unpaid Bills"|t }}</th>
-          <td>{{ breakdown.unpaid_bills|money }}</td>
+          {% for p in properties %}
+          <td>{{ comparison.unpaid_bills[p.nickname]|money }}</td>
+          {% endfor %}
+          <td class="total-col">{{ comparison.unpaid_bills['total']|money }}</td>
         </tr>
         {% endif %}
-        <tr>
+        <tr class="row-accent">
           <th scope="row">{{ "Balance"|t }}</th>
-          <td class="total-col">{{ breakdown.net_cash_flow|money }}</td>
+          {% for p in properties %}
+          <td>{{ comparison.net_cash_flow[p.nickname]|money }}</td>
+          {% endfor %}
+          <td class="total-col">{{ comparison.net_cash_flow['total']|money }}</td>
         </tr>
       </tbody>
     </table>

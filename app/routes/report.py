@@ -4,7 +4,12 @@ from flask import Blueprint, render_template, request
 
 from app.cache import get_or_set
 from app.db import SessionLocal
-from app.reports import latest_reported_month, properties_summary, report_breakdown
+from app.reports import (
+    latest_reported_month,
+    properties_summary,
+    report_breakdown,
+    report_breakdown_comparison,
+)
 
 report_bp = Blueprint("report", __name__)
 
@@ -32,6 +37,10 @@ def report():
             ("report_breakdown", selected_month.isoformat(), property_filter),
             lambda: report_breakdown(session, selected_month, property_filter),
         )
+        comparison = get_or_set(
+            ("report_breakdown_comparison", selected_month.isoformat()),
+            lambda: report_breakdown_comparison(session, selected_month, properties),
+        )
     finally:
         session.close()
 
@@ -41,4 +50,5 @@ def report():
         selected_property=property_filter,
         selected_month=selected_month,
         breakdown=breakdown,
+        comparison=comparison,
     )

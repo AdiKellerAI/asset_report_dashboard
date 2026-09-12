@@ -828,6 +828,16 @@ a {
   color: #d24545;
 }
 
+/* Flags a property whose Rental Income has fallen below a meaningful
+   floor (Adi's request, 2026-09-12: NIS 1,400) - checked against the
+   NIS-converted amount regardless of the USD/NIS display toggle, since
+   the threshold is a NIS figure. Reuses the same red as the negative
+   value-change cells above for one consistent "something's off" color. */
+.compare-table td.rent-low {
+  color: #d24545;
+  font-weight: bold;
+}
+
 /* "Balance" is a derived estimate tied to the gold Accumulated Balance
    card below it, not a raw on-statement figure like the
    3 rows above it (Rent/Expenses/NOI) - Adi found it confusing without a
