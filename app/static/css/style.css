@@ -784,15 +784,16 @@ a {
 .help-annotated-table {
   display: flex;
   flex-direction: column;
-  gap: 1.1rem;
+  gap: 0.5rem;
 }
 
 .help-arow {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  padding: 0.7rem 0.6rem;
+  /* Content (label/value, English) is inherently an LTR line even though
+     the modal around it is RTL (Hebrew) - set explicitly rather than
+     inheriting, so the grid below lays out left-to-right regardless of
+     the modal's own dir. */
+  direction: ltr;
+  padding: 0.4rem 0.5rem;
   border-radius: var(--radius-md);
   /* Visible by default (works with JS disabled) - the fade/slide-in only
      happens when .is-animating is applied (report.html's open() handler),
@@ -807,19 +808,19 @@ a {
      visibly snap to the keyframe's opacity:0 the instant its animation
      starts - "both" applies the from-state during the delay too, so it
      stays invisible then fades in, instead of flashing. */
-  animation: help-row-in 0.5s ease both;
+  animation: help-row-in 0.4s ease both;
 }
 
 .help-annotated-table.is-animating .help-arow:nth-child(1) { animation-delay: 0.05s; }
-.help-annotated-table.is-animating .help-arow:nth-child(2) { animation-delay: 0.35s; }
-.help-annotated-table.is-animating .help-arow:nth-child(3) { animation-delay: 0.65s; }
-.help-annotated-table.is-animating .help-arow:nth-child(4) { animation-delay: 0.95s; }
-.help-annotated-table.is-animating .help-arow:nth-child(5) { animation-delay: 1.25s; }
+.help-annotated-table.is-animating .help-arow:nth-child(2) { animation-delay: 0.25s; }
+.help-annotated-table.is-animating .help-arow:nth-child(3) { animation-delay: 0.45s; }
+.help-annotated-table.is-animating .help-arow:nth-child(4) { animation-delay: 0.65s; }
+.help-annotated-table.is-animating .help-arow:nth-child(5) { animation-delay: 0.85s; }
 
 @keyframes help-row-in {
   from {
     opacity: 0;
-    transform: translateY(10px);
+    transform: translateY(8px);
   }
   to {
     opacity: 1;
@@ -828,55 +829,77 @@ a {
 }
 
 .help-arow-main {
-  display: flex;
+  /* A fixed (not auto/content-sized) label column, shared by every row's
+     grid via this one class, is what actually guarantees every row's
+     value starts at the same x regardless of label length or how many
+     digits the value has (Adi's request, 2026-10-12) - minmax/auto would
+     let "Net Operating Income" push its own row's second column further
+     right than "Balance"'s. */
+  display: grid;
+  grid-template-columns: 180px auto;
+  column-gap: 0.6rem;
   align-items: baseline;
-  gap: 0.6rem;
 }
 
 .help-arow-label {
-  font-size: 0.95rem;
+  text-align: left;
+  font-size: 0.85rem;
   font-weight: 600;
   color: var(--ink);
 }
 
 .help-arow-value {
-  font-size: 1.05rem;
+  text-align: left;
+  justify-self: start;
+  font-size: 1rem;
   font-weight: 700;
-  color: var(--ink);
 }
 
 .help-circle {
-  border: 2px solid #e5484d;
+  border: 2px solid currentColor;
   border-radius: 999px;
-  padding: 0.15rem 0.85rem;
-  color: #e5484d;
+  padding: 0.1rem 0.7rem;
+  display: inline-block;
+}
+
+/* Income / "what's left" vs. expense / fee - Adi's request: green for
+   money in (or still net-positive), red for money out. Matches the
+   Income/Expense colors already used by this same page's waterfall chart
+   (KIND_COLORS in the script block below) rather than inventing a second
+   palette for the same two concepts. */
+.help-value-income {
+  color: #2f9e58;
+}
+
+.help-value-expense {
+  color: #d24545;
 }
 
 .help-arow-final {
-  background: rgba(230, 103, 103, 0.08);
-  border: 1px dashed rgba(230, 103, 103, 0.35);
+  background: rgba(47, 158, 88, 0.08);
+  border: 1px dashed rgba(47, 158, 88, 0.35);
 }
 
 .help-circle-final {
-  font-size: 1.2rem;
+  font-size: 1.1rem;
 }
 
 .help-arow-caption {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.15rem;
-  margin-top: 0.35rem;
+  margin-top: 0.25rem;
+  padding-right: 0.55rem;
+  border-right: 3px solid var(--border);
   color: var(--ink-muted);
-  font-size: 0.85rem;
-  line-height: 1.45;
-  max-width: 380px;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  text-align: right;
 }
 
-.help-arow-connector {
-  color: #e5484d;
-  font-size: 1.1rem;
-  line-height: 1;
+.help-arow-income .help-arow-caption {
+  border-right-color: #2f9e58;
+}
+
+.help-arow-expense .help-arow-caption {
+  border-right-color: #d24545;
 }
 
 .card-grid {
