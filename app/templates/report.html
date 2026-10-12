@@ -3,7 +3,38 @@
 {% block title %}{{ "Report"|t }} - {{ "Asset Report Dashboard"|t }}{% endblock %}
 
 {% block content %}
-  <p class="period-label">{{ "Understand This Report"|t }}</p>
+  <div class="report-title-row">
+    <p class="period-label">{{ "Understand This Report"|t }}</p>
+    <button type="button" class="help-button" id="report-help-btn">
+      <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/><path d="M9.5 9.3a2.5 2.5 0 1 1 3.4 2.3c-.7.3-1.2.9-1.2 1.7v.4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="12" cy="16.8" r="0.9" fill="currentColor"/></svg>
+      איך קוראים את הדוח
+    </button>
+  </div>
+
+  <div class="help-modal-overlay" id="report-help-overlay" hidden>
+    <div class="help-modal" dir="rtl" role="dialog" aria-modal="true" aria-label="איך קוראים את הדוח">
+      <div class="help-modal-header">
+        <h2>איך קוראים את הדוח</h2>
+        <button type="button" class="help-modal-close" id="report-help-close" aria-label="סגור">&times;</button>
+      </div>
+      <dl class="help-modal-body">
+        <dt>הכנסה משכירות</dt>
+        <dd>כמה שכירות נכנסה מהנכס בחודש הזה.</dd>
+
+        <dt>סך ההוצאות על הנכס</dt>
+        <dd>כל ההוצאות על הנכס באותו חודש - תיקונים, ארנונה, ביטוח ועוד, כולל 10% עמלת ניהול ל-Overland.</dd>
+
+        <dt>רווח תפעולי נקי (NOI)</dt>
+        <dd>כמה נטו נשאר מהנכס אחרי ההוצאות - ההכנסה משכירות פחות כל ההוצאות. זה מה שחוזר אליי בפועל כל חודש.</dd>
+
+        <dt>חשבונות לא משולמים</dt>
+        <dd>חשבונות שהגיעו באותו חודש אבל עדיין לא שולמו - יורדים מהיתרה בהמשך כשישולמו.</dd>
+
+        <dt>יתרה</dt>
+        <dd>השורה התחתונה של החודש: הרווח התפעולי הנקי בניכוי חשבונות לא משולמים.</dd>
+      </dl>
+    </div>
+  </div>
 
   <div class="period-header-row">
     <nav class="period-pills">
@@ -116,6 +147,29 @@
       document.getElementById("report-month-input"),
       document.getElementById("report-month-form")
     );
+
+    (function () {
+      const btn = document.getElementById("report-help-btn");
+      const overlay = document.getElementById("report-help-overlay");
+      const closeBtn = document.getElementById("report-help-close");
+      if (!btn || !overlay) return;
+
+      function open() {
+        overlay.hidden = false;
+      }
+      function close() {
+        overlay.hidden = true;
+      }
+
+      btn.addEventListener("click", open);
+      closeBtn.addEventListener("click", close);
+      overlay.addEventListener("click", (e) => {
+        if (e.target === overlay) close();
+      });
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && !overlay.hidden) close();
+      });
+    })();
   </script>
 
   {% if breakdown.has_data %}
