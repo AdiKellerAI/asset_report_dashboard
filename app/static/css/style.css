@@ -736,7 +736,7 @@ a {
 
 .help-modal {
   width: 100%;
-  max-width: 480px;
+  max-width: 540px;
   max-height: 85vh;
   overflow-y: auto;
   background: var(--surface-raised);
@@ -775,26 +775,108 @@ a {
   color: var(--ink);
 }
 
-.help-modal-body {
-  margin: 0;
+.help-modal-intro {
+  margin: 0 0 1rem;
+  color: var(--ink-muted);
+  font-size: 0.85rem;
 }
 
-.help-modal-body dt {
+.help-annotated-table {
+  display: flex;
+  flex-direction: column;
+  gap: 1.1rem;
+}
+
+.help-arow {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: 0.7rem 0.6rem;
+  border-radius: var(--radius-md);
+  /* Visible by default (works with JS disabled) - the fade/slide-in only
+     happens when .is-animating is applied (report.html's open() handler),
+     which starts each row's animation from the keyframes' own opacity:0
+     regardless of this base value, so this doesn't fight the animation. */
+  opacity: 1;
+}
+
+.help-annotated-table.is-animating .help-arow {
+  /* "both" (not just "forwards"): without it, each row would sit fully
+     opaque at its own base opacity:1 for the whole animation-delay, then
+     visibly snap to the keyframe's opacity:0 the instant its animation
+     starts - "both" applies the from-state during the delay too, so it
+     stays invisible then fades in, instead of flashing. */
+  animation: help-row-in 0.5s ease both;
+}
+
+.help-annotated-table.is-animating .help-arow:nth-child(1) { animation-delay: 0.05s; }
+.help-annotated-table.is-animating .help-arow:nth-child(2) { animation-delay: 0.35s; }
+.help-annotated-table.is-animating .help-arow:nth-child(3) { animation-delay: 0.65s; }
+.help-annotated-table.is-animating .help-arow:nth-child(4) { animation-delay: 0.95s; }
+.help-annotated-table.is-animating .help-arow:nth-child(5) { animation-delay: 1.25s; }
+
+@keyframes help-row-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.help-arow-main {
+  display: flex;
+  align-items: baseline;
+  gap: 0.6rem;
+}
+
+.help-arow-label {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.help-arow-value {
+  font-size: 1.05rem;
   font-weight: 700;
   color: var(--ink);
-  font-size: 0.95rem;
-  margin-top: 0.9rem;
 }
 
-.help-modal-body dt:first-child {
-  margin-top: 0;
+.help-circle {
+  border: 2px solid #e5484d;
+  border-radius: 999px;
+  padding: 0.15rem 0.85rem;
+  color: #e5484d;
 }
 
-.help-modal-body dd {
-  margin: 0.2rem 0 0;
+.help-arow-final {
+  background: rgba(230, 103, 103, 0.08);
+  border: 1px dashed rgba(230, 103, 103, 0.35);
+}
+
+.help-circle-final {
+  font-size: 1.2rem;
+}
+
+.help-arow-caption {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.15rem;
+  margin-top: 0.35rem;
   color: var(--ink-muted);
-  font-size: 0.88rem;
-  line-height: 1.5;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  max-width: 380px;
+}
+
+.help-arow-connector {
+  color: #e5484d;
+  font-size: 1.1rem;
+  line-height: 1;
 }
 
 .card-grid {
@@ -1683,4 +1765,56 @@ body.chart-fullscreen-open {
 
 .load-sentinel {
   height: 1px;
+}
+
+.upload-result-balance {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 0.9rem 1rem;
+  margin: 0.2rem 0 1rem;
+  text-align: center;
+}
+
+.upload-result-balance-label {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ink-muted);
+  margin-bottom: 0.35rem;
+}
+
+.upload-result-balance-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.upload-result-balance-value {
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.upload-result-balance-value.is-faded {
+  color: var(--ink-muted);
+  font-weight: 500;
+}
+
+.upload-result-balance-value-after {
+  color: var(--accent);
+}
+
+.upload-result-balance-arrow {
+  color: var(--ink-muted);
+  font-size: 1.1rem;
+}
+
+.upload-result-section-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--ink);
+  margin: 0 0 0.5rem;
 }

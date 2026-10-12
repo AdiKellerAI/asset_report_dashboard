@@ -7,6 +7,63 @@
   <p class="flash-message flash-{{ message_level }}">{{ message }}</p>
   {% endif %}
 
+  {% if upload_result %}
+  <div class="help-modal-overlay" id="upload-result-overlay" hidden>
+    <div class="help-modal">
+      <div class="help-modal-header">
+        <h2>{{ "Upload Complete"|t }}</h2>
+        <button type="button" class="help-modal-close" id="upload-result-close" aria-label="{{ 'Close'|t }}">&times;</button>
+      </div>
+
+      <p class="help-modal-intro">{{ upload_result.summary_text }}</p>
+
+      <div class="upload-result-balance">
+        <span class="upload-result-balance-label">{{ "Accumulated Balance"|t }}</span>
+        {% set balance_changed = upload_result.accumulated_before != upload_result.accumulated_after %}
+        <span class="upload-result-balance-row">
+          <span class="upload-result-balance-value {{ 'is-faded' if balance_changed }}">{{ upload_result.accumulated_before|money }}</span>
+          <span class="upload-result-balance-arrow" aria-hidden="true">→</span>
+          <span class="upload-result-balance-value {{ 'upload-result-balance-value-after' if balance_changed }}">{{ upload_result.accumulated_after|money }}</span>
+        </span>
+      </div>
+
+      {% if upload_result.statements %}
+      <p class="upload-result-section-title">{{ "New Data Added"|t }}</p>
+      <div class="table-wrap manage-table-wrap">
+        <table class="compare-table">
+          <thead>
+            <tr>
+              <th scope="col" class="metric-col">{{ "Property"|t }}</th>
+              <th scope="col">{{ "Month"|t }}</th>
+              <th scope="col">{{ "Net (NOI)"|t }}</th>
+              <th scope="col">{{ "Balance"|t }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for s in upload_result.statements %}
+            <tr>
+              <th scope="row">{{ s.nickname }}</th>
+              <td>{{ s.month_label }}</td>
+              <td>{{ s.noi|money if s.noi is not none else "—" }}</td>
+              <td>{{ s.net_owner_funds|money if s.net_owner_funds is not none else "—" }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="empty-state-note">{{ "No new data - these files were already loaded before"|t }}</p>
+      {% endif %}
+    </div>
+  </div>
+  <noscript>
+    <p class="flash-message flash-success">
+      {{ upload_result.summary_text }} —
+      {{ "Accumulated Balance"|t }}: {{ upload_result.accumulated_before|money }} → {{ upload_result.accumulated_after|money }}
+    </p>
+  </noscript>
+  {% endif %}
+
   <section class="manage-card">
     <h2 class="manage-card-title">{{ "Upload New Reports"|t }}</h2>
     <p class="manage-card-hint">{{ "Select the report files (zip or individual files, as downloaded)."|t }}</p>
@@ -197,6 +254,29 @@
           input.files = e.dataTransfer.files;
           showNames(input.files);
         }
+      });
+    })();
+
+    (function () {
+      // Only present in the DOM at all when upload_result was just popped
+      // from the session (see app/routes/manage.py) - i.e. right after an
+      // upload. Opens itself immediately rather than waiting for a click,
+      // since there's no trigger button for this one.
+      const overlay = document.getElementById("upload-result-overlay");
+      const closeBtn = document.getElementById("upload-result-close");
+      if (!overlay) return;
+
+      function close() {
+        overlay.hidden = true;
+      }
+
+      overlay.hidden = false;
+      closeBtn.addEventListener("click", close);
+      overlay.addEventListener("click", (e) => {
+        if (e.target === overlay) close();
+      });
+      document.addEventListener("keydown", (e) => {
+        if (e.key === "Escape" && !overlay.hidden) close();
       });
     })();
   </script>

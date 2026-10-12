@@ -1,8 +1,10 @@
+import io
 from datetime import date
 
 from app import create_app
 from app.models import Mortgage, Property, TaxReport, Transfer
 from app.seed import seed
+from tests.test_parsers.conftest import ARCHIVE_DIR, requires_archive
 
 
 def test_manage_page_renders(db_session):
@@ -48,6 +50,59 @@ def test_manage_upload_with_no_files_redirects_with_error(db_session):
 
     assert response.status_code == 200
     assert "No files selected" in response.get_data(as_text=True)
+
+
+@requires_archive
+def test_manage_upload_shows_result_popup_with_what_changed(db_session):
+    """Adi's feedback (2026-10-12): a plain "success" message isn't
+    reassuring when the Home page looks unchanged - the Manage page should
+    show what actually moved (the Accumulated Balance before/after, and
+    which property/month got new data) right after a successful upload."""
+    seed(db_session)
+    filename = "Jan 01, 2025 to Jan 31, 2025.zip"
+    data = (ARCHIVE_DIR / filename).read_bytes()
+
+    client = create_app().test_client()
+    response = client.post(
+        "/manage/upload",
+        data={"files": (io.BytesIO(data), filename)},
+        content_type="multipart/form-data",
+        follow_redirects=True,
+    )
+
+    assert response.status_code == 200
+    body = response.get_data(as_text=True)
+    assert "Upload Complete" in body
+    assert "New Data Added" in body
+    assert "Brunswick" in body
+    assert 'id="upload-result-overlay"' in body
+
+    # A second GET without a new upload shouldn't show the popup again -
+    # it's popped from the session, one-shot, same as the plain flash message.
+    second_visit = client.get("/manage")
+    assert 'id="upload-result-overlay"' not in second_visit.get_data(as_text=True)
+
+
+@requires_archive
+def test_manage_reupload_same_file_shows_no_new_data(db_session):
+    """Re-uploading a file whose content hash is already known is a no-op
+    for the data (dedup, dev-plan.md sec 6) - the popup should say so
+    plainly instead of implying something changed."""
+    seed(db_session)
+    filename = "Jan 01, 2025 to Jan 31, 2025.zip"
+    data = (ARCHIVE_DIR / filename).read_bytes()
+
+    client = create_app().test_client()
+    client.post(
+        "/manage/upload", data={"files": (io.BytesIO(data), filename)}, content_type="multipart/form-data", follow_redirects=True
+    )
+    response = client.post(
+        "/manage/upload", data={"files": (io.BytesIO(data), filename)}, content_type="multipart/form-data", follow_redirects=True
+    )
+
+    assert response.status_code == 200
+    body = response.get_data(as_text=True)
+    assert "No new data" in body
 
 
 def test_manage_mortgage_creates_then_updates_a_single_combined_row(db_session):

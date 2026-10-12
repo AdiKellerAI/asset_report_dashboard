@@ -1,12 +1,14 @@
 from datetime import date
 
 from flask import Blueprint, g, redirect, render_template, request, url_for
+from flask import session as flask_session
 
 from app.cache import get_or_set, invalidate_all
 from app.db import SessionLocal
 from app.i18n import translate_message
 from app.ingestion import process_upload
-from app.models import Document, Mortgage, Property, TaxReport, Transfer
+from app.models import Document, Mortgage, MonthlyStatement, Property, TaxReport, Transfer
+from app.reports import _accumulated_balance
 from app.valuation import (
     MONTHLY_REQUEST_CAP,
     refresh_current_value,
@@ -114,6 +116,10 @@ def manage():
         transfers=transfers,
         message=request.args.get("msg"),
         message_level=request.args.get("level", "success"),
+        # Popped (not just read) so it only shows once, right after the
+        # upload that produced it - a page refresh afterward won't re-show
+        # stale results, same one-shot semantics as the msg/level flash above.
+        upload_result=flask_session.pop("upload_result", None),
     )
 
 
@@ -126,18 +132,54 @@ def upload_reports():
     uploaded_files = [(f.filename, f.read()) for f in files]
     session = SessionLocal()
     try:
+        # Snapshot the Home page's headline figure before this batch writes
+        # anything, so the post-upload popup can show what actually moved -
+        # the flash message alone ("N files ingested") doesn't say whether
+        # the upload did anything *visible* (Adi's feedback, 2026-10-12: a
+        # "success" message isn't reassuring on its own when the Home page
+        # looks unchanged).
+        accumulated_before = _accumulated_balance(session)
+
         batch = process_upload(uploaded_files, session)
+
         needs_review = session.query(Document).filter_by(source_batch_id=batch.id, status="needs_review").count()
+        accumulated_after = _accumulated_balance(session)
+
+        new_statements = (
+            session.query(MonthlyStatement)
+            .join(Document, MonthlyStatement.source_document_id == Document.id)
+            .join(Property, MonthlyStatement.property_id == Property.id)
+            .filter(Document.source_batch_id == batch.id)
+            .order_by(MonthlyStatement.month, Property.nickname)
+            .all()
+        )
+        statements_summary = [
+            {
+                "nickname": s.property.nickname,
+                "month": s.month.strftime("%Y-%m"),
+                "month_label": s.month.strftime("%B %Y"),
+                "noi": float(s.noi) if s.noi is not None else None,
+                "net_owner_funds": float(s.net_owner_funds) if s.net_owner_funds is not None else None,
+            }
+            for s in new_statements
+        ]
     finally:
         session.close()
     invalidate_all()
 
-    msg = translate_message("Uploaded batch processed: {count} file(s) ingested", g.lang, count=batch.file_count)
+    summary_text = translate_message("{count} file(s) ingested", g.lang, count=batch.file_count)
     if needs_review:
-        msg += translate_message(", {count} need review", g.lang, count=needs_review)
+        summary_text += translate_message(", {count} need review", g.lang, count=needs_review)
     if batch.notes:
-        msg += f" ({batch.notes})"
-    return redirect(url_for("manage.manage", msg=msg, level="success"))
+        summary_text += f" ({batch.notes})"
+
+    flask_session["upload_result"] = {
+        "summary_text": summary_text,
+        "accumulated_before": accumulated_before,
+        "accumulated_after": accumulated_after,
+        "statements": statements_summary,
+    }
+    return redirect(url_for("manage.manage"))
 
 
 @manage_bp.post("/manage/mortgage")

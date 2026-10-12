@@ -7,32 +7,77 @@
     <p class="period-label">{{ "Understand This Report"|t }}</p>
     <button type="button" class="help-button" id="report-help-btn">
       <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/><path d="M9.5 9.3a2.5 2.5 0 1 1 3.4 2.3c-.7.3-1.2.9-1.2 1.7v.4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="12" cy="16.8" r="0.9" fill="currentColor"/></svg>
-      איך קוראים את הדוח
+      {{ "How to Read This Report"|t }}
     </button>
   </div>
 
+  {# Everything inside this modal is fixed Hebrew by design (Adi's request) -
+     it's a worked example with illustrative numbers, not live data, so it's
+     never run through the |t filter regardless of the site's EN/HE toggle. #}
   <div class="help-modal-overlay" id="report-help-overlay" hidden>
     <div class="help-modal" dir="rtl" role="dialog" aria-modal="true" aria-label="איך קוראים את הדוח">
       <div class="help-modal-header">
         <h2>איך קוראים את הדוח</h2>
         <button type="button" class="help-modal-close" id="report-help-close" aria-label="סגור">&times;</button>
       </div>
-      <dl class="help-modal-body">
-        <dt>הכנסה משכירות</dt>
-        <dd>כמה שכירות נכנסה מהנכס בחודש הזה.</dd>
+      <p class="help-modal-intro">דוגמה עם מספרים מדומים, שורה אחרי שורה:</p>
 
-        <dt>סך ההוצאות על הנכס</dt>
-        <dd>כל ההוצאות על הנכס באותו חודש - תיקונים, ארנונה, ביטוח ועוד, כולל 10% עמלת ניהול ל-Overland.</dd>
+      <div class="help-annotated-table" id="help-annotated-table">
+        <div class="help-arow">
+          <div class="help-arow-main">
+            <span class="help-arow-label">הכנסה משכירות</span>
+            <span class="help-arow-value help-circle">1,460&nbsp;$</span>
+          </div>
+          <div class="help-arow-caption">
+            <span class="help-arow-connector" aria-hidden="true">↓</span>
+            כמה שכירות נכנסה מהנכס בחודש הזה
+          </div>
+        </div>
 
-        <dt>רווח תפעולי נקי (NOI)</dt>
-        <dd>כמה נטו נשאר מהנכס אחרי ההוצאות - ההכנסה משכירות פחות כל ההוצאות. זה מה שחוזר אליי בפועל כל חודש.</dd>
+        <div class="help-arow">
+          <div class="help-arow-main">
+            <span class="help-arow-label">סך הוצאות הנכס</span>
+            <span class="help-arow-value help-circle">-146&nbsp;$</span>
+          </div>
+          <div class="help-arow-caption">
+            <span class="help-arow-connector" aria-hidden="true">↓</span>
+            כל מה שיצא באותו חודש - תיקונים, ארנונה, ביטוח, כולל 10% עמלת ניהול ל-Overland
+          </div>
+        </div>
 
-        <dt>חשבונות לא משולמים</dt>
-        <dd>חשבונות שהגיעו באותו חודש אבל עדיין לא שולמו - יורדים מהיתרה בהמשך כשישולמו.</dd>
+        <div class="help-arow">
+          <div class="help-arow-main">
+            <span class="help-arow-label">רווח תפעולי נקי</span>
+            <span class="help-arow-value help-circle">1,314&nbsp;$</span>
+          </div>
+          <div class="help-arow-caption">
+            <span class="help-arow-connector" aria-hidden="true">↓</span>
+            הכנסה משכירות פחות ההוצאות - מה שהנכס בפועל מרוויח באותו חודש
+          </div>
+        </div>
 
-        <dt>יתרה</dt>
-        <dd>השורה התחתונה של החודש: הרווח התפעולי הנקי בניכוי חשבונות לא משולמים.</dd>
-      </dl>
+        <div class="help-arow">
+          <div class="help-arow-main">
+            <span class="help-arow-label">חשבונות לתשלום</span>
+            <span class="help-arow-value help-circle">-45&nbsp;$</span>
+          </div>
+          <div class="help-arow-caption">
+            <span class="help-arow-connector" aria-hidden="true">↓</span>
+            חשבונות שהגיעו באותו חודש ועדיין לא שולמו - ירדו מהיתרה כשישולמו
+          </div>
+        </div>
+
+        <div class="help-arow help-arow-final">
+          <div class="help-arow-main">
+            <span class="help-arow-label">יתרה</span>
+            <span class="help-arow-value help-circle help-circle-final">1,269&nbsp;$</span>
+          </div>
+          <div class="help-arow-caption">
+            <span class="help-arow-connector" aria-hidden="true">↓</span>
+            השורה התחתונה: הרווח התפעולי הנקי בניכוי חשבונות לתשלום - כמה נטו נכנס לי בפועל החודש
+          </div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -152,10 +197,19 @@
       const btn = document.getElementById("report-help-btn");
       const overlay = document.getElementById("report-help-overlay");
       const closeBtn = document.getElementById("report-help-close");
+      const table = document.getElementById("help-annotated-table");
       if (!btn || !overlay) return;
 
       function open() {
         overlay.hidden = false;
+        // Replay the row-by-row reveal every time the modal opens, not just
+        // the first time - CSS animations don't restart on their own just
+        // because a hidden ancestor became visible again.
+        if (table) {
+          table.classList.remove("is-animating");
+          void table.offsetWidth; // force a reflow so the class re-triggers
+          table.classList.add("is-animating");
+        }
       }
       function close() {
         overlay.hidden = true;
