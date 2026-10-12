@@ -74,7 +74,7 @@ Based on the samples reviewed:
 
 Each monthly zip (e.g. `Apr_01__2022_to_Apr_30__2022.zip`, `May_01__2026_to_May_31__2026.zip`) contains:
 
-- **The zip's own filename encodes the statement period** (`<Mon>_<DD>__<YYYY>_to_<Mon>_<DD>__<YYYY>.zip`) — parse this directly for the batch's date range; don't re-derive it from file contents.
+- **The zip's own filename encodes the statement period** (`<Mon>_<DD>__<YYYY>_to_<Mon>_<DD>__<YYYY>.zip`) — parse this directly for the batch's date range; this stays the primary source. Fallback added 2026-10-12: a bare `Owner Packet.pdf` re-shared without its zip (e.g. a phone's share sheet forwarding just the PDF) has no date in its filename — `parse_statement_period_from_text` (app/ingestion.py) reads the same range off page 1's own "Owner Statement" header instead, used only when the filename doesn't carry it.
 - **`Owner Packet.pdf`** — always present, the master document (see table above). Confirmed structure: page 1 = consolidated 2-property summary, then one section per property with its own cash summary + transaction table.
 - **`bill_*` files** — one per bill/utility document for that month, filename either a UUID (`bill_<uuid>.jpeg`, a photographed paper bill — OCR required) or a descriptive timestamp (`bill_document_0_2026_05_25t140618_321.pdf`, a normal text PDF).
 - **`work_order_<id>_<uuid>.jpeg`** — confirmed to be **byte-identical** to a `bill_<uuid>.jpeg` sharing the same UUID in the same zip (AppFolio attaches the same photo to both a work-order record and its linked bill). **The ingestion parser must hash file contents on unzip and treat matching hashes as one underlying document, not two** — otherwise repair costs get double-counted and the same photo shows up twice in the UI.

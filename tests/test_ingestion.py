@@ -6,13 +6,14 @@ from app.ingestion import (
     _upsert_monthly_statement,
     _write_transactions,
     parse_statement_period,
+    parse_statement_period_from_text,
     process_upload,
     recategorize_transactions,
 )
 from app.models import Document, ExpenseType, MonthlyStatement, Property, Transaction
 from app.parsers.owner_packet import PropertyCashSummary, TransactionRow
 from app.seed import seed
-from tests.test_parsers.conftest import ARCHIVE_DIR, requires_archive
+from tests.test_parsers.conftest import ARCHIVE_DIR, owner_packet_path, requires_archive
 
 
 def test_parse_statement_period():
@@ -25,6 +26,25 @@ def test_parse_statement_period():
         date(2024, 8, 31),
     )
     assert parse_statement_period("random_photo.jpeg") is None
+
+
+def test_parse_statement_period_from_text():
+    """The fallback used when a re-shared "Owner Packet.pdf" has no date in
+    its own filename - reads the same range off page 1's own header text
+    instead. Dash-separated in the PDF ("Sep 01, 2026 - Sep 30, 2026"),
+    unlike the "to"-separated zip filename format, and the surrounding text
+    on that line isn't consistent across samples (confirmed against the
+    whole archive), so this only anchors on the date pattern itself."""
+    assert parse_statement_period_from_text(
+        "Owner Statement\n37939 vine st Sep 01, 2026 - Sep 30, 2026\nwilloughby, OH 44094"
+    ) == (date(2026, 9, 1), date(2026, 9, 30))
+    assert parse_statement_period_from_text("Owner Statement\n37939 vine st\nMar 01, 2023 - Mar 31, 2023") == (
+        date(2023, 3, 1),
+        date(2023, 3, 31),
+    )
+    assert parse_statement_period_from_text("no date range in here at all") is None
+    assert parse_statement_period_from_text(None) is None
+    assert parse_statement_period_from_text("") is None
 
 
 def _read(filename):
@@ -67,6 +87,30 @@ def test_owner_packet_writes_monthly_statements_and_transactions(db_session):
     assert len(transactions) == 2  # rent income + management fee
     rent_txn = next(t for t in transactions if t.expense_type.code == "rent_income")
     assert float(rent_txn.amount) == 1378.00
+
+
+@requires_archive
+def test_owner_packet_uploaded_alone_under_a_generic_filename_still_parses(db_session, tmp_path):
+    """Reproduces the real bug (2026-10-12): uploading just the extracted
+    Owner Packet.pdf under AppFolio's own generic name - e.g. forwarded from
+    a phone's share sheet, which drops the zip's date-range filename - used
+    to silently land in needs_review with no monthly_statement written,
+    since the period previously had no source once the filename didn't carry
+    it. Now falls back to the date range printed on the PDF's own page 1."""
+    seed(db_session)
+    pdf_path = owner_packet_path("Jan 01, 2025 to Jan 31, 2025.zip", tmp_path)
+
+    batch = process_upload([("Owner Packet.pdf", pdf_path.read_bytes())], db_session)
+
+    assert batch.file_count == 1
+    document = db_session.query(Document).filter_by(source_batch_id=batch.id).one()
+    assert document.status == "parsed"
+
+    brunswick = db_session.query(Property).filter_by(nickname="Brunswick").one()
+    statement = (
+        db_session.query(MonthlyStatement).filter_by(property_id=brunswick.id, month=date(2025, 1, 1)).one()
+    )
+    assert float(statement.net_owner_funds) == pytest.approx(1240.20)
 
 
 def test_non_operating_transactions_excluded_from_noi(db_session):

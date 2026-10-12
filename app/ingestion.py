@@ -20,12 +20,18 @@ from app.storage import save_document_file
 
 PERIOD_RE = re.compile(r"([A-Za-z]{3})\s+(\d{1,2}),\s+(\d{4})\s+to\s+([A-Za-z]{3})\s+(\d{1,2}),\s+(\d{4})")
 
+# The Owner Packet's own page 1 prints the same range dash-separated ("Owner
+# Statement\nSep 01, 2026 - Sep 30, 2026"), not "to"-separated like the zip's
+# filename. Kept as a fallback (parse_statement_period_from_text below), not
+# the primary source: confirmed against every sample in the archive that the
+# dash-range substring itself is always intact, but which *line* it lands on
+# varies (it merges with the address line in most samples, splits onto its
+# own line in others) - a .search() against the full extracted text sidesteps
+# that instead of anchoring to a specific line.
+PERIOD_IN_TEXT_RE = re.compile(r"([A-Za-z]{3})\s+(\d{1,2}),\s+(\d{4})\s*-\s*([A-Za-z]{3})\s+(\d{1,2}),\s+(\d{4})")
 
-def parse_statement_period(filename: str):
-    """Derive the statement period from the file's own name (dev-plan.md sec
-    3.1) - e.g. "Apr 01, 2022 to Apr 30, 2022.zip" -> (date(2022,4,1), date(2022,4,30)).
-    Returns None if the filename doesn't match (e.g. an ad-hoc single bill upload)."""
-    match = PERIOD_RE.search(filename)
+
+def _parse_period_match(match):
     if not match:
         return None
     mon1, day1, year1, mon2, day2, year2 = match.groups()
@@ -35,6 +41,25 @@ def parse_statement_period(filename: str):
     except ValueError:
         return None
     return start, end
+
+
+def parse_statement_period(filename: str):
+    """Derive the statement period from the file's own name (dev-plan.md sec
+    3.1) - e.g. "Apr 01, 2022 to Apr 30, 2022.zip" -> (date(2022,4,1), date(2022,4,30)).
+    Returns None if the filename doesn't match (e.g. an ad-hoc single bill
+    upload, or a PDF extracted from its zip and re-shared under a generic
+    name like "Owner Packet.pdf" - common from a phone's share sheet)."""
+    return _parse_period_match(PERIOD_RE.search(filename))
+
+
+def parse_statement_period_from_text(text: str):
+    """Fallback for when the filename doesn't carry the period (see
+    parse_statement_period's docstring) - reads it off the Owner Packet's own
+    page 1 instead. Only called when the filename-based parse already came up
+    empty, so this is the second of two sources, not a replacement."""
+    if not text:
+        return None
+    return _parse_period_match(PERIOD_IN_TEXT_RE.search(text))
 
 
 def _expand_to_raw_files(filename: str, data: bytes):
@@ -124,7 +149,7 @@ def _ingest_one_file(filename, raw, digest, period, batch, session, properties_b
     session.flush()
 
     if doc_type == OWNER_PACKET:
-        _ingest_owner_packet(raw, period, document, session, properties_by_nickname, expense_types_by_code)
+        _ingest_owner_packet(raw, period, text, document, session, properties_by_nickname, expense_types_by_code)
     elif doc_type in (WATER_BILL, SEWER_BILL):
         _ingest_utility_bill(raw, doc_type, document, properties_by_nickname)
     # unknown: stays needs_review, no further extraction - a human decides
@@ -140,8 +165,10 @@ def _extract_text(raw, extension):
         return None
 
 
-def _ingest_owner_packet(raw, period, document, session, properties_by_nickname, expense_types_by_code):
+def _ingest_owner_packet(raw, period, text, document, session, properties_by_nickname, expense_types_by_code):
     summaries = parse_owner_packet(io.BytesIO(raw))
+    if period is None:
+        period = parse_statement_period_from_text(text)
     if not summaries or period is None:
         return  # stays needs_review - can't attribute to a property/month
 

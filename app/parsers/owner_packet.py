@@ -2,10 +2,12 @@
 
 Extracts, per property page: the cash-summary header fields (the numbers that
 feed monthly_statement) and the transaction log (the rows that feed
-transaction). The statement month is NOT parsed from the PDF - callers derive
-it from the zip/file's own filename (dev-plan.md sec 3.1), which is the
-documented authoritative source, since in-page date text wraps unreliably
-across a line break in some samples.
+transaction). The statement month itself isn't extracted here - callers
+derive it primarily from the zip/file's own filename (dev-plan.md sec 3.1),
+falling back to page 1's own "Owner Statement" date range
+(app/ingestion.py's parse_statement_period_from_text) when the filename
+doesn't carry it, e.g. a bare "Owner Packet.pdf" re-shared from a phone
+without its original zip.
 """
 
 from dataclasses import dataclass, field
